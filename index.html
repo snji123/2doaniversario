@@ -95,6 +95,8 @@
     cursor:pointer;transition:background .12s ease;position:relative;
   }
   .track:active{background:var(--surface-hover);}
+  .t-num{width:20px;flex:none;text-align:center;font-size:14px;font-weight:600;color:var(--text-dim);}
+  .track.playing .t-num{color:var(--green);}
   .cover{
     width:48px;height:48px;border-radius:6px;flex:none;position:relative;overflow:hidden;
     display:flex;align-items:center;justify-content:center;font-size:18px;
@@ -152,10 +154,12 @@
     position:absolute;left:0;right:0;bottom:0;padding:20px 16px 16px;
     background:linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.35) 55%, transparent 100%);
   }
-  .sheet-progress-bar{height:3px;border-radius:2px;background:rgba(255,255,255,0.25);margin-bottom:12px;cursor:pointer;overflow:hidden;}
+  .sheet-progress-bar{height:3px;border-radius:2px;background:rgba(255,255,255,0.25);margin-bottom:6px;cursor:pointer;overflow:hidden;}
   .sheet-progress-fill{height:100%;width:0%;background:var(--green);border-radius:2px;}
-  .sheet-controls-row{display:flex;align-items:center;justify-content:center;gap:16px;}
-  .sheet-time{font-size:11px;color:rgba(255,255,255,0.9);min-width:30px;text-align:center;}
+  .sheet-times{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.85);margin-bottom:10px;}
+  .sheet-controls-row{display:flex;align-items:center;justify-content:center;gap:26px;}
+  .sheet-nav-btn{background:none;border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:6px;}
+  .sheet-nav-btn svg{fill:currentColor;}
   .sheet-play-btn{
     width:50px;height:50px;border-radius:50%;background:var(--green);border:none;
     display:flex;align-items:center;justify-content:center;cursor:pointer;
@@ -231,18 +235,22 @@
     <div class="big-cover" id="sheetCover">
       <div class="sheet-player-overlay">
         <div class="sheet-progress-bar" id="sheetProgressBar"><div class="sheet-progress-fill" id="sheetProgressFill"></div></div>
+        <div class="sheet-times"><span id="sheetTimeCur">0:00</span><span id="sheetTimeDur">0:00</span></div>
         <div class="sheet-controls-row">
-          <span class="sheet-time" id="sheetTimeCur">0:00</span>
+          <button class="sheet-nav-btn" id="sheetPrevBtn">
+            <svg width="22" height="22" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+          </button>
           <button class="sheet-play-btn" id="sheetPlayBtn">
             <svg id="sheetPlayIcon" width="20" height="20" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
           </button>
-          <span class="sheet-time" id="sheetTimeDur">0:00</span>
+          <button class="sheet-nav-btn" id="sheetNextBtn">
+            <svg width="22" height="22" viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
+          </button>
         </div>
       </div>
     </div>
     <h2 id="sheetTitle"></h2>
     <div class="by" id="sheetArtist"></div>
-    <audio id="sheetAudio" style="display:none"></audio>
     <div class="block"><h3>La frase</h3><p class="phrase" id="sheetPhrase"></p></div>
     <div class="block"><h3>Lo que significa</h3><p id="sheetMeaning"></p></div>
     <div class="block"><h3>Mi nota para ti</h3><div class="note-box"><p id="sheetNote"></p></div></div>
@@ -289,7 +297,13 @@
   let currentIndex = null;
   let isPlaying = false;
   const mini = document.getElementById('miniplayer');
-  const mpAudio = new Audio();
+  const audio = new Audio(); // reproductor único: sigue sonando al cerrar la ficha
+
+  function fmtTime(t){
+    if(!isFinite(t)) return '0:00';
+    const m = Math.floor(t/60), s = Math.floor(t%60);
+    return `${m}:${s<10?'0':''}${s}`;
+  }
 
   function renderTracks(){
     list.innerHTML = '';
@@ -297,6 +311,7 @@
       const row = document.createElement('div');
       row.className = 'track' + (currentIndex===i && isPlaying ? ' playing' : '');
       row.innerHTML = `
+        <div class="t-num">${i+1}</div>
         <div class="cover" style="background:url('${s.cover}') center/cover no-repeat, ${s.grad}">
           <div class="bars"><span></span><span></span><span></span></div>
         </div>
@@ -312,99 +327,85 @@
   }
   renderTracks();
 
-  function playTrack(i){
-    const s = songs[i];
-    currentIndex = i; isPlaying = true;
-    mpAudio.src = s.audio;
-    mpAudio.play().catch(()=>{});
-    document.getElementById('mpCover').style.background = `url('${s.cover}') center/cover no-repeat, ${s.grad}`;
+  function setPlayIcons(playing){
+    const shape = playing
+      ? '<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>'
+      : '<path d="M8 5v14l11-7z"/>';
+    document.getElementById('mpIcon').innerHTML = shape;
+    document.getElementById('sheetPlayIcon').innerHTML = shape;
+  }
+
+  function refreshNowPlayingUI(){
+    if(currentIndex===null) return;
+    const s = songs[currentIndex];
+    const bg = `url('${s.cover}') center/cover no-repeat, ${s.grad}`;
+    document.getElementById('mpCover').style.background = bg;
     document.getElementById('mpTitle').textContent = s.title;
     document.getElementById('mpArtist').textContent = s.artist;
-    mini.classList.add('show');
-    setMpIcon(true);
-    renderTracks();
-  }
-  function setMpIcon(playing){
-    document.getElementById('mpIcon').innerHTML = playing
-      ? '<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>'
-      : '<path d="M8 5v14l11-7z"/>';
-  }
-  document.getElementById('mpPlayBtn').addEventListener('click', ()=>{
-    if(mpAudio.paused){ mpAudio.play().catch(()=>{}); isPlaying=true; }
-    else { mpAudio.pause(); isPlaying=false; }
-    setMpIcon(!mpAudio.paused);
-    renderTracks();
-  });
-  document.getElementById('heroPlay').addEventListener('click', ()=>{
-    if(currentIndex===null){ playTrack(0); } else { document.getElementById('mpPlayBtn').click(); }
-  });
-  mpAudio.addEventListener('timeupdate', ()=>{
-    if(mpAudio.duration){
-      document.getElementById('mpProgress').style.width = (mpAudio.currentTime/mpAudio.duration*100)+'%';
-    }
-  });
-  mpAudio.addEventListener('ended', ()=>{ isPlaying=false; renderTracks(); setMpIcon(false); });
-
-  // Detail sheet
-  const sheet = document.getElementById('sheet');
-  function fmtTime(t){
-    if(!isFinite(t)) return '0:00';
-    const m = Math.floor(t/60), s = Math.floor(t%60);
-    return `${m}:${s<10?'0':''}${s}`;
-  }
-  const sheetAudio = document.getElementById('sheetAudio');
-  const sheetPlayBtn = document.getElementById('sheetPlayBtn');
-  const sheetPlayIcon = document.getElementById('sheetPlayIcon');
-  const sheetProgressFill = document.getElementById('sheetProgressFill');
-  const sheetProgressBar = document.getElementById('sheetProgressBar');
-  const sheetTimeCur = document.getElementById('sheetTimeCur');
-  const sheetTimeDur = document.getElementById('sheetTimeDur');
-
-  function setSheetIcon(playing){
-    sheetPlayIcon.innerHTML = playing
-      ? '<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>'
-      : '<path d="M8 5v14l11-7z"/>';
-  }
-  function openSheet(i){
-    const s = songs[i];
     document.getElementById('sheetBg').style.background = s.grad;
-    document.getElementById('sheetCover').style.background = `url('${s.cover}') center/cover no-repeat, ${s.grad}`;
+    document.getElementById('sheetCover').style.background = bg;
     document.getElementById('sheetTitle').textContent = s.title;
     document.getElementById('sheetArtist').textContent = s.artist;
-    sheetAudio.src = s.audio;
-    sheetProgressFill.style.width = '0%';
-    sheetTimeCur.textContent = '0:00';
-    sheetTimeDur.textContent = '0:00';
     document.getElementById('sheetPhrase').textContent = s.phrase;
     document.getElementById('sheetMeaning').textContent = s.meaning;
     document.getElementById('sheetNote').textContent = s.note;
-    sheet.classList.add('open');
-    mpAudio.pause(); isPlaying=false; setMpIcon(false); renderTracks();
-    sheetAudio.play().then(()=>setSheetIcon(true)).catch(()=>setSheetIcon(false));
   }
-  sheetPlayBtn.addEventListener('click', ()=>{
-    if(sheetAudio.paused){ sheetAudio.play().then(()=>setSheetIcon(true)).catch(()=>{}); }
-    else { sheetAudio.pause(); setSheetIcon(false); }
-  });
-  sheetAudio.addEventListener('timeupdate', ()=>{
-    if(sheetAudio.duration){
-      sheetProgressFill.style.width = (sheetAudio.currentTime/sheetAudio.duration*100)+'%';
-      sheetTimeCur.textContent = fmtTime(sheetAudio.currentTime);
-      sheetTimeDur.textContent = fmtTime(sheetAudio.duration);
+
+  function playIndex(i){
+    currentIndex = i;
+    const s = songs[i];
+    audio.src = s.audio;
+    audio.currentTime = 0;
+    audio.play().then(()=>{ isPlaying=true; setPlayIcons(true); renderTracks(); }).catch(()=>{ isPlaying=false; setPlayIcons(false); });
+    mini.classList.add('show');
+    refreshNowPlayingUI();
+  }
+  function togglePlay(){
+    if(currentIndex===null){ playIndex(0); return; }
+    if(audio.paused){ audio.play().then(()=>{isPlaying=true; setPlayIcons(true); renderTracks();}).catch(()=>{}); }
+    else { audio.pause(); isPlaying=false; setPlayIcons(false); renderTracks(); }
+  }
+  function nextTrack(){ playIndex((currentIndex + 1) % songs.length); }
+  function prevTrack(){ playIndex((currentIndex - 1 + songs.length) % songs.length); }
+
+  document.getElementById('mpPlayBtn').addEventListener('click', togglePlay);
+  document.getElementById('heroPlay').addEventListener('click', togglePlay);
+  audio.addEventListener('timeupdate', ()=>{
+    if(audio.duration){
+      const pct = (audio.currentTime/audio.duration*100)+'%';
+      document.getElementById('mpProgress').style.width = pct;
+      document.getElementById('sheetProgressFill').style.width = pct;
+      document.getElementById('sheetTimeCur').textContent = fmtTime(audio.currentTime);
+      document.getElementById('sheetTimeDur').textContent = fmtTime(audio.duration);
     }
   });
-  sheetAudio.addEventListener('loadedmetadata', ()=>{ sheetTimeDur.textContent = fmtTime(sheetAudio.duration); });
-  sheetAudio.addEventListener('ended', ()=> setSheetIcon(false));
-  sheetProgressBar.addEventListener('click', (e)=>{
-    if(!sheetAudio.duration) return;
-    const rect = sheetProgressBar.getBoundingClientRect();
+  audio.addEventListener('loadedmetadata', ()=>{
+    document.getElementById('sheetTimeDur').textContent = fmtTime(audio.duration);
+  });
+  audio.addEventListener('ended', ()=> nextTrack());
+
+  // Detail sheet
+  const sheet = document.getElementById('sheet');
+  function openSheet(i){
+    if(currentIndex !== i){ playIndex(i); }
+    else { refreshNowPlayingUI(); }
+    document.getElementById('sheetProgressFill').style.width = audio.duration ? (audio.currentTime/audio.duration*100)+'%' : '0%';
+    document.getElementById('sheetTimeCur').textContent = fmtTime(audio.currentTime);
+    document.getElementById('sheetTimeDur').textContent = fmtTime(audio.duration || 0);
+    setPlayIcons(!audio.paused);
+    sheet.classList.add('open');
+  }
+  document.getElementById('sheetPlayBtn').addEventListener('click', togglePlay);
+  document.getElementById('sheetNextBtn').addEventListener('click', nextTrack);
+  document.getElementById('sheetPrevBtn').addEventListener('click', prevTrack);
+  document.getElementById('sheetProgressBar').addEventListener('click', (e)=>{
+    if(!audio.duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
     const ratio = (e.clientX - rect.left) / rect.width;
-    sheetAudio.currentTime = ratio * sheetAudio.duration;
+    audio.currentTime = ratio * audio.duration;
   });
   document.getElementById('closeSheet').addEventListener('click', ()=>{
-    sheet.classList.remove('open');
-    sheetAudio.pause();
-    setSheetIcon(false);
+    sheet.classList.remove('open'); // el audio sigue sonando, como en Spotify
   });
 
   // Tabs
