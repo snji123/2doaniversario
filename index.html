@@ -6,179 +6,136 @@
 <title>Para Ti</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0a0a0a;
-    --surface:#181818;
-    --surface-2:#282828;
-    --surface-hover:#2a2a2a;
-    --text:#ffffff;
-    --text-dim:#a7a7a7;
-    --green:#1ed760;
-    --green-dim:#1aa34a;
-    --divider: rgba(255,255,255,0.08);
-    --font: 'Poppins', -apple-system, system-ui, sans-serif;
+    --bg:#1c0f16;
+    --surface:#2a1520;
+    --surface-2:#331a27;
+    --text:#f4e7de;
+    --text-dim:#c79aa4;
+    --accent:#caa15c;
+    --accent-soft:#7d5230;
+    --divider: rgba(244,231,222,0.12);
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Inter', -apple-system, system-ui, sans-serif;
   }
   @media (prefers-color-scheme: light){
     :root:not([data-theme="dark"]){
-      --bg:#f5f5f5; --surface:#ffffff; --surface-2:#ececec; --surface-hover:#e6e6e6;
-      --text:#0a0a0a; --text-dim:#5c5c5c; --divider: rgba(0,0,0,0.08);
+      --bg:#fbf1e9;
+      --surface:#ffffff;
+      --surface-2:#f4e3d3;
+      --text:#3a1c22;
+      --text-dim:#8a5a5f;
+      --accent:#a9702c;
+      --accent-soft:#e7cba3;
+      --divider: rgba(58,28,34,0.12);
     }
   }
+  :root[data-theme="dark"]{
+    --bg:#1c0f16; --surface:#2a1520; --surface-2:#331a27;
+    --text:#f4e7de; --text-dim:#c79aa4; --accent:#caa15c;
+    --accent-soft:#7d5230; --divider: rgba(244,231,222,0.12);
+  }
   *{box-sizing:border-box;}
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-tap-highlight-color:transparent;overflow-x:hidden;}
-  body{padding-top:env(safe-area-inset-top,0px);}
-  ::-webkit-scrollbar{display:none;}
+  html,body{
+    margin:0; height:100%;
+    background:var(--bg); color:var(--text);
+    font-family:var(--sans);
+    -webkit-tap-highlight-color:transparent;
+  }
+  body{
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    display:flex; flex-direction:column; min-height:100%;
+  }
+  .wrap{ max-width:480px; margin:0 auto; width:100%; flex:1; display:flex; flex-direction:column; }
 
-  .wrap{max-width:480px;margin:0 auto;width:100%;padding-bottom:110px;}
-
-  /* Hero */
-  .hero{
-    position:relative; padding:22px 20px 24px;
-    background:radial-gradient(120% 160% at 30% -10%, #3a1030 0%, #1a0a17 45%, var(--bg) 78%);
-    overflow:hidden;
+  header.hero{
+    padding:28px 22px 18px;
+    background:linear-gradient(180deg, var(--surface-2), var(--bg) 85%);
   }
-  .hero::after{
-    content:''; position:absolute; inset:0;
-    background:radial-gradient(60% 50% at 80% 0%, rgba(30,215,96,0.18), transparent 70%);
-    pointer-events:none;
-  }
-  .greeting{font-size:13px;color:var(--text-dim);font-weight:500;position:relative;z-index:1;}
-  .playlist-title{
-    font-size:34px; font-weight:800; margin:6px 0 4px; letter-spacing:-0.5px;
-    position:relative; z-index:1;
-  }
-  .playlist-sub{font-size:13px;color:var(--text-dim);position:relative;z-index:1;}
-
-  .hero-actions{
-    display:flex; align-items:center; justify-content:space-between;
-    margin-top:22px; position:relative; z-index:1;
-  }
-  .icon-btn{
-    width:32px;height:32px;border-radius:50%;border:none;background:transparent;
-    color:var(--text-dim); display:flex;align-items:center;justify-content:center;cursor:pointer;
-  }
-  .play-fab{
-    width:56px;height:56px;border-radius:50%;background:var(--green);border:none;
-    display:flex;align-items:center;justify-content:center;cursor:pointer;
-    box-shadow:0 8px 20px rgba(30,215,96,0.35);
-    transition:transform .15s ease;
-  }
-  .play-fab:active{transform:scale(0.92);}
-  .play-fab svg{fill:#0a0a0a;margin-left:3px;}
-
-  /* Stat / clock chip */
-  .stat-chip{
-    margin:0 20px 6px; padding:14px 16px; border-radius:14px;
+  .eyebrow-free{ font-family:var(--serif); font-size:26px; font-weight:600; margin:0 0 4px; }
+  .clock{
+    margin-top:14px; padding:16px 18px; border-radius:18px;
     background:var(--surface); border:1px solid var(--divider);
-    display:flex; align-items:center; gap:12px;
   }
-  .stat-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none;box-shadow:0 0 8px var(--green);}
-  .stat-chip .txt{font-size:13px;color:var(--text-dim);}
-  .stat-chip .txt b{color:var(--text);font-weight:700;}
+  .clock .label{ font-size:13px; color:var(--text-dim); margin-bottom:6px; }
+  .clock .value{ font-family:var(--serif); font-size:22px; letter-spacing:0.2px; }
+  .clock .value b{ font-weight:600; color:var(--accent); }
 
-  /* Tabs */
-  .tabs{display:flex;gap:8px;padding:16px 20px 6px;}
-  .tabs button{
-    padding:7px 16px;border-radius:999px;border:1px solid var(--divider);
-    background:var(--surface);color:var(--text-dim);font-family:var(--font);
-    font-size:13px;font-weight:600;cursor:pointer;transition:.15s ease;
+  nav.tabs{
+    display:flex; gap:6px; padding:14px 22px 0;
   }
-  .tabs button.active{background:var(--text);color:#0a0a0a;border-color:var(--text);}
-
-  main{padding:8px 12px 0;}
-
-  /* Track row */
-  .track{
-    display:flex;align-items:center;gap:12px;padding:9px 8px;border-radius:8px;
-    cursor:pointer;transition:background .12s ease;position:relative;
+  nav.tabs button{
+    flex:1; padding:10px 0; border:none; background:none; color:var(--text-dim);
+    font-family:var(--sans); font-size:14px; font-weight:600; cursor:pointer;
+    border-bottom:2px solid transparent;
   }
-  .track:active{background:var(--surface-hover);}
+  nav.tabs button.active{ color:var(--text); border-bottom-color:var(--accent); }
+
+  main{ flex:1; padding:16px 22px 24px; }
+
+  .song{
+    display:flex; align-items:center; gap:14px; padding:12px 10px;
+    border-radius:14px; cursor:pointer; border:1px solid transparent;
+  }
+  .song:active{ background:var(--surface); border-color:var(--divider); }
   .cover{
-    width:48px;height:48px;border-radius:6px;flex:none;position:relative;overflow:hidden;
-    display:flex;align-items:center;justify-content:center;font-size:18px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.4);
+    width:56px; height:56px; border-radius:10px; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--serif); font-size:20px; color:rgba(255,255,255,0.85);
   }
-  .cover .bars{display:flex;gap:2px;align-items:flex-end;height:14px;opacity:0;transition:opacity .15s;}
-  .track.playing .cover .bars{opacity:1;}
-  .cover .bars span{width:3px;background:var(--green);border-radius:2px;animation:eq 0.8s ease-in-out infinite;}
-  .cover .bars span:nth-child(2){animation-delay:.2s;}
-  .cover .bars span:nth-child(3){animation-delay:.4s;}
-  @keyframes eq{0%,100%{height:4px;}50%{height:14px;}}
-  .t-meta{flex:1;min-width:0;}
-  .t-title{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .track.playing .t-title{color:var(--green);}
-  .t-artist{font-size:12.5px;color:var(--text-dim);margin-top:2px;}
-  .heart{width:20px;height:20px;flex:none;color:var(--text-dim);}
+  .meta .title{ font-weight:600; font-size:15px; }
+  .meta .artist{ font-size:13px; color:var(--text-dim); margin-top:2px; }
 
-  .empty{margin-top:60px;text-align:center;color:var(--text-dim);font-size:14px;padding:0 30px;}
-  .empty span{display:block;font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px;}
-
-  /* Mini player */
-  .miniplayer{
-    position:fixed;left:0;right:0;bottom:0;z-index:15;
-    background:linear-gradient(135deg,#2a1030,#1a1a1a);
-    border-top:1px solid var(--divider);
-    padding:10px 14px; padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));
-    display:none; align-items:center; gap:12px;
-    transform:translateY(0); transition:transform .25s ease;
+  .empty{
+    margin-top:40px; text-align:center; color:var(--text-dim); font-size:14px; line-height:1.6;
   }
-  .miniplayer.show{display:flex;}
-  .mp-cover{width:40px;height:40px;border-radius:6px;flex:none;}
-  .mp-meta{flex:1;min-width:0;}
-  .mp-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .mp-artist{font-size:11px;color:var(--text-dim);}
-  .mp-play{width:34px;height:34px;border-radius:50%;background:var(--green);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;}
-  .mp-play svg{fill:#0a0a0a;}
-  .mp-progress{position:absolute;top:0;left:0;height:2px;background:var(--green);width:0%;transition:width .1s linear;}
+  .empty span{ display:block; font-family:var(--serif); font-size:20px; color:var(--text); margin-bottom:6px; }
 
-  /* Detail sheet */
+  /* Detail overlay */
   .sheet{
-    position:fixed;inset:0;background:var(--bg);z-index:30;
-    transform:translateY(100%);transition:transform .32s cubic-bezier(.32,.72,0,1);
-    display:flex;flex-direction:column;
-    padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+    position:fixed; inset:0; background:var(--bg); z-index:20;
+    display:flex; flex-direction:column;
+    transform:translateY(100%); transition:transform .32s ease;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
   }
-  .sheet.open{transform:translateY(0);}
-  .sheet-bg{position:absolute;inset:0;z-index:-1;opacity:.55;}
-  .sheet-inner{max-width:480px;margin:0 auto;width:100%;flex:1;overflow-y:auto;padding:16px 20px 40px;}
+  .sheet.open{ transform:translateY(0); }
+  .sheet-inner{ max-width:480px; margin:0 auto; width:100%; flex:1; display:flex; flex-direction:column; padding:18px 22px 28px; overflow-y:auto; }
   .close-btn{
-    width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;
-    color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;margin-bottom:20px;
+    align-self:flex-start; background:var(--surface); border:1px solid var(--divider);
+    color:var(--text); font-size:14px; padding:8px 14px; border-radius:999px; cursor:pointer; margin-bottom:18px;
   }
-  .big-cover{width:100%;aspect-ratio:1/1;border-radius:12px;margin-bottom:20px;box-shadow:0 16px 40px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:56px;}
-  .sheet h2{font-size:24px;font-weight:800;margin:0 0 2px;letter-spacing:-0.3px;}
-  .sheet .by{color:var(--text-dim);font-size:13px;margin-bottom:16px;}
-  audio{width:100%;margin-bottom:24px;accent-color:var(--green);}
-  .block{margin-bottom:18px;}
-  .block h3{font-size:11px;letter-spacing:.3px;color:var(--green);margin:0 0 8px;font-weight:700;}
-  .block p{margin:0;font-size:15px;line-height:1.6;}
-  .phrase{font-style:italic;font-weight:500;font-size:18px;line-height:1.5;}
-  .note-box{background:var(--surface);border:1px solid var(--divider);border-radius:14px;padding:16px;}
+  .big-cover{
+    width:100%; aspect-ratio:1/1; border-radius:20px; margin-bottom:18px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--serif); font-size:44px; color:rgba(255,255,255,0.9);
+  }
+  .sheet h2{ font-family:var(--serif); font-size:26px; margin:0 0 2px; font-weight:600; }
+  .sheet .by{ color:var(--text-dim); font-size:14px; margin-bottom:18px; }
+  audio{ width:100%; margin-bottom:22px; }
+  .block{ margin-bottom:20px; }
+  .block h3{ font-size:12px; text-transform:none; color:var(--accent); margin:0 0 8px; font-weight:600; }
+  .block p{ margin:0; font-size:15px; line-height:1.6; }
+  .phrase{ font-family:var(--serif); font-style:italic; font-size:19px; line-height:1.5; }
+  .note-box{
+    background:var(--surface); border:1px solid var(--divider); border-radius:16px; padding:16px;
+  }
+
+  ::-webkit-scrollbar{ display:none; }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <div class="hero">
-    <div class="greeting">Hecho para ti</div>
-    <h1 class="playlist-title">Para Ti</h1>
-    <div class="playlist-sub" id="songCount">5 canciones · nuestra playlist</div>
-    <div class="hero-actions">
-      <button class="icon-btn" title="Buscar">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      </button>
-      <button class="play-fab" id="heroPlay" title="Reproducir">
-        <svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-      </button>
+  <header class="hero">
+    <p class="eyebrow-free">Para ti</p>
+    <div class="clock">
+      <div class="label">Llevamos juntos</div>
+      <div class="value" id="clockValue">calculando…</div>
     </div>
-  </div>
-
-  <div class="stat-chip">
-    <div class="dot"></div>
-    <div class="txt">Llevamos juntos <b id="clockValue">calculando…</b></div>
-  </div>
+  </header>
 
   <nav class="tabs">
     <button class="active" data-tab="canciones">Canciones</button>
@@ -196,137 +153,89 @@
   </main>
 </div>
 
-<div class="miniplayer" id="miniplayer">
-  <div class="mp-progress" id="mpProgress"></div>
-  <div class="mp-cover" id="mpCover"></div>
-  <div class="mp-meta">
-    <div class="mp-title" id="mpTitle"></div>
-    <div class="mp-artist" id="mpArtist"></div>
-  </div>
-  <button class="mp-play" id="mpPlayBtn">
-    <svg id="mpIcon" width="16" height="16" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-  </button>
-</div>
-
 <div class="sheet" id="sheet">
-  <div class="sheet-bg" id="sheetBg"></div>
   <div class="sheet-inner">
-    <button class="close-btn" id="closeSheet">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    </button>
+    <button class="close-btn" id="closeSheet">← Volver</button>
     <div class="big-cover" id="sheetCover"></div>
     <h2 id="sheetTitle"></h2>
     <div class="by" id="sheetArtist"></div>
     <audio controls id="sheetAudio"></audio>
-    <div class="block"><h3>La frase</h3><p class="phrase" id="sheetPhrase"></p></div>
-    <div class="block"><h3>Lo que significa</h3><p id="sheetMeaning"></p></div>
-    <div class="block"><h3>Mi nota para ti</h3><div class="note-box"><p id="sheetNote"></p></div></div>
+    <div class="block">
+      <h3>La frase</h3>
+      <p class="phrase" id="sheetPhrase"></p>
+    </div>
+    <div class="block">
+      <h3>Lo que significa</h3>
+      <p id="sheetMeaning"></p>
+    </div>
+    <div class="block">
+      <h3>Mi nota para ti</h3>
+      <div class="note-box"><p id="sheetNote"></p></div>
+    </div>
   </div>
 </div>
 
 <script>
-  // ----- Fecha de inicio real -----
-  const START_DATE = new Date("2024-10-19T00:00:00");
+  // ----- Fecha de inicio: cámbiala por la fecha real -----
+  const START_DATE = new Date("2024-01-01T00:00:00");
+
   function updateClock(){
     const now = new Date();
     let diff = Math.max(0, now - START_DATE);
-    const day=86400000,hour=3600000,min=60000;
-    const days=Math.floor(diff/day); diff-=days*day;
-    const hours=Math.floor(diff/hour); diff-=hours*hour;
-    const mins=Math.floor(diff/min); diff-=mins*min;
-    const secs=Math.floor(diff/1000);
-    document.getElementById('clockValue').textContent = `${days}d ${hours}h ${mins}m ${secs}s`;
+    const day = 86400000, hour = 3600000, min = 60000;
+    const days = Math.floor(diff / day); diff -= days*day;
+    const hours = Math.floor(diff / hour); diff -= hours*hour;
+    const mins = Math.floor(diff / min); diff -= mins*min;
+    const secs = Math.floor(diff / 1000);
+    document.getElementById('clockValue').innerHTML =
+      `<b>${days}</b> días, <b>${hours}</b> h, <b>${mins}</b> m, <b>${secs}</b> s`;
   }
-  updateClock(); setInterval(updateClock,1000);
+  updateClock();
+  setInterval(updateClock, 1000);
 
-  // ----- Canciones (reemplaza frase/significado/nota/audio por lo real) -----
+  // ----- Datos de ejemplo: reemplaza frase/significado/nota/audio por lo real -----
   const songs = [
-    { title:"Mary Es Mi Amor", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#7a2f4a,#c98a3e)",
-      audio:"mari es mi amor.mp3", cover:"sin ti mari.gif",
-      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí." },
-    { title:"Si Supieras", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#4a2a5c,#a9702c)",
-      audio:"si supieras kevin karl.mp3", cover:"kevin3.gif",
-      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí." },
-    { title:"San Lucas", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#5c2a3a,#caa15c)",
-      audio:"san lucas.mp3", cover:"kevin-sanlucas.gif",
-      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí." },
-    { title:"Zoe Luna", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#1ed760,#0a3d20)",
-      audio:"luna de zoe.mp3", cover:"zoe-luna.gif",
-      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí." },
-    { title:"Tú Sí Eres Real", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#7a2f4a,#4a2a5c)",
-      audio:"tu si eres real kevin karl.mp3", cover:"tu si eres real kevin.gif",
-      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí." }
+    { title:"Mary Es Mi Amor", artist:"—", grad:"linear-gradient(135deg,#7a2f4a,#c98a3e)",
+      audio:"canciones/song1.mp3",
+      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción para ustedes.",
+      note:"Escribe tu dedicatoria para esta canción." },
+    { title:"Si Supieras", artist:"—", grad:"linear-gradient(135deg,#4a2a5c,#a9702c)",
+      audio:"canciones/song2.mp3",
+      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción para ustedes.",
+      note:"Escribe tu dedicatoria para esta canción." },
+    { title:"San Lucas", artist:"—", grad:"linear-gradient(135deg,#5c2a3a,#caa15c)",
+      audio:"canciones/song3.mp3",
+      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción para ustedes.",
+      note:"Escribe tu dedicatoria para esta canción." },
+    { title:"Zoe Luna", artist:"—", grad:"linear-gradient(135deg,#2a3a5c,#7d5230)",
+      audio:"canciones/song4.mp3",
+      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción para ustedes.",
+      note:"Escribe tu dedicatoria para esta canción." },
+    { title:"Tú Sí Eres Real", artist:"—", grad:"linear-gradient(135deg,#7a2f4a,#4a2a5c)",
+      audio:"canciones/song5.mp3",
+      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción para ustedes.",
+      note:"Escribe tu dedicatoria para esta canción." }
   ];
-  // Nota: revisa este mapeo de gif↔canción; si no coincide con lo que pensabas, dime cuál va con cuál y lo cambio.
-  document.getElementById('songCount').textContent = `${songs.length} canciones · nuestra playlist`;
 
   const list = document.getElementById('panel-canciones');
-  let currentIndex = null;
-  let isPlaying = false;
-  const mini = document.getElementById('miniplayer');
-  const mpAudio = new Audio();
-
-  function renderTracks(){
-    list.innerHTML = '';
-    songs.forEach((s,i)=>{
-      const row = document.createElement('div');
-      row.className = 'track' + (currentIndex===i && isPlaying ? ' playing' : '');
-      row.innerHTML = `
-        <div class="cover" style="background:${s.grad} url('${s.cover}') center/cover no-repeat">
-          <div class="bars"><span></span><span></span><span></span></div>
-        </div>
-        <div class="t-meta">
-          <div class="t-title">${s.title}</div>
-          <div class="t-artist">${s.artist}</div>
-        </div>
-        <svg class="heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-6.7-4.35-9.3-8.1C.7 9.6 2 6 5.4 5.1 7.7 4.5 9.9 5.6 12 8c2.1-2.4 4.3-3.5 6.6-2.9C22 6 23.3 9.6 21.3 12.9 18.7 16.65 12 21 12 21z"/></svg>
-      `;
-      row.addEventListener('click', ()=>openSheet(i));
-      list.appendChild(row);
-    });
-  }
-  renderTracks();
-
-  function playTrack(i){
-    const s = songs[i];
-    currentIndex = i; isPlaying = true;
-    mpAudio.src = s.audio;
-    mpAudio.play().catch(()=>{});
-    document.getElementById('mpCover').style.background = `${s.grad} url('${s.cover}') center/cover no-repeat`;
-    document.getElementById('mpTitle').textContent = s.title;
-    document.getElementById('mpArtist').textContent = s.artist;
-    mini.classList.add('show');
-    setMpIcon(true);
-    renderTracks();
-  }
-  function setMpIcon(playing){
-    document.getElementById('mpIcon').innerHTML = playing
-      ? '<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>'
-      : '<path d="M8 5v14l11-7z"/>';
-  }
-  document.getElementById('mpPlayBtn').addEventListener('click', ()=>{
-    if(mpAudio.paused){ mpAudio.play().catch(()=>{}); isPlaying=true; }
-    else { mpAudio.pause(); isPlaying=false; }
-    setMpIcon(!mpAudio.paused);
-    renderTracks();
+  songs.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'song';
+    row.innerHTML = `
+      <div class="cover" style="background:${s.grad}">♪</div>
+      <div class="meta">
+        <div class="title">${s.title}</div>
+        <div class="artist">${s.artist}</div>
+      </div>`;
+    row.addEventListener('click', () => openSheet(i));
+    list.appendChild(row);
   });
-  document.getElementById('heroPlay').addEventListener('click', ()=>{
-    if(currentIndex===null){ playTrack(0); } else { document.getElementById('mpPlayBtn').click(); }
-  });
-  mpAudio.addEventListener('timeupdate', ()=>{
-    if(mpAudio.duration){
-      document.getElementById('mpProgress').style.width = (mpAudio.currentTime/mpAudio.duration*100)+'%';
-    }
-  });
-  mpAudio.addEventListener('ended', ()=>{ isPlaying=false; renderTracks(); setMpIcon(false); });
 
-  // Detail sheet
   const sheet = document.getElementById('sheet');
   function openSheet(i){
     const s = songs[i];
-    document.getElementById('sheetBg').style.background = s.grad;
-    document.getElementById('sheetCover').style.background = `${s.grad} url('${s.cover}') center/cover no-repeat`;
-    document.getElementById('sheetCover').textContent = '';
+    document.getElementById('sheetCover').style.background = s.grad;
+    document.getElementById('sheetCover').textContent = '♪';
     document.getElementById('sheetTitle').textContent = s.title;
     document.getElementById('sheetArtist').textContent = s.artist;
     document.getElementById('sheetAudio').src = s.audio;
@@ -334,17 +243,16 @@
     document.getElementById('sheetMeaning').textContent = s.meaning;
     document.getElementById('sheetNote').textContent = s.note;
     sheet.classList.add('open');
-    mpAudio.pause(); isPlaying=false; setMpIcon(false); renderTracks();
   }
-  document.getElementById('closeSheet').addEventListener('click', ()=>{
+  document.getElementById('closeSheet').addEventListener('click', () => {
     sheet.classList.remove('open');
     document.getElementById('sheetAudio').pause();
   });
 
   // Tabs
-  document.querySelectorAll('.tabs button').forEach(btn=>{
+  document.querySelectorAll('nav.tabs button').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       const tab = btn.dataset.tab;
       document.getElementById('panel-canciones').style.display = tab==='canciones' ? '' : 'none';
