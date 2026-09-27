@@ -126,7 +126,7 @@
     display:none; align-items:center; gap:12px;
     transform:translateY(0); transition:transform .25s ease;
   }
-  .miniplayer.show{display:flex;}
+  .miniplayer.show{display:flex;cursor:pointer;}
   .mp-cover{width:40px;height:40px;border-radius:6px;flex:none;}
   .mp-meta{flex:1;min-width:0;}
   .mp-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -368,7 +368,8 @@
   function nextTrack(){ playIndex((currentIndex + 1) % songs.length); }
   function prevTrack(){ playIndex((currentIndex - 1 + songs.length) % songs.length); }
 
-  document.getElementById('mpPlayBtn').addEventListener('click', togglePlay);
+  document.getElementById('mpPlayBtn').addEventListener('click', (e)=>{ e.stopPropagation(); togglePlay(); });
+  mini.addEventListener('click', ()=>{ if(currentIndex!==null) openSheet(currentIndex); });
   document.getElementById('heroPlay').addEventListener('click', togglePlay);
   audio.addEventListener('timeupdate', ()=>{
     if(audio.duration){
@@ -386,6 +387,7 @@
 
   // Detail sheet
   const sheet = document.getElementById('sheet');
+  let sheetIsOpen = false;
   function openSheet(i){
     if(currentIndex !== i){ playIndex(i); }
     else { refreshNowPlayingUI(); }
@@ -394,7 +396,18 @@
     document.getElementById('sheetTimeDur').textContent = fmtTime(audio.duration || 0);
     setPlayIcons(!audio.paused);
     sheet.classList.add('open');
+    if(!sheetIsOpen){
+      sheetIsOpen = true;
+      history.pushState({ sheetOpen:true }, '', '#cancion');
+    }
   }
+  function closeSheetVisual(){
+    sheet.classList.remove('open'); // el audio sigue sonando, como en Spotify
+    sheetIsOpen = false;
+  }
+  window.addEventListener('popstate', ()=>{
+    if(sheetIsOpen) closeSheetVisual();
+  });
   document.getElementById('sheetPlayBtn').addEventListener('click', togglePlay);
   document.getElementById('sheetNextBtn').addEventListener('click', nextTrack);
   document.getElementById('sheetPrevBtn').addEventListener('click', prevTrack);
@@ -405,7 +418,7 @@
     audio.currentTime = ratio * audio.duration;
   });
   document.getElementById('closeSheet').addEventListener('click', ()=>{
-    sheet.classList.remove('open'); // el audio sigue sonando, como en Spotify
+    if(sheetIsOpen) history.back(); // dispara popstate, que cierra la ficha (no sale de la página)
   });
 
   // Tabs
