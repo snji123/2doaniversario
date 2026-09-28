@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Admin — Para Ti</title>
+<style>
+  :root{--bg:#0a0a0a;--surface:#181818;--text:#fff;--text-dim:#a7a7a7;--green:#1ed760;--divider:rgba(255,255,255,0.1);}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,system-ui,sans-serif;padding:20px 16px 60px;padding-top:calc(20px + env(safe-area-inset-top,0px));}
+  h1{font-size:22px;margin:0 0 4px;}
+  .sub{color:var(--text-dim);font-size:13px;margin-bottom:24px;}
+  h2{font-size:15px;color:var(--green);margin:32px 0 12px;border-top:1px solid var(--divider);padding-top:20px;}
+  .card{background:var(--surface);border:1px solid var(--divider);border-radius:14px;padding:16px;margin-bottom:14px;}
+  label{display:block;font-size:11px;color:var(--text-dim);margin:10px 0 4px;}
+  label:first-child{margin-top:0;}
+  input,textarea{
+    width:100%;background:#0a0a0a;border:1px solid var(--divider);color:var(--text);
+    border-radius:8px;padding:9px 11px;font-family:inherit;font-size:13.5px;
+  }
+  textarea{resize:vertical;min-height:50px;}
+  .row{display:flex;gap:10px;}
+  .row > div{flex:1;}
+  button{
+    background:var(--green);color:#0a0a0a;border:none;border-radius:999px;
+    padding:9px 18px;font-weight:700;font-size:13px;cursor:pointer;margin-top:14px;
+  }
+  .status{font-size:12px;color:var(--green);margin-left:10px;}
+  .photo-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--divider);border-radius:10px;padding:8px 10px;margin-bottom:8px;}
+  .photo-row img{width:44px;height:44px;object-fit:cover;border-radius:6px;background:#222;}
+  .photo-row .meta{flex:1;font-size:13px;min-width:0;}
+  .photo-row .meta div:last-child{color:var(--text-dim);font-size:11px;}
+  .del-btn{background:#3a1a1a;color:#ff6b6b;border:1px solid #5a2a2a;border-radius:8px;padding:6px 12px;font-size:12px;margin:0;cursor:pointer;}
+  .add-photo{display:flex;flex-direction:column;gap:8px;}
+</style>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, addDoc, onSnapshot
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyAYD660eNE13MEBYl0FqfpcyiTYtqmkD1w",
+    authDomain: "base-158b8.firebaseapp.com",
+    projectId: "base-158b8",
+    storageBucket: "base-158b8.firebasestorage.app",
+    messagingSenderId: "1003554295420",
+    appId: "1:1003554295420:web:44f65558de219085d383f9"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  window.fb = { db, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, addDoc, onSnapshot };
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
+</head>
+<body>
+  <h1>Panel de edición — Para Ti</h1>
+  <div class="sub">Cambia el texto y guarda; se refleja directo en la app (index.html). Esta página no tiene contraseña, solo tú tienes el link.</div>
+
+  <h2>Canciones</h2>
+  <div id="songsList"></div>
+
+  <h2>Álbum de fotos</h2>
+  <div class="card">
+    <div class="add-photo">
+      <label>Nombre del archivo (subido a la raíz del repo, ej. foto1.jpg)</label>
+      <input id="newPhotoFile" placeholder="foto1.jpg">
+      <label>Mensaje (opcional)</label>
+      <input id="newPhotoCap" placeholder="Un mensaje para esta foto">
+      <button id="addPhotoBtn">+ Agregar foto</button>
+    </div>
+  </div>
+  <div id="photosList"></div>
+
+<script>
+  const SONG_IDS = ['song1','song2','song3','song4','song5'];
+  const FIELDS = [
+    {key:'title', label:'Título'},
+    {key:'artist', label:'Subtítulo (ej. Dedicada a ti)'},
+    {key:'audio', label:'Nombre del archivo de audio (ej. mari es mi amor.mp3)'},
+    {key:'cover', label:'Nombre del gif/imagen de portada (ej. zoe-luna.gif)'},
+    {key:'phrase', label:'La frase de la canción'},
+    {key:'meaning', label:'Lo que significa'},
+    {key:'note', label:'Tu nota (dedicatoria)'}
+  ];
+
+  function buildSongCard(id, data){
+    const card = document.createElement('div');
+    card.className = 'card';
+    let html = `<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">${id}</div>`;
+    FIELDS.forEach(f=>{
+      const isArea = f.key==='phrase' || f.key==='meaning' || f.key==='note';
+      html += `<label>${f.label}</label>` + (isArea
+        ? `<textarea data-field="${f.key}">${data[f.key]||''}</textarea>`
+        : `<input data-field="${f.key}" value="${(data[f.key]||'').replace(/"/g,'&quot;')}">`);
+    });
+    html += `<button data-save>Guardar</button><span class="status" data-status></span>`;
+    card.innerHTML = html;
+    card.querySelector('[data-save]').addEventListener('click', ()=>{
+      const updates = {};
+      FIELDS.forEach(f=>{ updates[f.key] = card.querySelector(`[data-field="${f.key}"]`).value; });
+      const { db, doc, updateDoc } = window.fb;
+      updateDoc(doc(db,'songs',id), updates).then(()=>{
+        const st = card.querySelector('[data-status]');
+        st.textContent = '✓ Guardado';
+        setTimeout(()=>st.textContent='', 2000);
+      });
+    });
+    return card;
+  }
+
+  function initSongs(){
+    const { db, doc, getDoc } = window.fb;
+    const list = document.getElementById('songsList');
+    SONG_IDS.forEach(id=>{
+      getDoc(doc(db,'songs',id)).then(snap=>{
+        if(snap.exists()) list.appendChild(buildSongCard(id, snap.data()));
+      });
+    });
+  }
+
+  function initPhotos(){
+    const { db, collection, onSnapshot, addDoc, deleteDoc, doc } = window.fb;
+    const list = document.getElementById('photosList');
+    onSnapshot(collection(db,'photos'), snap=>{
+      list.innerHTML = '';
+      snap.forEach(d=>{
+        const p = d.data();
+        const row = document.createElement('div');
+        row.className = 'photo-row';
+        row.innerHTML = `<img src="${p.file}"><div class="meta"><div>${p.file}</div><div>${p.caption||''}</div></div><button class="del-btn">Eliminar</button>`;
+        row.querySelector('.del-btn').addEventListener('click', ()=>deleteDoc(doc(db,'photos',d.id)));
+        list.appendChild(row);
+      });
+    });
+    document.getElementById('addPhotoBtn').addEventListener('click', ()=>{
+      const file = document.getElementById('newPhotoFile').value.trim();
+      const cap = document.getElementById('newPhotoCap').value.trim();
+      if(!file) return;
+      addDoc(collection(db,'photos'), { file, caption:cap, ts:Date.now() });
+      document.getElementById('newPhotoFile').value='';
+      document.getElementById('newPhotoCap').value='';
+    });
+  }
+
+  if(window.fb){ initSongs(); initPhotos(); }
+  else window.addEventListener('firebase-ready', ()=>{ initSongs(); initPhotos(); });
+</script>
+</body>
+</html>

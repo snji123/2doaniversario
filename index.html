@@ -174,7 +174,49 @@
   .block p{margin:0;font-size:15px;line-height:1.6;}
   .phrase{font-style:italic;font-weight:500;font-size:18px;line-height:1.5;}
   .note-box{background:var(--surface);border:1px solid var(--divider);border-radius:14px;padding:16px;}
+  .note-box textarea{
+    width:100%;background:transparent;border:none;color:var(--text);font-family:var(--font);
+    font-size:14px;line-height:1.5;resize:vertical;min-height:70px;padding:0;margin-bottom:10px;
+  }
+  .save-btn{
+    background:var(--green);color:#0a0a0a;border:none;border-radius:999px;
+    padding:8px 18px;font-weight:700;font-size:12px;cursor:pointer;font-family:var(--font);
+  }
+  .heart.liked{color:var(--green);fill:var(--green);}
+
+  .add-photo-form{display:flex;flex-direction:column;gap:8px;padding:4px 8px 18px;}
+  .add-photo-form input{
+    background:var(--surface);border:1px solid var(--divider);color:var(--text);
+    border-radius:10px;padding:11px 14px;font-family:var(--font);font-size:13px;
+  }
+  .photo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:0 8px 20px;}
+  .photo-item{border-radius:12px;overflow:hidden;background:var(--surface);border:1px solid var(--divider);}
+  .photo-item img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:var(--surface-2);}
+  .photo-cap{font-size:12px;color:var(--text-dim);padding:8px 10px;}
 </style>
+<script type="module">
+  // Firebase conectado directo por CDN (sin npm, funciona tal cual en GitHub Pages)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, onSnapshot, addDoc
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAYD660eNE13MEBYl0FqfpcyiTYtqmkD1w",
+    authDomain: "base-158b8.firebaseapp.com",
+    projectId: "base-158b8",
+    storageBucket: "base-158b8.firebasestorage.app",
+    messagingSenderId: "1003554295420",
+    appId: "1:1003554295420:web:44f65558de219085d383f9"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Se expone en window para que el script principal (más abajo) lo use
+  window.fb = { db, collection, doc, setDoc, getDoc, getDocs, updateDoc, onSnapshot, addDoc };
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -206,9 +248,15 @@
   <main>
     <section id="panel-canciones"></section>
     <section id="panel-album" style="display:none;">
-      <div class="empty">
+      <div class="add-photo-form">
+        <input id="photoFileInput" placeholder="Nombre del archivo (ej. foto1.jpg) subido a la raíz del repo">
+        <input id="photoCapInput" placeholder="Un mensaje para esta foto (opcional)">
+        <button class="save-btn" id="addPhotoBtn" style="align-self:flex-start;">+ Agregar foto</button>
+      </div>
+      <div class="photo-grid" id="photoGrid"></div>
+      <div class="empty" id="albumEmpty">
         <span>Álbum de fotos</span>
-        Aquí vamos a guardar nuestras fotos favoritas. Muy pronto.
+        Agrega la primera foto arriba.
       </div>
     </section>
   </main>
@@ -254,6 +302,10 @@
     <div class="block"><h3>La frase</h3><p class="phrase" id="sheetPhrase"></p></div>
     <div class="block"><h3>Lo que significa</h3><p id="sheetMeaning"></p></div>
     <div class="block"><h3>Mi nota para ti</h3><div class="note-box"><p id="sheetNote"></p></div></div>
+    <div class="block"><h3>Tu nota para él</h3><div class="note-box">
+      <textarea id="herNoteInput" placeholder="Escribe aquí lo que quieras responderle…"></textarea>
+      <button class="save-btn" id="herNoteSave">Guardar</button>
+    </div></div>
   </div>
 </div>
 
@@ -272,25 +324,29 @@
   }
   updateClock(); setInterval(updateClock,1000);
 
-  // ----- Canciones (reemplaza frase/significado/nota/audio por lo real) -----
+  // ----- Canciones (reemplaza frase/significado/nota/audio por lo real, o edítalo desde admin.html) -----
   const songs = [
-    { title:"Mary Es Mi Amor", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#7a2f4a,#c98a3e)",
+    { id:"song1", title:"Mary Es Mi Amor", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#7a2f4a,#c98a3e)",
       audio:"mari es mi amor.mp3", cover:"sin ti mari.gif",
-      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí." },
-    { title:"Si Supieras", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#4a2a5c,#a9702c)",
+      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí.",
+      liked:false, herNote:"" },
+    { id:"song2", title:"Si Supieras", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#4a2a5c,#a9702c)",
       audio:"si supieras kevin karl.mp3", cover:"kevin3.gif",
-      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí." },
-    { title:"San Lucas", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#5c2a3a,#caa15c)",
+      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí.",
+      liked:false, herNote:"" },
+    { id:"song3", title:"San Lucas", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#5c2a3a,#caa15c)",
       audio:"san lucas.mp3", cover:"kevin-sanlucas.gif",
-      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí." },
-    { title:"Zoe Luna", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#1ed760,#0a3d20)",
+      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí.",
+      liked:false, herNote:"" },
+    { id:"song4", title:"Zoe Luna", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#1ed760,#0a3d20)",
       audio:"luna de zoe.mp3", cover:"zoe-luna.gif",
-      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí." },
-    { title:"Tú Sí Eres Real", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#7a2f4a,#4a2a5c)",
+      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí.",
+      liked:false, herNote:"" },
+    { id:"song5", title:"Tú Sí Eres Real", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#7a2f4a,#4a2a5c)",
       audio:"tu si eres real kevin karl.mp3", cover:"tu si eres real kevin.gif",
-      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí." }
+      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí.",
+      liked:false, herNote:"" }
   ];
-  // Nota: revisa este mapeo de gif↔canción; si no coincide con lo que pensabas, dime cuál va con cuál y lo cambio.
   document.getElementById('songCount').textContent = `${songs.length} canciones · nuestra playlist`;
 
   const list = document.getElementById('panel-canciones');
@@ -319,13 +375,79 @@
           <div class="t-title">${s.title}</div>
           <div class="t-artist">${s.artist}</div>
         </div>
-        <svg class="heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-6.7-4.35-9.3-8.1C.7 9.6 2 6 5.4 5.1 7.7 4.5 9.9 5.6 12 8c2.1-2.4 4.3-3.5 6.6-2.9C22 6 23.3 9.6 21.3 12.9 18.7 16.65 12 21 12 21z"/></svg>
+        <svg class="heart${s.liked?' liked':''}" data-heart="${i}" viewBox="0 0 24 24" fill="${s.liked?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M12 21s-6.7-4.35-9.3-8.1C.7 9.6 2 6 5.4 5.1 7.7 4.5 9.9 5.6 12 8c2.1-2.4 4.3-3.5 6.6-2.9C22 6 23.3 9.6 21.3 12.9 18.7 16.65 12 21 12 21z"/></svg>
       `;
+      row.querySelector('.heart').addEventListener('click', (e)=>{ e.stopPropagation(); toggleHeart(i); });
       row.addEventListener('click', ()=>openSheet(i));
       list.appendChild(row);
     });
   }
   renderTracks();
+
+  // ----- Firestore: sincroniza canciones (título/frase/nota/corazón/nota de ella) -----
+  function initFirestoreSongs(){
+    const { db, doc, getDoc, setDoc, updateDoc, onSnapshot } = window.fb;
+    songs.forEach((s, i)=>{
+      const ref = doc(db, 'songs', s.id);
+      getDoc(ref).then(snap=>{
+        if(!snap.exists()){ setDoc(ref, s); } // primera vez: siembra los datos por defecto
+      });
+      onSnapshot(ref, snap=>{
+        if(!snap.exists()) return;
+        Object.assign(songs[i], snap.data());
+        renderTracks();
+        if(currentIndex===i) refreshNowPlayingUI();
+        if(sheetIsOpen && currentIndex===i) document.getElementById('herNoteInput').value = songs[i].herNote || '';
+      });
+    });
+  }
+  function toggleHeart(i){
+    songs[i].liked = !songs[i].liked;
+    renderTracks();
+    if(window.fb){
+      const { db, doc, updateDoc } = window.fb;
+      updateDoc(doc(db,'songs',songs[i].id), { liked: songs[i].liked }).catch(()=>{});
+    }
+  }
+  document.getElementById('herNoteSave').addEventListener('click', ()=>{
+    if(currentIndex===null) return;
+    const val = document.getElementById('herNoteInput').value;
+    songs[currentIndex].herNote = val;
+    if(window.fb){
+      const { db, doc, updateDoc } = window.fb;
+      updateDoc(doc(db,'songs',songs[currentIndex].id), { herNote: val }).catch(()=>{});
+    }
+  });
+
+  // ----- Firestore: álbum de fotos -----
+  function initFirestorePhotos(){
+    const { db, collection, onSnapshot, addDoc } = window.fb;
+    const grid = document.getElementById('photoGrid');
+    const emptyMsg = document.getElementById('albumEmpty');
+    onSnapshot(collection(db,'photos'), snap=>{
+      grid.innerHTML = '';
+      const docs = [];
+      snap.forEach(d=>docs.push(d.data()));
+      emptyMsg.style.display = docs.length ? 'none' : '';
+      docs.forEach(p=>{
+        const item = document.createElement('div');
+        item.className = 'photo-item';
+        item.innerHTML = `<img src="${p.file}" loading="lazy">${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}`;
+        grid.appendChild(item);
+      });
+    });
+    document.getElementById('addPhotoBtn').addEventListener('click', ()=>{
+      const file = document.getElementById('photoFileInput').value.trim();
+      const cap = document.getElementById('photoCapInput').value.trim();
+      if(!file) return;
+      addDoc(collection(db,'photos'), { file, caption:cap, ts:Date.now() });
+      document.getElementById('photoFileInput').value = '';
+      document.getElementById('photoCapInput').value = '';
+    });
+  }
+
+  if(window.fb){ initFirestoreSongs(); initFirestorePhotos(); }
+  else window.addEventListener('firebase-ready', ()=>{ initFirestoreSongs(); initFirestorePhotos(); });
 
   function setPlayIcons(playing){
     const shape = playing
@@ -395,6 +517,7 @@
     document.getElementById('sheetTimeCur').textContent = fmtTime(audio.currentTime);
     document.getElementById('sheetTimeDur').textContent = fmtTime(audio.duration || 0);
     setPlayIcons(!audio.paused);
+    document.getElementById('herNoteInput').value = songs[i].herNote || '';
     sheet.classList.add('open');
     if(!sheetIsOpen){
       sheetIsOpen = true;
