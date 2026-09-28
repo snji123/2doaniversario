@@ -6,7 +6,7 @@
 <title>Para Ti</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#0a0a0a;
@@ -21,7 +21,7 @@
     --font: 'Poppins', -apple-system, system-ui, sans-serif;
   }
   @media (prefers-color-scheme: light){
-    :root:not([data-theme="dark"]){
+    :root[data-theme="light"]{
       --bg:#f5f5f5; --surface:#ffffff; --surface-2:#ececec; --surface-hover:#e6e6e6;
       --text:#0a0a0a; --text-dim:#5c5c5c; --divider: rgba(0,0,0,0.08);
     }
@@ -193,6 +193,75 @@
   .photo-item{border-radius:12px;overflow:hidden;background:var(--surface);border:1px solid var(--divider);}
   .photo-item img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:var(--surface-2);}
   .photo-cap{font-size:12px;color:var(--text-dim);padding:8px 10px;}
+
+  /* ---- Login (portón) ---- */
+  body.locked{overflow:hidden;}
+  .gate{
+    position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:calc(24px + env(safe-area-inset-top,0px)) 24px calc(24px + env(safe-area-inset-bottom,0px));
+    background:radial-gradient(120% 90% at 50% -10%, #3a1030 0%, #160a14 50%, #0a0a0a 85%);
+    transition:opacity .5s ease, visibility .5s;
+  }
+  .gate{--text:#fff;--text-dim:#a7a7a7;--divider:rgba(255,255,255,0.1);color:#fff;}
+  .gate.hide{opacity:0;visibility:hidden;pointer-events:none;}
+  .gate-step{width:100%;max-width:380px;text-align:center;display:none;animation:gateIn .5s ease both;}
+  .gate-step.active{display:block;}
+  @keyframes gateIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+  .gate h1{font-size:30px;font-weight:800;letter-spacing:-.5px;margin:0 0 6px;}
+  .gate p.sub{color:var(--text-dim);font-size:14px;margin:0 0 28px;}
+  .role-card{
+    width:100%;display:flex;align-items:center;gap:14px;padding:18px;margin-bottom:12px;
+    border-radius:16px;background:rgba(255,255,255,0.05);border:1px solid var(--divider);
+    color:var(--text);font-family:var(--font);font-size:18px;font-weight:700;cursor:pointer;text-align:left;
+    transition:transform .15s ease, background .2s ease, border-color .2s ease;
+  }
+  .role-card:active{transform:scale(.97);background:rgba(30,215,96,0.12);border-color:var(--green);}
+  .role-card .emo{font-size:28px;}
+  .role-card small{display:block;font-size:12px;font-weight:500;color:var(--text-dim);margin-top:2px;}
+  .picker{
+    position:relative;display:flex;gap:6px;justify-content:center;height:220px;margin:0 0 22px;
+    border-radius:18px;background:rgba(255,255,255,0.04);border:1px solid var(--divider);overflow:hidden;
+  }
+  .picker::before{
+    content:'';position:absolute;left:10px;right:10px;top:88px;height:44px;border-radius:12px;
+    background:rgba(30,215,96,0.14);border:1px solid rgba(30,215,96,0.45);pointer-events:none;
+  }
+  .picker::after{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(#0d0710 0%, rgba(13,7,16,0) 32%, rgba(13,7,16,0) 68%, #0d0710 100%);
+  }
+  .wheel{
+    flex:1;height:220px;overflow-y:scroll;scroll-snap-type:y mandatory;
+    padding:88px 0;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  .wheel.w-month{flex:1.6;}
+  .wheel.w-year{flex:1.2;}
+  .wheel div{
+    height:44px;line-height:44px;scroll-snap-align:center;font-size:17px;font-weight:500;
+    color:rgba(255,255,255,0.35);transition:color .15s, font-size .15s;
+  }
+  .wheel div.sel{color:#fff;font-weight:700;font-size:20px;}
+  .gate-btn{
+    width:100%;padding:15px;border:none;border-radius:999px;background:var(--green);color:#0a0a0a;
+    font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;transition:transform .15s;
+    box-shadow:0 10px 24px rgba(30,215,96,0.3);
+  }
+  .gate-btn:active{transform:scale(.97);}
+  .gate-back{background:none;border:none;color:var(--text-dim);font-family:var(--font);font-size:13px;margin-top:16px;cursor:pointer;}
+  .gate-err{min-height:20px;color:#ff7a7a;font-size:13px;margin-bottom:12px;}
+  .shake{animation:shake .4s ease;}
+  @keyframes shake{20%,60%{transform:translateX(-8px);}40%,80%{transform:translateX(8px);}}
+
+  .pair{position:relative;display:flex;justify-content:center;margin-bottom:12px;}
+  .pair svg{animation:bob 3s ease-in-out infinite;}
+  .pair svg:first-child{margin-right:-10px;}
+  .pair svg:nth-child(2){animation-delay:.5s;}
+  .pair-heart{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:20px;animation:floaty 2.4s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
+  @keyframes floaty{0%,100%{transform:translate(-50%,0);opacity:.9;}50%{transform:translate(-50%,-6px);opacity:1;}}
+
+  .duo-wrap{display:flex;justify-content:center;margin:-10px 0 4px;}
+  .duo{animation:bob 3.4s ease-in-out infinite;filter:drop-shadow(0 10px 18px rgba(244,154,184,.25));}
 </style>
 <script type="module">
   // Firebase conectado directo por CDN (sin npm, funciona tal cual en GitHub Pages)
@@ -218,7 +287,99 @@
   window.dispatchEvent(new Event('firebase-ready'));
 </script>
 </head>
-<body>
+<body class="locked">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="bear" viewBox="0 0 64 60">
+<g stroke="#a8622f" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">
+<circle cx="13" cy="14" r="9" fill="#d8935c"/><circle cx="51" cy="14" r="9" fill="#d8935c"/>
+<ellipse cx="32" cy="34" rx="26" ry="22" fill="#d8935c"/>
+</g>
+<circle cx="13" cy="14" r="4.5" fill="#f0bea0"/><circle cx="51" cy="14" r="4.5" fill="#f0bea0"/>
+<ellipse cx="32" cy="43" rx="10.5" ry="7.5" fill="#f3cfa9"/>
+<ellipse cx="32" cy="39" rx="3.2" ry="2.3" fill="#7a4326"/>
+<circle cx="21" cy="32" r="2.4" fill="#3b2418"/><circle cx="43" cy="32" r="2.4" fill="#3b2418"/>
+<path d="M32 41.2v2.2M28.4 45q3.6 2.8 7.2 0" stroke="#7a4326" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+<circle cx="13.5" cy="42" r="4.6" fill="#ff9aa0" opacity=".75"/><circle cx="50.5" cy="42" r="4.6" fill="#ff9aa0" opacity=".75"/>
+</symbol>
+<symbol id="panda" viewBox="0 0 64 60">
+<g stroke="#cbb0b8" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">
+<circle cx="13" cy="14" r="9" fill="#fff"/><circle cx="51" cy="14" r="9" fill="#fff"/>
+<ellipse cx="32" cy="34" rx="26" ry="22" fill="#fff"/>
+</g>
+<circle cx="13" cy="14" r="4.5" fill="#ffc2d4"/><circle cx="51" cy="14" r="4.5" fill="#ffc2d4"/>
+<path d="M16.5 33q5 5.5 10 0M37.5 33q5 5.5 10 0" stroke="#7a4a55" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<ellipse cx="32" cy="38.5" rx="2.8" ry="2" fill="#8b5a66"/>
+<path d="M27.5 42q4.5 7.5 9 0z" fill="#ff8fa8" stroke="#7a4a55" stroke-width="1.3" stroke-linejoin="round"/>
+<circle cx="13.5" cy="42" r="5" fill="#ffb3c6" opacity=".85"/><circle cx="50.5" cy="42" r="5" fill="#ffb3c6" opacity=".85"/>
+<g stroke="#c4557f" stroke-width=".9" fill="#ff8fb8">
+<circle cx="53" cy="3.6" r="3.3"/><circle cx="57.6" cy="7" r="3.3"/><circle cx="55.9" cy="12.4" r="3.3"/><circle cx="50.1" cy="12.4" r="3.3"/><circle cx="48.4" cy="7" r="3.3"/>
+</g>
+<circle cx="53" cy="8" r="2.4" fill="#ffd54a" stroke="#d9a520" stroke-width=".8"/>
+</symbol>
+<symbol id="duo" viewBox="0 0 240 230">
+<g stroke="#a8622f" stroke-width="3" stroke-linejoin="round">
+<circle cx="56" cy="34" r="12" fill="#d8935c"/><circle cx="116" cy="32" r="12" fill="#d8935c"/>
+<ellipse cx="88" cy="62" rx="38" ry="33" fill="#d8935c"/>
+</g>
+<circle cx="56" cy="34" r="6" fill="#f0bea0"/>
+<ellipse cx="96" cy="74" rx="15" ry="11" fill="#f3cfa9"/>
+<ellipse cx="96" cy="68" rx="4" ry="3" fill="#7a4326"/>
+<circle cx="80" cy="60" r="3" fill="#3b2418"/><circle cx="108" cy="58" r="3" fill="#3b2418"/>
+<path d="M96 71v3M91 78q5 3 10 0" stroke="#7a4326" stroke-width="2" fill="none" stroke-linecap="round"/>
+<circle cx="66" cy="73" r="7" fill="#ff9aa0" opacity=".75"/>
+<g stroke="#cbb0b8" stroke-width="3" stroke-linejoin="round" fill="#fff">
+<circle cx="128" cy="36" r="11"/><circle cx="178" cy="36" r="11"/>
+<ellipse cx="152" cy="64" rx="36" ry="32"/>
+</g>
+<circle cx="128" cy="36" r="5.5" fill="#ffc2d4"/><circle cx="178" cy="36" r="5.5" fill="#ffc2d4"/>
+<path d="M138 62q6 6 12 0M160 62q6 6 12 0" stroke="#7a4a55" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<ellipse cx="155" cy="68" rx="3" ry="2.1" fill="#8b5a66"/>
+<path d="M148 73q6 11 12 0z" fill="#ff7f9f" stroke="#7a4a55" stroke-width="1.5" stroke-linejoin="round"/>
+<circle cx="130" cy="75" r="7" fill="#ffb3c6" opacity=".85"/><circle cx="176" cy="75" r="7" fill="#ffb3c6" opacity=".85"/>
+<g stroke="#c4557f" stroke-width="1" fill="#ff8fb8">
+<circle cx="182" cy="24" r="4.5"/><circle cx="187.7" cy="28.2" r="4.5"/><circle cx="185.5" cy="34.9" r="4.5"/><circle cx="178.5" cy="34.9" r="4.5"/><circle cx="176.3" cy="28.2" r="4.5"/>
+</g>
+<circle cx="182" cy="30" r="3.2" fill="#ffd54a" stroke="#d9a520" stroke-width="1"/>
+<g transform="translate(12,30) scale(.9)">
+<path d="M120 205C30 145 5 105 38 78C64 55 106 66 120 96C134 66 176 55 202 78C235 105 210 145 120 205Z" fill="#f49ab8" stroke="#e0708f" stroke-width="5" stroke-linejoin="round"/>
+<ellipse cx="168" cy="90" rx="14" ry="8" fill="#fff" opacity=".5" transform="rotate(-25 168 90)"/>
+<circle cx="194" cy="104" r="5" fill="#fff" opacity=".5"/>
+</g>
+<g stroke="#a8622f" stroke-width="2.6" fill="#d8935c"><ellipse cx="74" cy="100" rx="11" ry="8"/><ellipse cx="102" cy="104" rx="11" ry="8"/></g>
+<g stroke="#cbb0b8" stroke-width="2.6" fill="#fff"><ellipse cx="140" cy="98" rx="10" ry="8"/><ellipse cx="160" cy="100" rx="10" ry="8"/></g>
+<g font-family="'Dancing Script','Brush Script MT',cursive" font-weight="600" fill="#c2185b" font-size="21">
+<text x="60" y="152" transform="rotate(-6 60 152)">Tú</text>
+<text x="116" y="172">y</text>
+<text x="136" y="196" transform="rotate(6 136 196)">Yo</text>
+</g>
+<g stroke="#ff9aa8" stroke-width="2.5" fill="#e63946">
+<g transform="translate(84,18) scale(1.3)"><path d="M0 9C-16 -2 -9 -15 0 -7C9 -15 16 -2 0 9Z"/></g>
+<g transform="translate(146,14) scale(1.3)"><path d="M0 9C-16 -2 -9 -15 0 -7C9 -15 16 -2 0 9Z"/></g>
+</g>
+</symbol>
+</defs></svg>
+<div class="gate" id="gate">
+  <div class="gate-step active" id="stepRole">
+    <div class="duo-wrap"><svg class="duo" width="260" height="249" aria-hidden="true"><use href="#duo"/></svg></div>
+    <h1>Hola 💚</h1>
+    <p class="sub">Esta app es solo para dos personas.<br>¿Quién eres?</p>
+    <button class="role-card" data-role="bodoco"><span class="emo"><svg width="56" height="52" aria-hidden="true"><use href="#bear"/></svg></span><span>Soy bodoco<small>el que hizo esta app</small></span></button>
+    <button class="role-card" data-role="bodoca"><span class="emo"><svg width="56" height="52" aria-hidden="true"><use href="#panda"/></svg></span><span>Soy bodoca<small>para quien es todo esto</small></span></button>
+  </div>
+  <div class="gate-step" id="stepDate">
+    <h1 id="dateTitle">Tu cumpleaños</h1>
+    <p class="sub">Desliza para elegir tu fecha</p>
+    <div class="picker" id="picker">
+      <div class="wheel w-day" id="wDay"></div>
+      <div class="wheel w-month" id="wMonth"></div>
+      <div class="wheel w-year" id="wYear"></div>
+    </div>
+    <div class="gate-err" id="gateErr"></div>
+    <button class="gate-btn" id="gateEnter">Entrar</button>
+    <button class="gate-back" id="gateBack">← Volver</button>
+  </div>
+</div>
+
 <div class="wrap">
 
   <div class="hero">
@@ -554,6 +715,95 @@
       document.getElementById('panel-album').style.display = tab==='album' ? '' : 'none';
     });
   });
+  // ----- Login (portón bonito: la fecha vive en el código, es un detalle, no seguridad real) -----
+  const USERS = {
+    bodoca:{ d:16, m:5, y:2000, hello:"Hola, bodoca 💚" },
+    bodoco:{ d:28, m:6, y:2004, hello:"Hola, bodoco 💚" }
+  };
+  const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const ITEM_H = 44;
+  const gate = document.getElementById('gate');
+  let chosenRole = null;
+  let myRole = null;
+
+  function fillWheel(el, items){
+    el.innerHTML = items.map(t=>`<div>${t}</div>`).join('');
+  }
+  const wDay = document.getElementById('wDay'), wMonth = document.getElementById('wMonth'), wYear = document.getElementById('wYear');
+  fillWheel(wDay, Array.from({length:31},(_,i)=>i+1));
+  fillWheel(wMonth, MESES);
+  fillWheel(wYear, Array.from({length:36},(_,i)=>1980+i));
+
+  function wheelIndex(el){ return Math.max(0, Math.round(el.scrollTop / ITEM_H)); }
+  function markSel(el){
+    const idx = wheelIndex(el);
+    [...el.children].forEach((c,i)=>c.classList.toggle('sel', i===idx));
+    return idx;
+  }
+  [wDay,wMonth,wYear].forEach(el=>{
+    let last = -1;
+    el.addEventListener('scroll', ()=>{
+      const idx = markSel(el);
+      if(idx!==last){ last=idx; if(navigator.vibrate) navigator.vibrate(4); }
+    }, {passive:true});
+  });
+  function setWheels(d,m,y){
+    wDay.scrollTop = (d-1)*ITEM_H;
+    wMonth.scrollTop = (m-1)*ITEM_H;
+    wYear.scrollTop = (y-1980)*ITEM_H;
+    [wDay,wMonth,wYear].forEach(markSel);
+  }
+  function showStep(id){
+    document.querySelectorAll('.gate-step').forEach(x=>x.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+  function unlock(role){
+    myRole = role;
+    try{ localStorage.setItem('paraTiRole', role); }catch(e){}
+    gate.classList.add('hide');
+    document.body.classList.remove('locked');
+    document.querySelector('.hero .greeting').textContent = USERS[role].hello;
+    applyRole();
+  }
+  function applyRole(){
+    // Ella escribe su nota; él solo la lee
+    const box = document.getElementById('herNoteInput');
+    const save = document.getElementById('herNoteSave');
+    const title = box.closest('.block').querySelector('h3');
+    if(myRole==='bodoco'){
+      box.readOnly = true; save.style.display = 'none';
+      box.placeholder = 'Aquí verás lo que ella te escriba…';
+      title.textContent = 'Su nota para ti';
+    } else {
+      box.readOnly = false; save.style.display = '';
+      title.textContent = 'Tu nota para él';
+    }
+  }
+  document.querySelectorAll('.role-card').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      chosenRole = btn.dataset.role;
+      document.getElementById('dateTitle').textContent = chosenRole==='bodoca' ? 'Tu cumpleaños, bodoca' : 'Tu cumpleaños, bodoco';
+      document.getElementById('gateErr').textContent = '';
+      showStep('stepDate');
+      setWheels(1, 1, 2002); // arranque neutro
+    });
+  });
+  document.getElementById('gateBack').addEventListener('click', ()=>showStep('stepRole'));
+  document.getElementById('gateEnter').addEventListener('click', ()=>{
+    const u = USERS[chosenRole];
+    const d = wheelIndex(wDay)+1, m = wheelIndex(wMonth)+1, y = 1980+wheelIndex(wYear);
+    if(d===u.d && m===u.m && y===u.y){ unlock(chosenRole); }
+    else {
+      const p = document.getElementById('picker');
+      document.getElementById('gateErr').textContent = 'Mmm, esa fecha no es. Intenta de nuevo 💭';
+      p.classList.remove('shake'); void p.offsetWidth; p.classList.add('shake');
+    }
+  });
+  // Si ya entró antes en este celular, pasa directo
+  try{
+    const saved = localStorage.getItem('paraTiRole');
+    if(saved && USERS[saved]) unlock(saved);
+  }catch(e){}
 </script>
 </body>
 </html>
