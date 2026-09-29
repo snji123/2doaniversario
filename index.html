@@ -291,6 +291,14 @@
   .p-status{font-size:12px;color:var(--green);}
   .logout-btn{width:100%;margin-top:18px;padding:13px;border-radius:999px;background:transparent;border:1px solid rgba(255,122,122,.5);color:#ff8a8a;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;}
   .logout-btn:active{background:rgba(255,122,122,.12);}
+
+  .file-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--divider);border-radius:10px;padding:11px 14px;}
+  .file-row .pick-btn{flex:none;background:var(--green);color:#0a0a0a;border:none;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);}
+  .file-row .pick-name{flex:1;font-size:12.5px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .upload-bar{height:4px;border-radius:2px;background:rgba(255,255,255,0.1);overflow:hidden;display:none;}
+  .upload-bar.show{display:block;}
+  .upload-bar span{display:block;height:100%;width:0%;background:var(--green);transition:width .15s;}
+  .mt-status{font-size:12px;color:var(--text-dim);}
 </style>
 <script type="module">
   // Firebase conectado directo por CDN (sin npm, funciona tal cual en GitHub Pages)
@@ -443,8 +451,18 @@
       <div class="add-photo-form" id="addSongForm" style="display:none;">
         <input id="mtTitle" placeholder="Título">
         <input id="mtArtist" placeholder="Artista">
-        <input id="mtAudio" placeholder="Archivo de audio (ej. cancion.mp3)">
-        <input id="mtCover" placeholder="Portada o gif (opcional, ej. portada.jpg)">
+        <div class="file-row">
+          <button type="button" class="pick-btn" id="mtAudioBtn">Elegir mp3</button>
+          <span class="pick-name" id="mtAudioName">Sin archivo</span>
+        </div>
+        <div class="file-row">
+          <button type="button" class="pick-btn" id="mtCoverBtn">Elegir portada</button>
+          <span class="pick-name" id="mtCoverName">Opcional</span>
+        </div>
+        <input type="file" id="mtAudioFile" accept="audio/*" hidden>
+        <input type="file" id="mtCoverFile" accept="image/*" hidden>
+        <div class="upload-bar" id="mtBar"><span id="mtBarFill"></span></div>
+        <div class="mt-status" id="mtStatus"></div>
         <button class="save-btn" id="mtSave" style="align-self:flex-start;">Guardar canción</button>
       </div>
       <div id="panel-mias-list"></div>
@@ -685,24 +703,82 @@
   if(window.fb){ initFirestoreSongs(); initFirestoreExtra(); }
   else window.addEventListener('firebase-ready', ()=>{ initFirestoreSongs(); initFirestoreExtra(); });
 
-  // Agregar "mis canciones"
+  // Agregar "mis canciones" (con subida directa a Cloudinary)
+  const CLOUD_NAME = 'k1irg52e';
+  const UPLOAD_PRESET = 'Para ti';
+  let pickedAudio = null, pickedCover = null;
+
   document.getElementById('toggleAddSong').addEventListener('click', ()=>{
     const f = document.getElementById('addSongForm');
     f.style.display = f.style.display==='none' ? 'flex' : 'none';
   });
-  document.getElementById('mtSave').addEventListener('click', ()=>{
+  document.getElementById('mtAudioBtn').addEventListener('click', ()=>document.getElementById('mtAudioFile').click());
+  document.getElementById('mtCoverBtn').addEventListener('click', ()=>document.getElementById('mtCoverFile').click());
+  document.getElementById('mtAudioFile').addEventListener('change', (e)=>{
+    pickedAudio = e.target.files[0] || null;
+    document.getElementById('mtAudioName').textContent = pickedAudio ? pickedAudio.name : 'Sin archivo';
+  });
+  document.getElementById('mtCoverFile').addEventListener('change', (e)=>{
+    pickedCover = e.target.files[0] || null;
+    document.getElementById('mtCoverName').textContent = pickedCover ? pickedCover.name : 'Opcional';
+  });
+
+  function cloudinaryUpload(file, resourceType, onProgress){
+    return new Promise((resolve, reject)=>{
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`);
+      xhr.upload.onprogress = (e)=>{ if(e.lengthComputable) onProgress(e.loaded / e.total); };
+      xhr.onload = ()=>{
+        try{
+          const res = JSON.parse(xhr.responseText);
+          if(xhr.status>=200 && xhr.status<300 && res.secure_url) resolve(res.secure_url);
+          else reject(res.error ? res.error.message : 'Error al subir');
+        }catch(err){ reject('Respuesta inválida de Cloudinary'); }
+      };
+      xhr.onerror = ()=>reject('Falló la conexión');
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', UPLOAD_PRESET);
+      xhr.send(fd);
+    });
+  }
+
+  document.getElementById('mtSave').addEventListener('click', async ()=>{
     if(!window.fb || !myRole) return;
     const title = document.getElementById('mtTitle').value.trim();
-    const audioFile = document.getElementById('mtAudio').value.trim();
-    if(!title || !audioFile) return;
-    const { db, collection, addDoc } = window.fb;
-    addDoc(collection(db,'mySongs'), {
-      owner: myRole, title, artist: document.getElementById('mtArtist').value.trim(),
-      audio: audioFile, cover: document.getElementById('mtCover').value.trim(),
-      grad: GRADS[Math.floor(Math.random()*GRADS.length)], liked:false, ts: Date.now()
-    });
-    ['mtTitle','mtArtist','mtAudio','mtCover'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('addSongForm').style.display = 'none';
+    if(!title || !pickedAudio) return;
+    const bar = document.getElementById('mtBar'), fill = document.getElementById('mtBarFill');
+    const status = document.getElementById('mtStatus'), saveBtn = document.getElementById('mtSave');
+    saveBtn.disabled = true; bar.classList.add('show');
+    try{
+      status.textContent = 'Subiendo canción…';
+      const audioUrl = await cloudinaryUpload(pickedAudio, 'video', p=>{ fill.style.width = (p*70)+'%'; });
+      let coverUrl = '';
+      if(pickedCover){
+        status.textContent = 'Subiendo portada…';
+        coverUrl = await cloudinaryUpload(pickedCover, 'image', p=>{ fill.style.width = (70 + p*30)+'%'; });
+      } else { fill.style.width = '100%'; }
+      const { db, collection, addDoc } = window.fb;
+      await addDoc(collection(db,'mySongs'), {
+        owner: myRole, title, artist: document.getElementById('mtArtist').value.trim(),
+        audio: audioUrl, cover: coverUrl,
+        grad: GRADS[Math.floor(Math.random()*GRADS.length)], liked:false, ts: Date.now()
+      });
+      status.textContent = '✓ Canción agregada';
+      ['mtTitle','mtArtist'].forEach(id=>document.getElementById(id).value='');
+      pickedAudio = null; pickedCover = null;
+      document.getElementById('mtAudioName').textContent = 'Sin archivo';
+      document.getElementById('mtCoverName').textContent = 'Opcional';
+      setTimeout(()=>{
+        document.getElementById('addSongForm').style.display = 'none';
+        bar.classList.remove('show'); fill.style.width = '0%'; status.textContent = '';
+      }, 900);
+    }catch(err){
+      status.textContent = 'No se pudo subir: ' + err;
+      bar.classList.remove('show'); fill.style.width = '0%';
+    }finally{
+      saveBtn.disabled = false;
+    }
   });
 
   function setPlayIcons(playing){
