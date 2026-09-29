@@ -351,6 +351,12 @@
   .b-meta .warn{color:#ffb454;}
   .b-meta .bad{color:#ff6b6b;}
   .b-x{flex:none;background:none;border:none;color:var(--text-dim);font-size:22px;line-height:1;cursor:pointer;padding:2px 6px;}
+  .b-bar{display:none;height:3px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden;}
+  .b-bar span{display:block;height:100%;width:0%;background:var(--green);transition:width .15s;}
+  .b-row.done{border-color:var(--green);}
+  .b-row.done .b-x{display:none;}
+  .batch-card.busy .b-row input{pointer-events:none;opacity:.6;}
+  .batch-card.busy .b-x{display:none;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <script type="module">
@@ -610,8 +616,11 @@
     <input type="file" id="bFiles" accept="audio/*" multiple hidden>
     <div class="b-summary" id="bSummary"></div>
     <div class="b-list" id="bList"></div>
+    <div class="upload-bar" id="bBar"><span></span></div>
+    <div class="mt-status" id="bStatus"></div>
     <div class="edit-actions">
       <button class="cancel-btn" id="bClose" type="button">Cerrar</button>
+      <button class="save-btn" id="bUpload" type="button" style="display:none;">Subir</button>
     </div>
   </div>
 </div>
@@ -833,16 +842,31 @@
   const CLOUD_NAME = 'k1irg52e';
   const UPLOAD_PRESET = 'Para ti';
 
+  // Limpia etiquetas típicas de YouTube: "Artista - Topic", "ArtistaVEVO", "(Official Video)" y "Artista - Título" dentro del título
+  function cleanTags(title, artist){
+    let t = (title||'').trim(), a = (artist||'').trim();
+    a = a.replace(/\s*[-–—]\s*topic$/i, '').replace(/\s*vevo$/i, '').trim();
+    t = t.replace(/\s*[\(\[]\s*(official|lyric|lyrics|audio|video|music video|visualizer|hd|hq|4k)[^\)\]]*[\)\]]/gi, '').trim();
+    const m = t.match(/^(.+?)\s+[-–—]\s+(.+)$/);
+    if(m){
+      const left = m[1].trim(), right = m[2].trim();
+      const nl = x=>x.toLowerCase().replace(/[^a-z0-9áéíóúñü]/g, '');
+      const nA = nl(a), nL = nl(left);
+      if(!a){ a = left; t = right; }
+      else if(nL.length>1 && (nA===nL || nA.includes(nL) || nL.includes(nA))) t = right;
+    }
+    return { title:t, artist:a };
+  }
   function parseSongFilename(name){
     let base = name.replace(/\.[^.]+$/, '').replace(/_/g,' ').trim();
     const seps = [' - ', ' – ', ' — '];
     for(const sep of seps){
       if(base.includes(sep)){
         const idx = base.indexOf(sep);
-        return { artist: base.slice(0, idx).trim(), title: base.slice(idx+sep.length).trim() };
+        return cleanTags(base.slice(idx+sep.length), base.slice(0, idx));
       }
     }
-    return { artist: '', title: base };
+    return cleanTags(base, '');
   }
   // Lee las etiquetas del archivo de audio: título, artista y portada incrustada
   function readTags(file){
@@ -857,7 +881,8 @@
               const type = t.picture.format || 'image/jpeg';
               cover = new File([new Uint8Array(t.picture.data)], 'portada.' + (type.includes('png') ? 'png' : 'jpg'), { type });
             }
-            resolve({ title: (t.title||'').trim(), artist: (t.artist||'').trim(), cover });
+            const cl = cleanTags(t.title, t.artist);
+            resolve({ title: cl.title, artist: cl.artist, cover });
           },
           onError: ()=>resolve({})
         });
@@ -891,8 +916,30 @@
     container.appendChild(img);
     container.classList.add('show');
   }
+  // Reduce una portada a máx. 600 px y JPEG (de cientos de KB o MB a unos 30-80 KB). Los GIF no se tocan
+  function shrinkImage(file, max, quality){
+    max = max || 600; quality = quality || 0.85;
+    return new Promise(resolve=>{
+      if(!file || !file.type || !file.type.startsWith('image/') || file.type==='image/gif'){ resolve(file); return; }
+      const url = URL.createObjectURL(file), img = new Image();
+      img.onload = ()=>{
+        URL.revokeObjectURL(url);
+        const r = Math.min(1, max / Math.max(img.width, img.height));
+        if(r===1 && file.size < 150*1024){ resolve(file); return; }
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(b=>{
+          if(b && b.size < file.size) resolve(new File([b], 'portada.jpg', { type:'image/jpeg' }));
+          else resolve(file);
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = ()=>{ URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  }
   function cloudinaryUpload(file, resourceType, onProgress){
-    return new Promise((resolve, reject)=>{
+    return (resourceType==='image' ? shrinkImage(file) : Promise.resolve(file)).then(file=>new Promise((resolve, reject)=>{
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`);
       xhr.upload.onprogress = (e)=>{ if(e.lengthComputable) onProgress(e.loaded / e.total); };
@@ -908,7 +955,7 @@
       fd.append('file', file);
       fd.append('upload_preset', UPLOAD_PRESET);
       xhr.send(fd);
-    });
+    }));
   }
 
   function itunesSearch(term, country, entity){
@@ -1318,22 +1365,30 @@
     if(!it.title.trim()) return false;
     return songs.concat(mySongs).some(x=>normKey(x.title, x.artist)===k);
   }
+  const escH = x=>String(x).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  let batchBusy = false;
   function batchDupInBatch(it){
     const k = normKey(it.title, it.artist);
-    return it.title.trim() && batchItems.some(o=>o!==it && normKey(o.title,o.artist)===k);
+    const idx = batchItems.indexOf(it);
+    return !!it.title.trim() && batchItems.some((o,j)=>j<idx && normKey(o.title,o.artist)===k);
   }
   function renderBatchSummary(){
-    const n = batchItems.length;
+    const items = batchItems.filter(i=>i.state!=='done');
+    const n = items.length;
     if(!n){ bF('bSummary').innerHTML = ''; return; }
-    const total = batchItems.reduce((a,i)=>a+i.file.size, 0);
-    const noCover = batchItems.filter(i=>i.read && !i.cover).length;
-    const dups = batchItems.filter(i=>batchExists(i) || batchDupInBatch(i)).length;
-    const big = batchItems.filter(i=>i.file.size>BATCH_MAX_AUDIO).length;
+    const total = items.reduce((a,i)=>a+i.file.size, 0);
+    const noCover = items.filter(i=>i.read && !i.cover).length;
+    const dups = items.filter(i=>batchExists(i) || batchDupInBatch(i)).length;
+    const big = items.filter(i=>i.file.size>BATCH_MAX_AUDIO).length;
     let h = `<b>${n}</b> archivo${n===1?'':'s'} · <b>${fmtMB(total)}</b> de audio (tu plan gratis tiene unos 25 GB).`;
     if(noCover) h += `<br>${noCover} sin portada en el archivo.`;
     if(dups) h += `<br><span style="color:#ffb454">${dups} parecen repetidas.</span>`;
     if(big) h += `<br><span style="color:#ff6b6b">${big} superan los 100 MB y Cloudinary las rechazaría.</span>`;
     bF('bSummary').innerHTML = h;
+  }
+  function setRowBar(it, pct){
+    const sp = it.row && it.row.querySelector('.b-bar span');
+    if(sp) sp.style.width = Math.min(100, pct) + '%';
   }
   function updateBatchRow(it){
     const row = it.row; if(!row) return;
@@ -1345,14 +1400,32 @@
     if(!it.read) parts.push('leyendo…');
     else parts.push(it.cover ? 'portada ✓' : '<span class="warn">sin portada</span>');
     if(it.file.size>BATCH_MAX_AUDIO) parts.push('<span class="bad">muy pesado</span>');
-    if(batchExists(it)) parts.push('<span class="warn">ya existe</span>');
-    else if(batchDupInBatch(it)) parts.push('<span class="warn">repetida en el lote</span>');
+    if(it.state==='done') parts.push('<span style="color:var(--green)">✓ subida</span>');
+    else if(it.state==='uploading') parts.push('subiendo…');
+    else if(it.state==='error') parts.push('<span class="bad">falló: ' + escH(it.err) + '</span>');
+    else if(it.state==='skipped') parts.push('<span class="warn">omitida</span>');
+    if(it.state!=='done'){
+      if(batchExists(it)) parts.push('<span class="warn">ya existe</span>');
+      else if(batchDupInBatch(it)) parts.push('<span class="warn">repetida en el lote</span>');
+    }
+    if(it.coverFailed) parts.push('<span class="warn">la portada no subió, edítala luego</span>');
     row.querySelector('.b-meta').innerHTML = parts.join(' · ');
+    row.classList.toggle('done', it.state==='done');
+    row.querySelector('.b-bar').style.display = (it.state==='uploading' || it.state==='done') ? 'block' : 'none';
+    row.querySelectorAll('input').forEach(x=>{ x.disabled = it.state==='done'; });
   }
-  function refreshBatchRows(){ batchItems.forEach(updateBatchRow); renderBatchSummary(); }
+  function updateBatchBtn(){
+    const b = bF('bUpload');
+    const pend = batchItems.filter(i=>i.state!=='done');
+    const failed = batchItems.some(i=>i.state==='error');
+    b.style.display = batchItems.length ? '' : 'none';
+    b.disabled = batchBusy || !pend.length || pend.some(i=>!i.read);
+    b.textContent = batchBusy ? 'Subiendo…' : (failed ? `Reintentar (${pend.length})` : `Subir ${pend.length} canción${pend.length===1?'':'es'}`);
+  }
+  function refreshBatchRows(){ batchItems.forEach(updateBatchRow); renderBatchSummary(); updateBatchBtn(); }
   function addBatchRow(it){
     const row = document.createElement('div'); row.className = 'b-row';
-    row.innerHTML = '<div class="b-thumb">♪</div><div class="b-fields"><input class="bt" placeholder="Título"><input class="ba" placeholder="Artista"><div class="b-meta"></div></div><button class="b-x" type="button" aria-label="Quitar">×</button>';
+    row.innerHTML = '<div class="b-thumb">♪</div><div class="b-fields"><input class="bt" placeholder="Título"><input class="ba" placeholder="Artista"><div class="b-meta"></div><div class="b-bar"><span></span></div></div><button class="b-x" type="button" aria-label="Quitar">×</button>';
     it.row = row;
     const ti = row.querySelector('.bt'), ai = row.querySelector('.ba');
     ti.value = it.title; ai.value = it.artist;
@@ -1384,7 +1457,15 @@
     if(profileOpen){ closeProfileVisual(); history.back(); }
     batchModal.classList.add('show');
   }
-  function closeBatch(){ batchModal.classList.remove('show'); }
+  function closeBatch(){
+    if(batchBusy) return;
+    batchItems.filter(i=>i.state==='done').forEach(i=>{ if(i.thumbUrl) URL.revokeObjectURL(i.thumbUrl); if(i.row) i.row.remove(); });
+    batchItems = batchItems.filter(i=>i.state!=='done');
+    bF('bPickName').textContent = batchItems.length ? batchItems.length + ' en la lista' : 'mp3 o m4a, varios a la vez';
+    bF('bStatus').textContent = ''; bF('bBar').classList.remove('show');
+    refreshBatchRows();
+    batchModal.classList.remove('show');
+  }
   function setBatchDest(d){
     batchDest = d;
     bF('bDestOurs').classList.toggle('on', d==='ourSongs');
@@ -1396,7 +1477,7 @@
   batchModal.addEventListener('click', (e)=>{ if(e.target===batchModal) closeBatch(); });
   bF('bDestOurs').addEventListener('click', ()=>setBatchDest('ourSongs'));
   bF('bDestMine').addEventListener('click', ()=>setBatchDest('mySongs'));
-  bF('bPick').addEventListener('click', ()=>bF('bFiles').click());
+  bF('bPick').addEventListener('click', ()=>{ if(!batchBusy) bF('bFiles').click(); });
   bF('bFiles').addEventListener('change', async (e)=>{
     const files = Array.from(e.target.files || []);
     e.target.value = '';
@@ -1410,6 +1491,73 @@
     renderBatchSummary();
     for(const it of fresh){ await readBatchItem(it); } // de una en una para no saturar el celular
   });
+
+  // ----- Subir por lote · fracción 2: subida a Cloudinary + Firestore, progreso por canción y reintento -----
+  async function uploadBatchItem(it){
+    const { db, collection, addDoc } = window.fb;
+    it.state = 'uploading'; it.err = ''; it.coverFailed = false; setRowBar(it, 0); updateBatchRow(it);
+    try{
+      if(!it.title.trim()) throw 'falta el título';
+      if(it.file.size > BATCH_MAX_AUDIO) throw 'pesa más de 100 MB';
+      if(!it.audioUrl) it.audioUrl = await cloudinaryUpload(it.file, 'video', p=>setRowBar(it, p*80));
+      setRowBar(it, 80);
+      if(it.cover && it.coverUrl===undefined){
+        try{ it.coverUrl = await cloudinaryUpload(it.cover, 'image', p=>setRowBar(it, 80 + p*20)); }
+        catch(e){ it.coverUrl = ''; it.coverFailed = true; }
+      }
+      const data = {
+        title: it.title.trim(), artist: it.artist.trim(),
+        audio: it.audioUrl, cover: it.coverUrl || '',
+        grad: GRADS[Math.floor(Math.random()*GRADS.length)], liked:false, ts: it.ts
+      };
+      if(batchDest==='ourSongs') Object.assign(data, { addedBy: myRole, phrase:'', meaning:'', note:'', herNote:'' });
+      else data.owner = myRole;
+      await addDoc(collection(db, batchDest), data);
+      it.state = 'done'; setRowBar(it, 100);
+    }catch(err){
+      it.state = 'error'; it.err = (err && err.message) ? err.message : String(err);
+    }
+    updateBatchRow(it);
+  }
+  async function runBatch(){
+    if(batchBusy) return;
+    if(!window.fb || !myRole){ bF('bStatus').textContent = 'Aún no hay conexión con Firebase, intenta en unos segundos'; return; }
+    let todo = batchItems.filter(i=>i.read && i.state!=='done');
+    if(!todo.length) return;
+    const dups = todo.filter(i=>batchExists(i) || batchDupInBatch(i));
+    if(dups.length && !confirm(dups.length + ' parecen repetidas. ¿Subirlas de todos modos?\n\nAceptar = subir todas\nCancelar = omitir las repetidas')){
+      dups.forEach(i=>{ i.state = 'skipped'; updateBatchRow(i); });
+      todo = todo.filter(i=>!dups.includes(i));
+      if(!todo.length){ updateBatchBtn(); return; }
+    }
+    batchBusy = true; bF('bBar').classList.add('show'); bF('bBar').firstElementChild.style.width = '0%';
+    batchModal.firstElementChild.classList.add('busy'); bF('bClose').disabled = true;
+    window.onbeforeunload = ()=>'Hay una subida en curso';
+    updateBatchBtn();
+    const base = Date.now();
+    todo.forEach((it,i)=>{ if(!it.ts) it.ts = base + i; });
+    let finished = 0, next = 0;
+    const tick = ()=>{
+      bF('bBar').firstElementChild.style.width = (finished/todo.length*100) + '%';
+      const ok = todo.filter(i=>i.state==='done').length, bad = todo.filter(i=>i.state==='error').length;
+      bF('bStatus').textContent = `Subiendo… ${finished} de ${todo.length}` + (bad ? ` · ${bad} con error` : '') + (ok ? ` · ${ok} listas` : '');
+    };
+    tick();
+    const worker = async ()=>{
+      while(next < todo.length){
+        const it = todo[next++];
+        await uploadBatchItem(it);
+        finished++; tick();
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+    batchBusy = false; window.onbeforeunload = null;
+    batchModal.firstElementChild.classList.remove('busy'); bF('bClose').disabled = false;
+    const ok = todo.filter(i=>i.state==='done').length, bad = todo.filter(i=>i.state==='error').length;
+    bF('bStatus').textContent = bad ? `✓ ${ok} subidas · ${bad} fallaron: toca Reintentar y solo se repiten esas` : `✓ ${ok} canción${ok===1?'':'es'} subida${ok===1?'':'s'}`;
+    refreshBatchRows();
+  }
+  bF('bUpload').addEventListener('click', runBatch);
 
   // Tabs
   document.querySelectorAll('.tabs button').forEach(btn=>{
