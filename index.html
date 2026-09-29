@@ -326,6 +326,31 @@
   .edit-actions{display:flex;gap:10px;margin-top:10px;}
   .edit-actions .cancel-btn{background:var(--surface-2);color:var(--text);border:none;border-radius:999px;padding:10px 20px;font-weight:600;font-size:13px;cursor:pointer;font-family:var(--font);}
   .edit-actions .save-btn{padding:10px 22px;font-size:13px;}
+
+  .p-admin-btn{display:block;width:100%;margin-top:14px;background:var(--surface-2);color:var(--text);border:none;border-radius:12px;padding:12px 14px;font-family:var(--font);font-size:14px;font-weight:600;text-align:left;cursor:pointer;}
+  .p-admin-sub{display:none;margin-top:6px;}
+  .p-admin-sub.show{display:block;}
+  .p-admin-sub button{display:block;width:100%;background:none;border:1px solid var(--divider);color:var(--green);border-radius:10px;padding:11px 14px;font-family:var(--font);font-size:14px;text-align:left;cursor:pointer;}
+  .batch-modal{position:fixed;inset:0;z-index:62;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;}
+  .batch-modal.show{display:flex;}
+  .batch-card{width:100%;max-width:480px;max-height:92vh;overflow-y:auto;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;}
+  .batch-card > *{flex-shrink:0;}
+  .batch-card h3{margin:0;font-size:18px;}
+  .b-dest{display:flex;gap:8px;}
+  .b-dest button{flex:1;background:var(--surface-2);color:var(--text);border:1px solid transparent;border-radius:999px;padding:9px 12px;font-size:13px;font-family:var(--font);cursor:pointer;}
+  .b-dest button.on{border-color:var(--green);color:var(--green);}
+  .b-summary{font-size:12px;color:var(--text-dim);line-height:1.5;}
+  .b-summary b{color:var(--text);}
+  .b-list{display:flex;flex-direction:column;gap:8px;}
+  .b-row{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--divider);border-radius:12px;padding:8px;}
+  .b-thumb{width:56px;height:56px;flex:none;border-radius:8px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--text-dim);font-size:20px;}
+  .b-thumb img{width:100%;height:100%;object-fit:cover;}
+  .b-fields{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;}
+  .b-fields input{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--divider);color:var(--text);border-radius:8px;padding:7px 10px;font-family:var(--font);font-size:13px;}
+  .b-meta{font-size:11px;color:var(--text-dim);}
+  .b-meta .warn{color:#ffb454;}
+  .b-meta .bad{color:#ff6b6b;}
+  .b-x{flex:none;background:none;border:none;color:var(--text-dim);font-size:22px;line-height:1;cursor:pointer;padding:2px 6px;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <script type="module">
@@ -571,6 +596,25 @@
     </div>
   </div>
 </div>
+<div class="batch-modal" id="batchModal">
+  <div class="batch-card">
+    <h3>Subir por lote</h3>
+    <div class="b-dest">
+      <button type="button" id="bDestOurs" class="on">Nuestras canciones</button>
+      <button type="button" id="bDestMine">Mis canciones</button>
+    </div>
+    <div class="file-row">
+      <button type="button" class="pick-btn" id="bPick">Elegir archivos</button>
+      <span class="pick-name" id="bPickName">mp3 o m4a, varios a la vez</span>
+    </div>
+    <input type="file" id="bFiles" accept="audio/*" multiple hidden>
+    <div class="b-summary" id="bSummary"></div>
+    <div class="b-list" id="bList"></div>
+    <div class="edit-actions">
+      <button class="cancel-btn" id="bClose" type="button">Cerrar</button>
+    </div>
+  </div>
+</div>
 <div class="psheet" id="psheet">
   <div class="p-handle"></div>
   <div class="p-avatar-wrap">
@@ -584,6 +628,8 @@
   <label class="p-label">Fecha de nacimiento</label>
   <div class="p-static" id="pBirth"></div>
   <div class="p-actions"><button class="save-btn" id="pSave">Guardar nombre</button><span class="p-status" id="pStatus"></span></div>
+  <button class="p-admin-btn" id="pAdmin" type="button">⚙️ Administrador</button>
+  <div class="p-admin-sub" id="pAdminSub"><button type="button" id="pBatch">📥 Subir por lote</button></div>
   <button class="logout-btn" id="pLogout">Cerrar sesión</button>
 </div>
 
@@ -1258,6 +1304,111 @@
     }catch(err){
       eF('eStatus').textContent = 'No se pudo guardar: ' + err;
     }finally{ btn.disabled = false; }
+  });
+
+  // ----- Subir por lote · fracción 1: elegir archivos, leer etiquetas y revisar (todavía no sube) -----
+  const batchModal = document.getElementById('batchModal');
+  const bF = id=>document.getElementById(id);
+  let batchItems = [], batchDest = 'ourSongs';
+  const BATCH_MAX_AUDIO = 100 * 1048576; // tope por archivo de audio del plan gratis de Cloudinary (verifícalo en tu panel)
+  const fmtMB = b=>(b/1048576).toFixed(1) + ' MB';
+  const normKey = (t,a)=>(t||'').trim().toLowerCase() + '|' + (a||'').trim().toLowerCase();
+  function batchExists(it){
+    const k = normKey(it.title, it.artist);
+    if(!it.title.trim()) return false;
+    return songs.concat(mySongs).some(x=>normKey(x.title, x.artist)===k);
+  }
+  function batchDupInBatch(it){
+    const k = normKey(it.title, it.artist);
+    return it.title.trim() && batchItems.some(o=>o!==it && normKey(o.title,o.artist)===k);
+  }
+  function renderBatchSummary(){
+    const n = batchItems.length;
+    if(!n){ bF('bSummary').innerHTML = ''; return; }
+    const total = batchItems.reduce((a,i)=>a+i.file.size, 0);
+    const noCover = batchItems.filter(i=>i.read && !i.cover).length;
+    const dups = batchItems.filter(i=>batchExists(i) || batchDupInBatch(i)).length;
+    const big = batchItems.filter(i=>i.file.size>BATCH_MAX_AUDIO).length;
+    let h = `<b>${n}</b> archivo${n===1?'':'s'} · <b>${fmtMB(total)}</b> de audio (tu plan gratis tiene unos 25 GB).`;
+    if(noCover) h += `<br>${noCover} sin portada en el archivo.`;
+    if(dups) h += `<br><span style="color:#ffb454">${dups} parecen repetidas.</span>`;
+    if(big) h += `<br><span style="color:#ff6b6b">${big} superan los 100 MB y Cloudinary las rechazaría.</span>`;
+    bF('bSummary').innerHTML = h;
+  }
+  function updateBatchRow(it){
+    const row = it.row; if(!row) return;
+    const th = row.querySelector('.b-thumb');
+    if(it.cover && !it.thumbUrl) it.thumbUrl = URL.createObjectURL(it.cover);
+    th.innerHTML = it.thumbUrl ? '' : '♪';
+    if(it.thumbUrl){ const im = document.createElement('img'); im.src = it.thumbUrl; im.alt = ''; th.appendChild(im); }
+    const parts = [fmtMB(it.file.size)];
+    if(!it.read) parts.push('leyendo…');
+    else parts.push(it.cover ? 'portada ✓' : '<span class="warn">sin portada</span>');
+    if(it.file.size>BATCH_MAX_AUDIO) parts.push('<span class="bad">muy pesado</span>');
+    if(batchExists(it)) parts.push('<span class="warn">ya existe</span>');
+    else if(batchDupInBatch(it)) parts.push('<span class="warn">repetida en el lote</span>');
+    row.querySelector('.b-meta').innerHTML = parts.join(' · ');
+  }
+  function refreshBatchRows(){ batchItems.forEach(updateBatchRow); renderBatchSummary(); }
+  function addBatchRow(it){
+    const row = document.createElement('div'); row.className = 'b-row';
+    row.innerHTML = '<div class="b-thumb">♪</div><div class="b-fields"><input class="bt" placeholder="Título"><input class="ba" placeholder="Artista"><div class="b-meta"></div></div><button class="b-x" type="button" aria-label="Quitar">×</button>';
+    it.row = row;
+    const ti = row.querySelector('.bt'), ai = row.querySelector('.ba');
+    ti.value = it.title; ai.value = it.artist;
+    ti.addEventListener('input', ()=>{ it.title = ti.value; refreshBatchRows(); });
+    ai.addEventListener('input', ()=>{ it.artist = ai.value; refreshBatchRows(); });
+    row.querySelector('.b-x').addEventListener('click', ()=>{
+      it.removed = true;
+      if(it.thumbUrl) URL.revokeObjectURL(it.thumbUrl);
+      batchItems = batchItems.filter(o=>o!==it);
+      row.remove(); refreshBatchRows();
+      bF('bPickName').textContent = batchItems.length ? batchItems.length + ' en la lista' : 'mp3 o m4a, varios a la vez';
+    });
+    bF('bList').appendChild(row);
+    updateBatchRow(it);
+  }
+  async function readBatchItem(it){
+    const t = await readTags(it.file);
+    if(it.removed) return;
+    const fn = parseSongFilename(it.file.name);
+    it.title = t.title || fn.title;
+    it.artist = t.artist || fn.artist;
+    it.cover = t.cover || null;
+    it.read = true;
+    it.row.querySelector('.bt').value = it.title;
+    it.row.querySelector('.ba').value = it.artist;
+    refreshBatchRows();
+  }
+  function openBatch(){
+    if(profileOpen){ closeProfileVisual(); history.back(); }
+    batchModal.classList.add('show');
+  }
+  function closeBatch(){ batchModal.classList.remove('show'); }
+  function setBatchDest(d){
+    batchDest = d;
+    bF('bDestOurs').classList.toggle('on', d==='ourSongs');
+    bF('bDestMine').classList.toggle('on', d==='mySongs');
+  }
+  bF('pAdmin').addEventListener('click', ()=>bF('pAdminSub').classList.toggle('show'));
+  bF('pBatch').addEventListener('click', openBatch);
+  bF('bClose').addEventListener('click', closeBatch);
+  batchModal.addEventListener('click', (e)=>{ if(e.target===batchModal) closeBatch(); });
+  bF('bDestOurs').addEventListener('click', ()=>setBatchDest('ourSongs'));
+  bF('bDestMine').addEventListener('click', ()=>setBatchDest('mySongs'));
+  bF('bPick').addEventListener('click', ()=>bF('bFiles').click());
+  bF('bFiles').addEventListener('change', async (e)=>{
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    const fresh = [];
+    files.forEach(f=>{
+      if(batchItems.some(o=>o.file.name===f.name && o.file.size===f.size)) return;
+      const it = { file:f, title:'', artist:'', cover:null, read:false, removed:false, thumbUrl:'' };
+      batchItems.push(it); fresh.push(it); addBatchRow(it);
+    });
+    bF('bPickName').textContent = batchItems.length + ' en la lista';
+    renderBatchSummary();
+    for(const it of fresh){ await readBatchItem(it); } // de una en una para no saturar el celular
   });
 
   // Tabs
