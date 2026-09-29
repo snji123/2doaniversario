@@ -307,12 +307,28 @@
   .cover-results img{width:76px;height:76px;flex:none;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid transparent;background:var(--surface-2);}
   .cover-results img.sel{border-color:var(--green);}
   .cover-results .cr-msg{font-size:12px;color:var(--text-dim);padding:6px 2px;}
+  .cover-menu-btn{position:absolute;top:10px;right:10px;z-index:3;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.35);border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.85;}
+  .cover-menu-btn svg{fill:currentColor;}
+  .cover-menu{position:absolute;top:48px;right:10px;z-index:4;background:#282828;color:#fff;border-radius:10px;min-width:130px;box-shadow:0 8px 24px rgba(0,0,0,.5);display:none;overflow:hidden;}
+  .cover-menu.show{display:block;}
+  .cover-menu button{display:block;width:100%;text-align:left;background:none;border:none;color:inherit;font-family:var(--font);font-size:14px;padding:12px 16px;cursor:pointer;}
+  .cover-menu button:active{background:rgba(255,255,255,.1);}
+  .cover-menu button.danger{color:#ff6b6b;}
+  .edit-modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;}
+  .edit-modal.show{display:flex;}
+  .edit-card{width:100%;max-width:480px;max-height:90vh;overflow-y:auto;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;}
+  .edit-card h3{margin:0 0 4px;font-size:18px;}
+  .edit-card label{font-size:12px;color:var(--text-dim);margin-top:4px;}
+  .edit-card input,.edit-card textarea{background:var(--surface);border:1px solid var(--divider);color:var(--text);border-radius:10px;padding:11px 14px;font-family:var(--font);font-size:14px;resize:vertical;}
+  .edit-actions{display:flex;gap:10px;margin-top:10px;}
+  .edit-actions .cancel-btn{background:var(--surface-2);color:var(--text);border:none;border-radius:999px;padding:10px 20px;font-weight:600;font-size:13px;cursor:pointer;font-family:var(--font);}
+  .edit-actions .save-btn{padding:10px 22px;font-size:13px;}
 </style>
 <script type="module">
   // Firebase conectado directo por CDN (sin npm, funciona tal cual en GitHub Pages)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
-    getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, onSnapshot, addDoc
+    getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, onSnapshot, addDoc, deleteDoc
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -328,7 +344,7 @@
   const db = getFirestore(app);
 
   // Se expone en window para que el script principal (más abajo) lo use
-  window.fb = { db, collection, doc, setDoc, getDoc, getDocs, updateDoc, onSnapshot, addDoc };
+  window.fb = { db, collection, doc, setDoc, getDoc, getDocs, updateDoc, onSnapshot, addDoc, deleteDoc };
   window.dispatchEvent(new Event('firebase-ready'));
 </script>
 </head>
@@ -483,6 +499,13 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
     <div class="big-cover" id="sheetCover">
+      <button class="cover-menu-btn" id="coverMenuBtn" aria-label="Más opciones">
+        <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      </button>
+      <div class="cover-menu" id="coverMenu">
+        <button id="menuEdit">Editar</button>
+        <button id="menuDelete" class="danger">Eliminar</button>
+      </div>
       <div class="sheet-player-overlay">
         <div class="sheet-progress-bar" id="sheetProgressBar"><div class="sheet-progress-fill" id="sheetProgressFill"></div></div>
         <div class="sheet-times"><span id="sheetTimeCur">0:00</span><span id="sheetTimeDur">0:00</span></div>
@@ -512,6 +535,31 @@
 </div>
 
 <div class="p-back" id="pBack"></div>
+<div class="edit-modal" id="editModal">
+  <div class="edit-card">
+    <h3>Editar canción</h3>
+    <label>Título</label><input id="eTitle">
+    <label>Artista</label><input id="eArtist">
+    <div id="eOursFields">
+      <label>La frase</label><textarea id="ePhrase" rows="2"></textarea>
+      <label>Lo que significa</label><textarea id="eMeaning" rows="2"></textarea>
+      <label>Mi nota para ti</label><textarea id="eNote" rows="3"></textarea>
+    </div>
+    <label>Portada</label>
+    <div class="file-row">
+      <button type="button" class="pick-btn" id="eCoverPick">Elegir imagen</button>
+      <span class="pick-name" id="eCoverName">Sin cambios</span>
+    </div>
+    <button type="button" class="suggest-chip" id="eCoverSearch" style="display:inline-block;">🔍 Buscar portada en internet</button>
+    <div class="cover-results" id="eResults"></div>
+    <input type="file" id="eCoverFile" accept="image/*" hidden>
+    <div class="mt-status" id="eStatus"></div>
+    <div class="edit-actions">
+      <button class="cancel-btn" id="eCancel" type="button">Cancelar</button>
+      <button class="save-btn" id="eSave" type="button">Guardar</button>
+    </div>
+  </div>
+</div>
 <div class="psheet" id="psheet">
   <div class="p-handle"></div>
   <div class="p-avatar-wrap">
@@ -619,31 +667,44 @@
   renderTracks();
 
   // ----- Firestore: sincroniza canciones (título/frase/nota/corazón/nota de ella) -----
-  const DEFAULT_COUNT = songs.length;
+  const defaults = songs.slice();
+  const removedDefaults = new Set();
+  let extrasCache = [];
   const colOf = (arr, s) => arr===mySongs ? 'mySongs' : (s._col || 'songs');
+  function rebuildOurs(){
+    const keep = (playlist===songs && currentIndex!==null) ? songs[currentIndex] : null;
+    songs.length = 0;
+    defaults.forEach(d=>{ if(!removedDefaults.has(d)) songs.push(d); });
+    extrasCache.forEach(x=>songs.push(x));
+    if(keep){
+      const ni = songs.findIndex(x=>x.id===keep.id);
+      currentIndex = ni>=0 ? ni : null;
+    }
+    document.getElementById('songCount').textContent = `${songs.length} canciones · nuestra playlist`;
+    renderTracks();
+  }
   function initFirestoreSongs(){
     const { db, doc, getDoc, setDoc, updateDoc, onSnapshot, collection } = window.fb;
     // canciones nuevas agregadas desde la app (compartidas)
     onSnapshot(collection(db,'ourSongs'), snap=>{
-      const keep = (playlist===songs && currentIndex!==null) ? songs[currentIndex] : null;
-      const extras = [];
-      snap.forEach(d=>extras.push({ id:d.id, _col:'ourSongs', ...d.data() }));
-      extras.sort((a,b)=>(a.ts||0)-(b.ts||0));
-      songs.length = DEFAULT_COUNT;
-      extras.forEach(x=>songs.push(x));
-      if(keep){ const ni = songs.findIndex(x=>x.id===keep.id); if(ni>=0) currentIndex = ni; }
-      document.getElementById('songCount').textContent = `${songs.length} canciones · nuestra playlist`;
-      renderTracks();
+      extrasCache = [];
+      snap.forEach(d=>extrasCache.push({ id:d.id, _col:'ourSongs', ...d.data() }));
+      extrasCache.sort((a,b)=>(a.ts||0)-(b.ts||0));
+      rebuildOurs();
     });
-    songs.forEach((s, i)=>{
+    defaults.forEach((s)=>{
       const ref = doc(db, 'songs', s.id);
       getDoc(ref).then(snap=>{
         if(!snap.exists()){ setDoc(ref, s); } // primera vez: siembra los datos por defecto
       });
       onSnapshot(ref, snap=>{
         if(!snap.exists()) return;
-        Object.assign(songs[i], snap.data());
+        const d = snap.data();
+        Object.assign(s, d);
+        if(d.deleted){ if(!removedDefaults.has(s)){ removedDefaults.add(s); rebuildOurs(); } return; }
+        if(removedDefaults.has(s)){ removedDefaults.delete(s); rebuildOurs(); }
         renderTracks();
+        const i = songs.indexOf(s);
         if(playlist===songs && currentIndex===i) refreshNowPlayingUI();
         if(sheetIsOpen && playlist===songs && currentIndex===i) document.getElementById('herNoteInput').value = playlist[i].herNote || '';
       });
@@ -746,6 +807,28 @@
     });
   }
 
+  function itunesSearch(term){
+    const url = 'https://itunes.apple.com/search?media=music&entity=song&limit=8&term=' + encodeURIComponent(term);
+    return fetch(url).then(r=>r.json()).catch(()=>new Promise((resolve,reject)=>{
+      const cb = 'itcb' + Date.now();
+      const sc = document.createElement('script');
+      window[cb] = d=>{ delete window[cb]; sc.remove(); resolve(d); };
+      sc.onerror = ()=>{ sc.remove(); reject(); };
+      sc.src = url + '&callback=' + cb;
+      document.head.appendChild(sc);
+    }));
+  }
+  async function itunesArts(term){
+    const data = await itunesSearch(term);
+    const seen = new Set(), arts = [];
+    (data.results||[]).forEach(r=>{
+      if(!r.artworkUrl100) return;
+      const big = r.artworkUrl100.replace('100x100bb','600x600bb');
+      if(!seen.has(big)){ seen.add(big); arts.push(big); }
+    });
+    return arts;
+  }
+
   function setupAdder(mountId, collName, isShared){
     const mount = document.getElementById(mountId);
     mount.innerHTML = `
@@ -776,17 +859,6 @@
     let pickedAudio = null, pickedCover = null, webCover = '';
     const results = q('.cover-results');
 
-    function itunesSearch(term){
-      const url = 'https://itunes.apple.com/search?media=music&entity=song&limit=8&term=' + encodeURIComponent(term);
-      return fetch(url).then(r=>r.json()).catch(()=>new Promise((resolve,reject)=>{
-        const cb = 'itcb' + Date.now();
-        const sc = document.createElement('script');
-        window[cb] = d=>{ delete window[cb]; sc.remove(); resolve(d); };
-        sc.onerror = ()=>{ sc.remove(); reject(); };
-        sc.src = url + '&callback=' + cb;
-        document.head.appendChild(sc);
-      }));
-    }
     q('.b-search').addEventListener('click', async ()=>{
       const term = (q('.f-artist').value + ' ' + q('.f-title').value).trim();
       results.classList.add('show');
@@ -983,6 +1055,109 @@
   });
   document.getElementById('closeSheet').addEventListener('click', ()=>{
     if(sheetIsOpen) history.back(); // dispara popstate, que cierra la ficha (no sale de la página)
+  });
+
+  // ----- Menú ⋮ de la portada: editar / eliminar -----
+  const coverMenu = document.getElementById('coverMenu');
+  document.getElementById('coverMenuBtn').addEventListener('click', (e)=>{ e.stopPropagation(); coverMenu.classList.toggle('show'); });
+  document.addEventListener('click', ()=> coverMenu.classList.remove('show'));
+
+  document.getElementById('menuDelete').addEventListener('click', async ()=>{
+    coverMenu.classList.remove('show');
+    if(currentIndex===null) return;
+    const arr = playlist, s = arr[currentIndex];
+    if(!confirm(`¿Eliminar "${s.title}"?`)) return;
+    audio.pause(); isPlaying=false; setPlayIcons(false);
+    mini.classList.remove('show');
+    currentIndex = null;
+    if(sheetIsOpen) history.back();
+    // borrado local inmediato
+    if(arr===mySongs){ allMine = allMine.filter(x=>x.id!==s.id); refreshMine(); }
+    else if(s._col==='ourSongs'){ extrasCache = extrasCache.filter(x=>x.id!==s.id); rebuildOurs(); }
+    else { removedDefaults.add(s); rebuildOurs(); }
+    // borrado en Firestore
+    if(window.fb){
+      const { db, doc, updateDoc, deleteDoc } = window.fb;
+      try{
+        if(arr!==mySongs && !s._col) await updateDoc(doc(db,'songs',s.id), { deleted:true });
+        else await deleteDoc(doc(db, colOf(arr,s), s.id));
+      }catch(err){ alert('No se pudo eliminar en la nube: ' + err); }
+    }
+  });
+
+  const editModal = document.getElementById('editModal');
+  const eF = id => document.getElementById(id);
+  let editTarget = null, editArr = null, editFile = null, editWebCover = '';
+  function closeEdit(){ editModal.classList.remove('show'); }
+  document.getElementById('menuEdit').addEventListener('click', ()=>{
+    coverMenu.classList.remove('show');
+    if(currentIndex===null) return;
+    editArr = playlist; editTarget = playlist[currentIndex];
+    editFile = null; editWebCover = '';
+    eF('eTitle').value = editTarget.title || '';
+    eF('eArtist').value = editTarget.artist || '';
+    eF('ePhrase').value = editTarget.phrase || '';
+    eF('eMeaning').value = editTarget.meaning || '';
+    eF('eNote').value = editTarget.note || '';
+    eF('eOursFields').style.display = editArr===songs ? '' : 'none';
+    eF('eCoverName').textContent = 'Sin cambios';
+    eF('eResults').innerHTML = ''; eF('eResults').classList.remove('show');
+    eF('eStatus').textContent = '';
+    editModal.classList.add('show');
+  });
+  eF('eCancel').addEventListener('click', closeEdit);
+  editModal.addEventListener('click', (e)=>{ if(e.target===editModal) closeEdit(); });
+  eF('eCoverPick').addEventListener('click', ()=>eF('eCoverFile').click());
+  eF('eCoverFile').addEventListener('change', (e)=>{
+    editFile = e.target.files[0] || null;
+    if(editFile){ editWebCover=''; eF('eResults').querySelectorAll('img').forEach(x=>x.classList.remove('sel')); }
+    eF('eCoverName').textContent = editFile ? editFile.name : 'Sin cambios';
+  });
+  eF('eCoverSearch').addEventListener('click', async ()=>{
+    const res = eF('eResults');
+    const term = (eF('eArtist').value + ' ' + eF('eTitle').value).trim();
+    res.classList.add('show');
+    if(!term){ res.innerHTML = '<div class="cr-msg">Escribe primero el título</div>'; return; }
+    res.innerHTML = '<div class="cr-msg">Buscando…</div>';
+    try{
+      const arts = await itunesArts(term);
+      if(!arts.length){ res.innerHTML = '<div class="cr-msg">No encontré portadas; prueba con otro título</div>'; return; }
+      res.innerHTML = '';
+      arts.forEach(u=>{
+        const img = document.createElement('img');
+        img.src = u.replace('600x600bb','200x200bb'); img.alt = '';
+        img.addEventListener('click', ()=>{
+          res.querySelectorAll('img').forEach(x=>x.classList.remove('sel'));
+          img.classList.add('sel');
+          editWebCover = u; editFile = null;
+          eF('eCoverName').textContent = 'Portada de internet ✓';
+        });
+        res.appendChild(img);
+      });
+    }catch(err){ res.innerHTML = '<div class="cr-msg">No se pudo buscar ahora</div>'; }
+  });
+  eF('eSave').addEventListener('click', async ()=>{
+    const title = eF('eTitle').value.trim();
+    if(!title || !editTarget) return;
+    const btn = eF('eSave'); btn.disabled = true;
+    try{
+      const data = { title, artist: eF('eArtist').value.trim() };
+      if(editArr===songs){ data.phrase = eF('ePhrase').value; data.meaning = eF('eMeaning').value; data.note = eF('eNote').value; }
+      if(editFile){
+        eF('eStatus').textContent = 'Subiendo portada…';
+        data.cover = await cloudinaryUpload(editFile, 'image', ()=>{});
+      } else if(editWebCover){ data.cover = editWebCover; }
+      Object.assign(editTarget, data);
+      if(window.fb){
+        const { db, doc, updateDoc } = window.fb;
+        await updateDoc(doc(db, colOf(editArr, editTarget), editTarget.id), data);
+      }
+      renderTracks();
+      if(currentIndex!==null && playlist[currentIndex]===editTarget) refreshNowPlayingUI();
+      closeEdit();
+    }catch(err){
+      eF('eStatus').textContent = 'No se pudo guardar: ' + err;
+    }finally{ btn.disabled = false; }
   });
 
   // Tabs
