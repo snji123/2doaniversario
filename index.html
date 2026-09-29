@@ -814,10 +814,10 @@
     });
   }
 
-  function itunesSearch(term){
-    const url = 'https://itunes.apple.com/search?media=music&entity=song&limit=8&term=' + encodeURIComponent(term);
+  function itunesSearch(term, country){
+    const url = 'https://itunes.apple.com/search?media=music&entity=song&limit=15&country=' + country + '&term=' + encodeURIComponent(term);
     return fetch(url).then(r=>r.json()).catch(()=>new Promise((resolve,reject)=>{
-      const cb = 'itcb' + Date.now();
+      const cb = 'itcb' + Date.now() + Math.floor(Math.random()*1e6);
       const sc = document.createElement('script');
       window[cb] = d=>{ delete window[cb]; sc.remove(); resolve(d); };
       sc.onerror = ()=>{ sc.remove(); reject(); };
@@ -825,15 +825,21 @@
       document.head.appendChild(sc);
     }));
   }
-  async function itunesArts(term){
-    const data = await itunesSearch(term);
+  // Busca por título+artista, solo título y solo artista (México y EE.UU.) y junta los resultados sin repetir
+  async function itunesArts(title, artist){
+    title = (title||'').trim(); artist = (artist||'').trim();
+    const terms = [];
+    if(title && artist) terms.push([`${artist} ${title}`,'MX'], [`${artist} ${title}`,'US']);
+    if(title) terms.push([title,'MX'], [title,'US']);
+    if(artist) terms.push([artist,'MX']);
+    const lists = await Promise.all(terms.map(([t,c])=>itunesSearch(t,c).then(d=>d.results||[]).catch(()=>[])));
     const seen = new Set(), arts = [];
-    (data.results||[]).forEach(r=>{
+    lists.forEach(list=>list.forEach(r=>{
       if(!r.artworkUrl100) return;
       const big = r.artworkUrl100.replace('100x100bb','600x600bb');
       if(!seen.has(big)){ seen.add(big); arts.push(big); }
-    });
-    return arts;
+    }));
+    return arts.slice(0, 16);
   }
 
   function setupAdder(mountId, collName, isShared){
@@ -867,18 +873,12 @@
     const results = q('.cover-results');
 
     q('.b-search').addEventListener('click', async ()=>{
-      const term = (q('.f-artist').value + ' ' + q('.f-title').value).trim();
+      const tt = q('.f-title').value.trim(), aa = q('.f-artist').value.trim();
       results.classList.add('show');
-      if(!term){ results.innerHTML = '<div class="cr-msg">Escribe primero el título</div>'; return; }
+      if(!tt && !aa){ results.innerHTML = '<div class="cr-msg">Escribe primero el título</div>'; return; }
       results.innerHTML = '<div class="cr-msg">Buscando…</div>';
       try{
-        const data = await itunesSearch(term);
-        const seen = new Set(), arts = [];
-        (data.results||[]).forEach(r=>{
-          if(!r.artworkUrl100) return;
-          const big = r.artworkUrl100.replace('100x100bb','600x600bb');
-          if(!seen.has(big)){ seen.add(big); arts.push(big); }
-        });
+        const arts = await itunesArts(tt, aa);
         if(!arts.length){ results.innerHTML = '<div class="cr-msg">No encontré portadas; prueba con otro título o sube tu imagen</div>'; return; }
         results.innerHTML = '';
         arts.forEach(u=>{
@@ -1140,12 +1140,12 @@
   });
   eF('eCoverSearch').addEventListener('click', async ()=>{
     const res = eF('eResults');
-    const term = (eF('eArtist').value + ' ' + eF('eTitle').value).trim();
+    const tt = eF('eTitle').value.trim(), aa = eF('eArtist').value.trim();
     res.classList.add('show');
-    if(!term){ res.innerHTML = '<div class="cr-msg">Escribe primero el título</div>'; return; }
+    if(!tt && !aa){ res.innerHTML = '<div class="cr-msg">Escribe primero el título</div>'; return; }
     res.innerHTML = '<div class="cr-msg">Buscando…</div>';
     try{
-      const arts = await itunesArts(term);
+      const arts = await itunesArts(tt, aa);
       if(!arts.length){ res.innerHTML = '<div class="cr-msg">No encontré portadas; prueba con otro título</div>'; return; }
       res.innerHTML = '';
       arts.forEach(u=>{
