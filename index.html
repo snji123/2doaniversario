@@ -302,8 +302,8 @@
 
   .add-fab{width:44px;height:44px;border-radius:50%;background:var(--green);color:#0a0a0a;border:none;font-size:24px;line-height:1;font-weight:800;display:flex;align-items:center;justify-content:center;cursor:pointer;margin:4px 8px 14px;box-shadow:0 6px 16px rgba(30,215,96,.3);}
   .suggest-chip{display:none;align-self:flex-start;background:rgba(30,215,96,0.12);border:1px solid rgba(30,215,96,0.4);color:var(--green);border-radius:999px;padding:7px 14px;font-size:12px;font-family:var(--font);cursor:pointer;margin-top:-2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .cover-results{display:none;gap:8px;overflow-x:auto;padding:2px 0 4px;}
-  .cover-results.show{display:flex;}
+  .cover-results{display:none;gap:8px;padding:2px 0 4px;}
+  .cover-results.show{display:flex;flex-wrap:wrap;max-height:340px;overflow-y:auto;}
   .cover-results img{width:76px;height:76px;flex:none;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid transparent;background:var(--surface-2);}
   .cover-results img.sel{border-color:var(--green);}
   .cover-results .cr-msg{font-size:12px;color:var(--text-dim);padding:6px 2px;}
@@ -815,6 +815,26 @@
       }catch(e){ resolve({}); }
     });
   }
+  // Muestra en un contenedor la portada del archivo (si hay) + las de internet
+  function fillCoverResults(container, arts, embedded, embeddedSelected, selectedUrl, onEmbedded, onWeb){
+    container.innerHTML = ''; container.classList.add('show');
+    const clear = ()=>container.querySelectorAll('img').forEach(x=>x.classList.remove('sel'));
+    if(embedded){
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(embedded); img.alt = ''; img.title = 'Portada del archivo';
+      if(embeddedSelected) img.classList.add('sel');
+      img.addEventListener('click', ()=>{ clear(); img.classList.add('sel'); onEmbedded(); });
+      container.appendChild(img);
+    }
+    arts.forEach(u=>{
+      const img = document.createElement('img');
+      img.src = u.replace('600x600bb','200x200bb'); img.alt = '';
+      if(selectedUrl===u) img.classList.add('sel');
+      img.addEventListener('click', ()=>{ clear(); img.classList.add('sel'); onWeb(u); });
+      container.appendChild(img);
+    });
+    if(!embedded && !arts.length) container.innerHTML = '<div class="cr-msg">No encontré portadas; prueba con otro título o sube tu imagen</div>';
+  }
   function showCoverPreview(container, file){
     container.innerHTML = '';
     const img = document.createElement('img');
@@ -842,8 +862,8 @@
     });
   }
 
-  function itunesSearch(term, country){
-    const url = 'https://itunes.apple.com/search?media=music&entity=song&limit=15&country=' + country + '&term=' + encodeURIComponent(term);
+  function itunesSearch(term, country, entity){
+    const url = 'https://itunes.apple.com/search?media=music&entity=' + entity + '&limit=40&country=' + country + '&term=' + encodeURIComponent(term);
     return fetch(url).then(r=>r.json()).catch(()=>new Promise((resolve,reject)=>{
       const cb = 'itcb' + Date.now() + Math.floor(Math.random()*1e6);
       const sc = document.createElement('script');
@@ -860,14 +880,16 @@
     if(title && artist) terms.push([`${artist} ${title}`,'MX'], [`${artist} ${title}`,'US']);
     if(artist) terms.push([artist,'MX'], [artist,'US']);
     if(title) terms.push([title,'MX'], [title,'US']);
-    const lists = await Promise.all(terms.map(([t,c])=>itunesSearch(t,c).then(d=>d.results||[]).catch(()=>[])));
+    const jobs = [];
+    terms.forEach(([t,c])=>{ ['song','album'].forEach(en=>jobs.push(itunesSearch(t,c,en).then(d=>d.results||[]).catch(()=>[]))); });
+    const lists = await Promise.all(jobs);
     const seen = new Set(), arts = [];
     lists.forEach(list=>list.forEach(r=>{
       if(!r.artworkUrl100) return;
       const big = r.artworkUrl100.replace('100x100bb','600x600bb');
       if(!seen.has(big)){ seen.add(big); arts.push(big); }
     }));
-    return arts.slice(0, 20);
+    return arts.slice(0, 60);
   }
 
   function setupAdder(mountId, collName, isShared){
@@ -897,7 +919,7 @@
     const q = sel => mount.querySelector(sel);
     const fab = q('.add-fab'), form = q('.add-photo-form'), chip = q('.suggest-chip');
     const bar = q('.upload-bar'), fill = q('.upload-bar span'), status = q('.mt-status'), saveBtn = q('.save-btn');
-    let pickedAudio = null, pickedCover = null, webCover = '';
+    let pickedAudio = null, pickedCover = null, webCover = '', embeddedCover = null;
     const results = q('.cover-results');
 
     q('.b-search').addEventListener('click', async ()=>{
@@ -907,19 +929,9 @@
       results.innerHTML = '<div class="cr-msg">Buscando…</div>';
       try{
         const arts = await itunesArts(tt, aa);
-        if(!arts.length){ results.innerHTML = '<div class="cr-msg">No encontré portadas; prueba con otro título o sube tu imagen</div>'; return; }
-        results.innerHTML = '';
-        arts.forEach(u=>{
-          const img = document.createElement('img');
-          img.src = u.replace('600x600bb','200x200bb'); img.alt = '';
-          img.addEventListener('click', ()=>{
-            results.querySelectorAll('img').forEach(x=>x.classList.remove('sel'));
-            img.classList.add('sel');
-            webCover = u; pickedCover = null;
-            q('.n-cover').textContent = 'Portada de internet ✓';
-          });
-          results.appendChild(img);
-        });
+        fillCoverResults(results, arts, embeddedCover, !!embeddedCover && pickedCover===embeddedCover, webCover,
+          ()=>{ pickedCover = embeddedCover; webCover = ''; q('.n-cover').textContent = 'Portada del archivo ✓'; },
+          (u)=>{ webCover = u; pickedCover = null; q('.n-cover').textContent = 'Portada de internet ✓'; });
       }catch(e){ results.innerHTML = '<div class="cr-msg">No se pudo buscar ahora</div>'; }
     });
 
@@ -932,6 +944,7 @@
     q('.b-cover').addEventListener('click', ()=>q('.i-cover').click());
     q('.i-audio').addEventListener('change', (e)=>{
       pickedAudio = e.target.files[0] || null;
+      embeddedCover = null;
       q('.n-audio').textContent = pickedAudio ? pickedAudio.name : 'Sin archivo';
       if(pickedAudio){
         const { artist, title } = parseSongFilename(pickedAudio.name);
@@ -946,6 +959,7 @@
             chip.textContent = t.artist ? `✨ Usar "${t.artist} – ${t.title}"` : `✨ Usar "${t.title}"`;
             if(!q('.f-title').value.trim()){ q('.f-title').value = t.title; if(t.artist && !q('.f-artist').value.trim()) q('.f-artist').value = t.artist; }
           }
+          if(t.cover){ embeddedCover = t.cover; }
           if(t.cover && !pickedCover && !webCover){
             pickedCover = t.cover;
             q('.n-cover').textContent = 'Portada del archivo ✓';
@@ -988,7 +1002,7 @@
         await addDoc(collection(db, collName), data);
         status.textContent = '✓ Canción agregada';
         q('.f-title').value = ''; q('.f-artist').value = '';
-        pickedAudio = null; pickedCover = null; webCover = '';
+        pickedAudio = null; pickedCover = null; webCover = ''; embeddedCover = null;
         results.innerHTML = ''; results.classList.remove('show');
         q('.n-audio').textContent = 'Sin archivo';
         q('.n-cover').textContent = 'Opcional';
@@ -1136,13 +1150,13 @@
 
   const editModal = document.getElementById('editModal');
   const eF = id => document.getElementById(id);
-  let editTarget = null, editArr = null, editFile = null, editWebCover = '', editAudio = null;
+  let editTarget = null, editArr = null, editFile = null, editWebCover = '', editAudio = null, editEmbedded = null;
   function closeEdit(){ editModal.classList.remove('show'); }
   document.getElementById('menuEdit').addEventListener('click', ()=>{
     coverMenu.classList.remove('show');
     if(currentIndex===null) return;
     editArr = playlist; editTarget = playlist[currentIndex];
-    editFile = null; editWebCover = ''; editAudio = null;
+    editFile = null; editWebCover = ''; editAudio = null; editEmbedded = null;
     eF('eAudioName').textContent = 'Sin cambios'; eF('eChip').style.display = 'none'; eF('eAudioFile').value = '';
     eF('eTitle').value = editTarget.title || '';
     eF('eArtist').value = editTarget.artist || '';
@@ -1160,6 +1174,7 @@
   eF('eAudioPick').addEventListener('click', ()=>eF('eAudioFile').click());
   eF('eAudioFile').addEventListener('change', (e)=>{
     editAudio = e.target.files[0] || null;
+    editEmbedded = null;
     eF('eAudioName').textContent = editAudio ? editAudio.name : 'Sin cambios';
     const chip = eF('eChip');
     if(editAudio){
@@ -1174,6 +1189,7 @@
           chip.dataset.title = t.title; chip.dataset.artist = t.artist || '';
           chip.textContent = t.artist ? `✨ Usar "${t.artist} – ${t.title}"` : `✨ Usar "${t.title}"`;
         }
+        if(t.cover) editEmbedded = t.cover;
         if(t.cover && !editFile && !editWebCover){
           editFile = t.cover;
           eF('eCoverName').textContent = 'Portada del archivo ✓';
@@ -1201,19 +1217,9 @@
     res.innerHTML = '<div class="cr-msg">Buscando…</div>';
     try{
       const arts = await itunesArts(tt, aa);
-      if(!arts.length){ res.innerHTML = '<div class="cr-msg">No encontré portadas; prueba con otro título</div>'; return; }
-      res.innerHTML = '';
-      arts.forEach(u=>{
-        const img = document.createElement('img');
-        img.src = u.replace('600x600bb','200x200bb'); img.alt = '';
-        img.addEventListener('click', ()=>{
-          res.querySelectorAll('img').forEach(x=>x.classList.remove('sel'));
-          img.classList.add('sel');
-          editWebCover = u; editFile = null;
-          eF('eCoverName').textContent = 'Portada de internet ✓';
-        });
-        res.appendChild(img);
-      });
+      fillCoverResults(res, arts, editEmbedded, !!editEmbedded && editFile===editEmbedded, editWebCover,
+        ()=>{ editFile = editEmbedded; editWebCover = ''; eF('eCoverName').textContent = 'Portada del archivo ✓'; },
+        (u)=>{ editWebCover = u; editFile = null; eF('eCoverName').textContent = 'Portada de internet ✓'; });
     }catch(err){ res.innerHTML = '<div class="cr-msg">No se pudo buscar ahora</div>'; }
   });
   eF('eSave').addEventListener('click', async ()=>{
