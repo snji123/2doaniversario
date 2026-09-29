@@ -317,6 +317,9 @@
   .edit-modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;}
   .edit-modal.show{display:flex;}
   .edit-card{width:100%;max-width:480px;max-height:90vh;overflow-y:auto;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;}
+  .edit-card > *{flex-shrink:0;}
+  #eOursFields{display:flex;flex-direction:column;gap:8px;}
+  .edit-card input,.edit-card textarea{width:100%;box-sizing:border-box;}
   .edit-card h3{margin:0 0 4px;font-size:18px;}
   .edit-card label{font-size:12px;color:var(--text-dim);margin-top:4px;}
   .edit-card input,.edit-card textarea{background:var(--surface);border:1px solid var(--divider);color:var(--text);border-radius:10px;padding:11px 14px;font-family:var(--font);font-size:14px;resize:vertical;}
@@ -1163,7 +1166,7 @@
     eF('ePhrase').value = editTarget.phrase || '';
     eF('eMeaning').value = editTarget.meaning || '';
     eF('eNote').value = editTarget.note || '';
-    eF('eOursFields').style.display = editArr===songs ? '' : 'none';
+    eF('eOursFields').style.display = editArr===songs ? 'flex' : 'none';
     eF('eCoverName').textContent = 'Sin cambios';
     eF('eResults').innerHTML = ''; eF('eResults').classList.remove('show');
     eF('eStatus').textContent = '';
