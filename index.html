@@ -545,6 +545,13 @@
       <label>Lo que significa</label><textarea id="eMeaning" rows="2"></textarea>
       <label>Mi nota para ti</label><textarea id="eNote" rows="3"></textarea>
     </div>
+    <label>Archivo mp3</label>
+    <div class="file-row">
+      <button type="button" class="pick-btn" id="eAudioPick">Reemplazar mp3</button>
+      <span class="pick-name" id="eAudioName">Sin cambios</span>
+    </div>
+    <button type="button" class="suggest-chip" id="eChip"></button>
+    <input type="file" id="eAudioFile" accept="audio/*" hidden>
     <label>Portada</label>
     <div class="file-row">
       <button type="button" class="pick-btn" id="eCoverPick">Elegir imagen</button>
@@ -1087,13 +1094,14 @@
 
   const editModal = document.getElementById('editModal');
   const eF = id => document.getElementById(id);
-  let editTarget = null, editArr = null, editFile = null, editWebCover = '';
+  let editTarget = null, editArr = null, editFile = null, editWebCover = '', editAudio = null;
   function closeEdit(){ editModal.classList.remove('show'); }
   document.getElementById('menuEdit').addEventListener('click', ()=>{
     coverMenu.classList.remove('show');
     if(currentIndex===null) return;
     editArr = playlist; editTarget = playlist[currentIndex];
-    editFile = null; editWebCover = '';
+    editFile = null; editWebCover = ''; editAudio = null;
+    eF('eAudioName').textContent = 'Sin cambios'; eF('eChip').style.display = 'none'; eF('eAudioFile').value = '';
     eF('eTitle').value = editTarget.title || '';
     eF('eArtist').value = editTarget.artist || '';
     eF('ePhrase').value = editTarget.phrase || '';
@@ -1107,6 +1115,23 @@
   });
   eF('eCancel').addEventListener('click', closeEdit);
   editModal.addEventListener('click', (e)=>{ if(e.target===editModal) closeEdit(); });
+  eF('eAudioPick').addEventListener('click', ()=>eF('eAudioFile').click());
+  eF('eAudioFile').addEventListener('change', (e)=>{
+    editAudio = e.target.files[0] || null;
+    eF('eAudioName').textContent = editAudio ? editAudio.name : 'Sin cambios';
+    const chip = eF('eChip');
+    if(editAudio){
+      const { artist, title } = parseSongFilename(editAudio.name);
+      chip.dataset.title = title; chip.dataset.artist = artist;
+      chip.textContent = artist ? `✨ Usar "${artist} – ${title}"` : `✨ Usar "${title}"`;
+      chip.style.display = 'inline-block';
+    } else { chip.style.display = 'none'; }
+  });
+  eF('eChip').addEventListener('click', ()=>{
+    const chip = eF('eChip');
+    eF('eTitle').value = chip.dataset.title || '';
+    if(chip.dataset.artist) eF('eArtist').value = chip.dataset.artist;
+  });
   eF('eCoverPick').addEventListener('click', ()=>eF('eCoverFile').click());
   eF('eCoverFile').addEventListener('change', (e)=>{
     editFile = e.target.files[0] || null;
@@ -1143,6 +1168,10 @@
     try{
       const data = { title, artist: eF('eArtist').value.trim() };
       if(editArr===songs){ data.phrase = eF('ePhrase').value; data.meaning = eF('eMeaning').value; data.note = eF('eNote').value; }
+      if(editAudio){
+        eF('eStatus').textContent = 'Subiendo canción…';
+        data.audio = await cloudinaryUpload(editAudio, 'video', ()=>{});
+      }
       if(editFile){
         eF('eStatus').textContent = 'Subiendo portada…';
         data.cover = await cloudinaryUpload(editFile, 'image', ()=>{});
@@ -1153,7 +1182,14 @@
         await updateDoc(doc(db, colOf(editArr, editTarget), editTarget.id), data);
       }
       renderTracks();
-      if(currentIndex!==null && playlist[currentIndex]===editTarget) refreshNowPlayingUI();
+      if(currentIndex!==null && playlist[currentIndex]===editTarget){
+        refreshNowPlayingUI();
+        if(data.audio){
+          const wasPlaying = !audio.paused;
+          audio.src = data.audio; audio.currentTime = 0;
+          if(wasPlaying) audio.play().catch(()=>{});
+        }
+      }
       closeEdit();
     }catch(err){
       eF('eStatus').textContent = 'No se pudo guardar: ' + err;
