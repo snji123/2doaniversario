@@ -302,6 +302,11 @@
 
   .add-fab{width:44px;height:44px;border-radius:50%;background:var(--green);color:#0a0a0a;border:none;font-size:24px;line-height:1;font-weight:800;display:flex;align-items:center;justify-content:center;cursor:pointer;margin:4px 8px 14px;box-shadow:0 6px 16px rgba(30,215,96,.3);}
   .suggest-chip{display:none;align-self:flex-start;background:rgba(30,215,96,0.12);border:1px solid rgba(30,215,96,0.4);color:var(--green);border-radius:999px;padding:7px 14px;font-size:12px;font-family:var(--font);cursor:pointer;margin-top:-2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .cover-results{display:none;gap:8px;overflow-x:auto;padding:2px 0 4px;}
+  .cover-results.show{display:flex;}
+  .cover-results img{width:76px;height:76px;flex:none;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid transparent;background:var(--surface-2);}
+  .cover-results img.sel{border-color:var(--green);}
+  .cover-results .cr-msg{font-size:12px;color:var(--text-dim);padding:6px 2px;}
 </style>
 <script type="module">
   // Firebase conectado directo por CDN (sin npm, funciona tal cual en GitHub Pages)
@@ -448,27 +453,12 @@
   </nav>
 
   <main>
-    <section id="panel-canciones"></section>
+    <section id="panel-canciones">
+      <div id="adder-ours"></div>
+      <div id="panel-canciones-list"></div>
+    </section>
     <section id="panel-mias" style="display:none;">
-      <button class="add-fab" id="toggleAddSong" aria-label="Agregar canción">+</button>
-      <div class="add-photo-form" id="addSongForm" style="display:none;">
-        <input id="mtTitle" placeholder="Título">
-        <input id="mtArtist" placeholder="Artista">
-        <div class="file-row">
-          <button type="button" class="pick-btn" id="mtAudioBtn">Elegir mp3</button>
-          <span class="pick-name" id="mtAudioName">Sin archivo</span>
-        </div>
-        <button type="button" class="suggest-chip" id="mtSuggestBtn"></button>
-        <div class="file-row">
-          <button type="button" class="pick-btn" id="mtCoverBtn">Elegir portada</button>
-          <span class="pick-name" id="mtCoverName">Opcional</span>
-        </div>
-        <input type="file" id="mtAudioFile" accept="audio/*" hidden>
-        <input type="file" id="mtCoverFile" accept="image/*" hidden>
-        <div class="upload-bar" id="mtBar"><span id="mtBarFill"></span></div>
-        <div class="mt-status" id="mtStatus"></div>
-        <button class="save-btn" id="mtSave" style="align-self:flex-start;">Guardar canción</button>
-      </div>
+      <div id="adder-mine"></div>
       <div id="panel-mias-list"></div>
     </section>
   </main>
@@ -578,7 +568,7 @@
   ];
   document.getElementById('songCount').textContent = `${songs.length} canciones · nuestra playlist`;
 
-  const list = document.getElementById('panel-canciones');
+  const list = document.getElementById('panel-canciones-list');
   let currentIndex = null;
   let isPlaying = false;
   const mini = document.getElementById('miniplayer');
@@ -629,8 +619,22 @@
   renderTracks();
 
   // ----- Firestore: sincroniza canciones (título/frase/nota/corazón/nota de ella) -----
+  const DEFAULT_COUNT = songs.length;
+  const colOf = (arr, s) => arr===mySongs ? 'mySongs' : (s._col || 'songs');
   function initFirestoreSongs(){
-    const { db, doc, getDoc, setDoc, updateDoc, onSnapshot } = window.fb;
+    const { db, doc, getDoc, setDoc, updateDoc, onSnapshot, collection } = window.fb;
+    // canciones nuevas agregadas desde la app (compartidas)
+    onSnapshot(collection(db,'ourSongs'), snap=>{
+      const keep = (playlist===songs && currentIndex!==null) ? songs[currentIndex] : null;
+      const extras = [];
+      snap.forEach(d=>extras.push({ id:d.id, _col:'ourSongs', ...d.data() }));
+      extras.sort((a,b)=>(a.ts||0)-(b.ts||0));
+      songs.length = DEFAULT_COUNT;
+      extras.forEach(x=>songs.push(x));
+      if(keep){ const ni = songs.findIndex(x=>x.id===keep.id); if(ni>=0) currentIndex = ni; }
+      document.getElementById('songCount').textContent = `${songs.length} canciones · nuestra playlist`;
+      renderTracks();
+    });
     songs.forEach((s, i)=>{
       const ref = doc(db, 'songs', s.id);
       getDoc(ref).then(snap=>{
@@ -650,7 +654,7 @@
     renderTracks();
     if(window.fb){
       const { db, doc, updateDoc } = window.fb;
-      updateDoc(doc(db, arr===songs ? 'songs' : 'mySongs', arr[i].id), { liked: arr[i].liked }).catch(()=>{});
+      updateDoc(doc(db, colOf(arr, arr[i]), arr[i].id), { liked: arr[i].liked }).catch(()=>{});
     }
   }
   document.getElementById('herNoteSave').addEventListener('click', ()=>{
@@ -659,7 +663,7 @@
     songs[currentIndex].herNote = val;
     if(window.fb){
       const { db, doc, updateDoc } = window.fb;
-      updateDoc(doc(db,'songs',songs[currentIndex].id), { herNote: val }).catch(()=>{});
+      updateDoc(doc(db, colOf(songs, songs[currentIndex]), songs[currentIndex].id), { herNote: val }).catch(()=>{});
     }
   });
 
@@ -707,17 +711,10 @@
   if(window.fb){ initFirestoreSongs(); initFirestoreExtra(); }
   else window.addEventListener('firebase-ready', ()=>{ initFirestoreSongs(); initFirestoreExtra(); });
 
-  // Agregar "mis canciones" (con subida directa a Cloudinary)
+  // Agregar canciones (subida directa a Cloudinary). Se usa en "Nuestras" y en "Mis canciones"
   const CLOUD_NAME = 'k1irg52e';
   const UPLOAD_PRESET = 'Para ti';
-  let pickedAudio = null, pickedCover = null;
 
-  document.getElementById('toggleAddSong').addEventListener('click', ()=>{
-    const f = document.getElementById('addSongForm');
-    const opening = f.style.display==='none' || !f.style.display;
-    f.style.display = opening ? 'flex' : 'none';
-    document.getElementById('toggleAddSong').textContent = opening ? '×' : '+';
-  });
   function parseSongFilename(name){
     let base = name.replace(/\.[^.]+$/, '').replace(/_/g,' ').trim();
     const seps = [' - ', ' – ', ' — '];
@@ -729,29 +726,6 @@
     }
     return { artist: '', title: base };
   }
-  document.getElementById('mtAudioBtn').addEventListener('click', ()=>document.getElementById('mtAudioFile').click());
-  document.getElementById('mtCoverBtn').addEventListener('click', ()=>document.getElementById('mtCoverFile').click());
-  document.getElementById('mtAudioFile').addEventListener('change', (e)=>{
-    pickedAudio = e.target.files[0] || null;
-    document.getElementById('mtAudioName').textContent = pickedAudio ? pickedAudio.name : 'Sin archivo';
-    const chip = document.getElementById('mtSuggestBtn');
-    if(pickedAudio){
-      const { artist, title } = parseSongFilename(pickedAudio.name);
-      chip.dataset.title = title; chip.dataset.artist = artist;
-      chip.textContent = artist ? `✨ Usar "${artist} – ${title}"` : `✨ Usar "${title}"`;
-      chip.style.display = 'inline-block';
-    } else { chip.style.display = 'none'; }
-  });
-  document.getElementById('mtSuggestBtn').addEventListener('click', ()=>{
-    const chip = document.getElementById('mtSuggestBtn');
-    document.getElementById('mtTitle').value = chip.dataset.title || '';
-    if(chip.dataset.artist) document.getElementById('mtArtist').value = chip.dataset.artist;
-  });
-  document.getElementById('mtCoverFile').addEventListener('change', (e)=>{
-    pickedCover = e.target.files[0] || null;
-    document.getElementById('mtCoverName').textContent = pickedCover ? pickedCover.name : 'Opcional';
-  });
-
   function cloudinaryUpload(file, resourceType, onProgress){
     return new Promise((resolve, reject)=>{
       const xhr = new XMLHttpRequest();
@@ -772,45 +746,146 @@
     });
   }
 
-  document.getElementById('mtSave').addEventListener('click', async ()=>{
-    if(!window.fb || !myRole) return;
-    const title = document.getElementById('mtTitle').value.trim();
-    if(!title || !pickedAudio) return;
-    const bar = document.getElementById('mtBar'), fill = document.getElementById('mtBarFill');
-    const status = document.getElementById('mtStatus'), saveBtn = document.getElementById('mtSave');
-    saveBtn.disabled = true; bar.classList.add('show');
-    try{
-      status.textContent = 'Subiendo canción…';
-      const audioUrl = await cloudinaryUpload(pickedAudio, 'video', p=>{ fill.style.width = (p*70)+'%'; });
-      let coverUrl = '';
-      if(pickedCover){
-        status.textContent = 'Subiendo portada…';
-        coverUrl = await cloudinaryUpload(pickedCover, 'image', p=>{ fill.style.width = (70 + p*30)+'%'; });
-      } else { fill.style.width = '100%'; }
-      const { db, collection, addDoc } = window.fb;
-      await addDoc(collection(db,'mySongs'), {
-        owner: myRole, title, artist: document.getElementById('mtArtist').value.trim(),
-        audio: audioUrl, cover: coverUrl,
-        grad: GRADS[Math.floor(Math.random()*GRADS.length)], liked:false, ts: Date.now()
-      });
-      status.textContent = '✓ Canción agregada';
-      ['mtTitle','mtArtist'].forEach(id=>document.getElementById(id).value='');
-      pickedAudio = null; pickedCover = null;
-      document.getElementById('mtAudioName').textContent = 'Sin archivo';
-      document.getElementById('mtCoverName').textContent = 'Opcional';
-      document.getElementById('mtSuggestBtn').style.display = 'none';
-      setTimeout(()=>{
-        document.getElementById('addSongForm').style.display = 'none';
-        document.getElementById('toggleAddSong').textContent = '+';
-        bar.classList.remove('show'); fill.style.width = '0%'; status.textContent = '';
-      }, 900);
-    }catch(err){
-      status.textContent = 'No se pudo subir: ' + err;
-      bar.classList.remove('show'); fill.style.width = '0%';
-    }finally{
-      saveBtn.disabled = false;
+  function setupAdder(mountId, collName, isShared){
+    const mount = document.getElementById(mountId);
+    mount.innerHTML = `
+      <button class="add-fab" type="button" aria-label="Agregar canción">+</button>
+      <div class="add-photo-form" style="display:none;">
+        <input class="f-title" placeholder="Título">
+        <input class="f-artist" placeholder="Artista">
+        <div class="file-row">
+          <button type="button" class="pick-btn b-audio">Elegir mp3</button>
+          <span class="pick-name n-audio">Sin archivo</span>
+        </div>
+        <button type="button" class="suggest-chip"></button>
+        <div class="file-row">
+          <button type="button" class="pick-btn b-cover">Elegir portada</button>
+          <span class="pick-name n-cover">Opcional</span>
+        </div>
+        <button type="button" class="suggest-chip b-search" style="display:inline-block;">🔍 Buscar portada en internet</button>
+        <div class="cover-results"></div>
+        <input type="file" class="i-audio" accept="audio/*" hidden>
+        <input type="file" class="i-cover" accept="image/*" hidden>
+        <div class="upload-bar"><span></span></div>
+        <div class="mt-status"></div>
+        <button class="save-btn" type="button" style="align-self:flex-start;">Guardar canción</button>
+      </div>`;
+    const q = sel => mount.querySelector(sel);
+    const fab = q('.add-fab'), form = q('.add-photo-form'), chip = q('.suggest-chip');
+    const bar = q('.upload-bar'), fill = q('.upload-bar span'), status = q('.mt-status'), saveBtn = q('.save-btn');
+    let pickedAudio = null, pickedCover = null, webCover = '';
+    const results = q('.cover-results');
+
+    function itunesSearch(term){
+      const url = 'https://itunes.apple.com/search?media=music&entity=song&limit=8&term=' + encodeURIComponent(term);
+      return fetch(url).then(r=>r.json()).catch(()=>new Promise((resolve,reject)=>{
+        const cb = 'itcb' + Date.now();
+        const sc = document.createElement('script');
+        window[cb] = d=>{ delete window[cb]; sc.remove(); resolve(d); };
+        sc.onerror = ()=>{ sc.remove(); reject(); };
+        sc.src = url + '&callback=' + cb;
+        document.head.appendChild(sc);
+      }));
     }
-  });
+    q('.b-search').addEventListener('click', async ()=>{
+      const term = (q('.f-artist').value + ' ' + q('.f-title').value).trim();
+      results.classList.add('show');
+      if(!term){ results.innerHTML = '<div class="cr-msg">Escribe primero el título</div>'; return; }
+      results.innerHTML = '<div class="cr-msg">Buscando…</div>';
+      try{
+        const data = await itunesSearch(term);
+        const seen = new Set(), arts = [];
+        (data.results||[]).forEach(r=>{
+          if(!r.artworkUrl100) return;
+          const big = r.artworkUrl100.replace('100x100bb','600x600bb');
+          if(!seen.has(big)){ seen.add(big); arts.push(big); }
+        });
+        if(!arts.length){ results.innerHTML = '<div class="cr-msg">No encontré portadas; prueba con otro título o sube tu imagen</div>'; return; }
+        results.innerHTML = '';
+        arts.forEach(u=>{
+          const img = document.createElement('img');
+          img.src = u.replace('600x600bb','200x200bb'); img.alt = '';
+          img.addEventListener('click', ()=>{
+            results.querySelectorAll('img').forEach(x=>x.classList.remove('sel'));
+            img.classList.add('sel');
+            webCover = u; pickedCover = null;
+            q('.n-cover').textContent = 'Portada de internet ✓';
+          });
+          results.appendChild(img);
+        });
+      }catch(e){ results.innerHTML = '<div class="cr-msg">No se pudo buscar ahora</div>'; }
+    });
+
+    fab.addEventListener('click', ()=>{
+      const opening = form.style.display==='none';
+      form.style.display = opening ? 'flex' : 'none';
+      fab.textContent = opening ? '×' : '+';
+    });
+    q('.b-audio').addEventListener('click', ()=>q('.i-audio').click());
+    q('.b-cover').addEventListener('click', ()=>q('.i-cover').click());
+    q('.i-audio').addEventListener('change', (e)=>{
+      pickedAudio = e.target.files[0] || null;
+      q('.n-audio').textContent = pickedAudio ? pickedAudio.name : 'Sin archivo';
+      if(pickedAudio){
+        const { artist, title } = parseSongFilename(pickedAudio.name);
+        chip.dataset.title = title; chip.dataset.artist = artist;
+        chip.textContent = artist ? `✨ Usar "${artist} – ${title}"` : `✨ Usar "${title}"`;
+        chip.style.display = 'inline-block';
+      } else { chip.style.display = 'none'; }
+    });
+    chip.addEventListener('click', ()=>{
+      q('.f-title').value = chip.dataset.title || '';
+      if(chip.dataset.artist) q('.f-artist').value = chip.dataset.artist;
+    });
+    q('.i-cover').addEventListener('change', (e)=>{
+      pickedCover = e.target.files[0] || null;
+      if(pickedCover){ webCover = ''; results.querySelectorAll('img').forEach(x=>x.classList.remove('sel')); }
+      q('.n-cover').textContent = pickedCover ? pickedCover.name : 'Opcional';
+    });
+
+    saveBtn.addEventListener('click', async ()=>{
+      if(!window.fb || !myRole) return;
+      const title = q('.f-title').value.trim();
+      if(!title || !pickedAudio) return;
+      saveBtn.disabled = true; bar.classList.add('show');
+      try{
+        status.textContent = 'Subiendo canción…';
+        const audioUrl = await cloudinaryUpload(pickedAudio, 'video', p=>{ fill.style.width = (p*70)+'%'; });
+        let coverUrl = '';
+        if(pickedCover){
+          status.textContent = 'Subiendo portada…';
+          coverUrl = await cloudinaryUpload(pickedCover, 'image', p=>{ fill.style.width = (70 + p*30)+'%'; });
+        } else { coverUrl = webCover; fill.style.width = '100%'; }
+        const { db, collection, addDoc } = window.fb;
+        const data = {
+          title, artist: q('.f-artist').value.trim(),
+          audio: audioUrl, cover: coverUrl,
+          grad: GRADS[Math.floor(Math.random()*GRADS.length)], liked:false, ts: Date.now()
+        };
+        if(isShared) Object.assign(data, { addedBy: myRole, phrase:'', meaning:'', note:'', herNote:'' });
+        else data.owner = myRole;
+        await addDoc(collection(db, collName), data);
+        status.textContent = '✓ Canción agregada';
+        q('.f-title').value = ''; q('.f-artist').value = '';
+        pickedAudio = null; pickedCover = null; webCover = '';
+        results.innerHTML = ''; results.classList.remove('show');
+        q('.n-audio').textContent = 'Sin archivo';
+        q('.n-cover').textContent = 'Opcional';
+        chip.style.display = 'none';
+        setTimeout(()=>{
+          form.style.display = 'none'; fab.textContent = '+';
+          bar.classList.remove('show'); fill.style.width = '0%'; status.textContent = '';
+        }, 900);
+      }catch(err){
+        status.textContent = 'No se pudo subir: ' + err;
+        bar.classList.remove('show'); fill.style.width = '0%';
+      }finally{
+        saveBtn.disabled = false;
+      }
+    });
+  }
+  setupAdder('adder-ours', 'ourSongs', true);
+  setupAdder('adder-mine', 'mySongs', false);
 
   function setPlayIcons(playing){
     const shape = playing
@@ -882,7 +957,7 @@
     document.getElementById('sheetTimeCur').textContent = fmtTime(audio.currentTime);
     document.getElementById('sheetTimeDur').textContent = fmtTime(audio.duration || 0);
     setPlayIcons(!audio.paused);
-    document.getElementById('herNoteInput').value = songs[i].herNote || '';
+    document.getElementById('herNoteInput').value = playlist[i].herNote || '';
     sheet.classList.add('open');
     if(!sheetIsOpen){
       sheetIsOpen = true;
