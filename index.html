@@ -830,8 +830,8 @@
     title = (title||'').trim(); artist = (artist||'').trim();
     const terms = [];
     if(title && artist) terms.push([`${artist} ${title}`,'MX'], [`${artist} ${title}`,'US']);
+    if(artist) terms.push([artist,'MX'], [artist,'US']);
     if(title) terms.push([title,'MX'], [title,'US']);
-    if(artist) terms.push([artist,'MX']);
     const lists = await Promise.all(terms.map(([t,c])=>itunesSearch(t,c).then(d=>d.results||[]).catch(()=>[])));
     const seen = new Set(), arts = [];
     lists.forEach(list=>list.forEach(r=>{
@@ -839,7 +839,7 @@
       const big = r.artworkUrl100.replace('100x100bb','600x600bb');
       if(!seen.has(big)){ seen.add(big); arts.push(big); }
     }));
-    return arts.slice(0, 16);
+    return arts.slice(0, 20);
   }
 
   function setupAdder(mountId, collName, isShared){
