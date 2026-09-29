@@ -324,6 +324,7 @@
   .edit-actions .cancel-btn{background:var(--surface-2);color:var(--text);border:none;border-radius:999px;padding:10px 20px;font-weight:600;font-size:13px;cursor:pointer;font-family:var(--font);}
   .edit-actions .save-btn{padding:10px 22px;font-size:13px;}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <script type="module">
   // Firebase conectado directo por CDN (sin npm, funciona tal cual en GitHub Pages)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -794,6 +795,33 @@
     }
     return { artist: '', title: base };
   }
+  // Lee las etiquetas del archivo de audio: título, artista y portada incrustada
+  function readTags(file){
+    return new Promise(resolve=>{
+      if(!window.jsmediatags){ resolve({}); return; }
+      try{
+        window.jsmediatags.read(file, {
+          onSuccess: (tag)=>{
+            const t = tag.tags || {};
+            let cover = null;
+            if(t.picture && t.picture.data){
+              const type = t.picture.format || 'image/jpeg';
+              cover = new File([new Uint8Array(t.picture.data)], 'portada.' + (type.includes('png') ? 'png' : 'jpg'), { type });
+            }
+            resolve({ title: (t.title||'').trim(), artist: (t.artist||'').trim(), cover });
+          },
+          onError: ()=>resolve({})
+        });
+      }catch(e){ resolve({}); }
+    });
+  }
+  function showCoverPreview(container, file){
+    container.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file); img.className = 'sel'; img.alt = '';
+    container.appendChild(img);
+    container.classList.add('show');
+  }
   function cloudinaryUpload(file, resourceType, onProgress){
     return new Promise((resolve, reject)=>{
       const xhr = new XMLHttpRequest();
@@ -910,6 +938,20 @@
         chip.dataset.title = title; chip.dataset.artist = artist;
         chip.textContent = artist ? `✨ Usar "${artist} – ${title}"` : `✨ Usar "${title}"`;
         chip.style.display = 'inline-block';
+        const f = pickedAudio;
+        readTags(f).then(t=>{
+          if(pickedAudio!==f) return;
+          if(t.title){
+            chip.dataset.title = t.title; chip.dataset.artist = t.artist || '';
+            chip.textContent = t.artist ? `✨ Usar "${t.artist} – ${t.title}"` : `✨ Usar "${t.title}"`;
+            if(!q('.f-title').value.trim()){ q('.f-title').value = t.title; if(t.artist && !q('.f-artist').value.trim()) q('.f-artist').value = t.artist; }
+          }
+          if(t.cover && !pickedCover && !webCover){
+            pickedCover = t.cover;
+            q('.n-cover').textContent = 'Portada del archivo ✓';
+            showCoverPreview(results, t.cover);
+          }
+        });
       } else { chip.style.display = 'none'; }
     });
     chip.addEventListener('click', ()=>{
@@ -1125,6 +1167,19 @@
       chip.dataset.title = title; chip.dataset.artist = artist;
       chip.textContent = artist ? `✨ Usar "${artist} – ${title}"` : `✨ Usar "${title}"`;
       chip.style.display = 'inline-block';
+      const f = editAudio;
+      readTags(f).then(t=>{
+        if(editAudio!==f) return;
+        if(t.title){
+          chip.dataset.title = t.title; chip.dataset.artist = t.artist || '';
+          chip.textContent = t.artist ? `✨ Usar "${t.artist} – ${t.title}"` : `✨ Usar "${t.title}"`;
+        }
+        if(t.cover && !editFile && !editWebCover){
+          editFile = t.cover;
+          eF('eCoverName').textContent = 'Portada del archivo ✓';
+          showCoverPreview(eF('eResults'), t.cover);
+        }
+      });
     } else { chip.style.display = 'none'; }
   });
   eF('eChip').addEventListener('click', ()=>{
