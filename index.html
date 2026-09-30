@@ -1216,6 +1216,50 @@
     if(sheetIsOpen) history.back(); // dispara popstate, que cierra la ficha (no sale de la página)
   });
 
+  // ----- Borrado en Cloudinary vía Worker de Cloudflare (la clave secreta vive solo en el Worker) -----
+  const DELETE_WORKER = 'https://borrar-cloudinary.axelsaha040628.workers.dev';
+  function cloudinaryRef(url){
+    try{
+      const u = new URL(url);
+      if(u.hostname !== 'res.cloudinary.com') return null;
+      const m = u.pathname.match(/^\/([^/]+)\/(video|image)\/upload\/(?:v\d+\/)?(.+)$/);
+      if(!m || m[1] !== CLOUD_NAME) return null;
+      return { resource_type: m[2], public_id: decodeURIComponent(m[3]).replace(/\.[^./]+$/, '') };
+    }catch(e){ return null; }
+  }
+  function getDeleteToken(){
+    let t = '';
+    try{ t = localStorage.getItem('delToken') || ''; }catch(e){}
+    if(!t){
+      t = (prompt('Contraseña de borrado (el APP_TOKEN que guardaste en Cloudflare). Se pide solo esta vez en este dispositivo:') || '').trim();
+      if(t){ try{ localStorage.setItem('delToken', t); }catch(e){} }
+    }
+    return t;
+  }
+  async function cloudinaryCleanup(urls){
+    const items = urls.map(cloudinaryRef).filter(Boolean);
+    if(!items.length) return; // portadas de iTunes o archivos de GitHub: no hay nada que borrar
+    const token = getDeleteToken();
+    if(!token){ alert('Se eliminó la canción, pero no se borraron sus archivos de Cloudinary (falta la contraseña).'); return; }
+    try{
+      const r = await fetch(DELETE_WORKER, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, items })
+      });
+      if(r.status === 401){
+        try{ localStorage.removeItem('delToken'); }catch(e){}
+        alert('Contraseña de borrado incorrecta. Se eliminó la canción pero no sus archivos de Cloudinary; la próxima vez te la vuelvo a pedir.');
+        return;
+      }
+      const j = await r.json();
+      if(!r.ok || !j.results) throw new Error((j && j.error) || 'respuesta inválida');
+      const bad = j.results.filter(x=>x.result!=='ok' && x.result!=='not found');
+      if(bad.length) alert('Algunos archivos no se borraron de Cloudinary: ' + bad.map(x=>x.result).join(', '));
+    }catch(err){
+      alert('Se eliminó la canción, pero no se pudieron borrar sus archivos de Cloudinary: ' + err.message);
+    }
+  }
+
   // ----- Menú ⋮ de la portada: editar / eliminar -----
   const coverMenu = document.getElementById('coverMenu');
   document.getElementById('coverMenuBtn').addEventListener('click', (e)=>{ e.stopPropagation(); coverMenu.classList.toggle('show'); });
@@ -1240,7 +1284,8 @@
       try{
         if(arr!==mySongs && !s._col) await updateDoc(doc(db,'songs',s.id), { deleted:true });
         else await deleteDoc(doc(db, colOf(arr,s), s.id));
-      }catch(err){ alert('No se pudo eliminar en la nube: ' + err); }
+      }catch(err){ alert('No se pudo eliminar en la nube: ' + err); return; }
+      cloudinaryCleanup([s.audio, s.cover]);
     }
   });
 
@@ -1323,6 +1368,7 @@
     if(!title || !editTarget) return;
     const btn = eF('eSave'); btn.disabled = true;
     try{
+      const oldAudio = editTarget.audio, oldCover = editTarget.cover;
       const data = { title, artist: eF('eArtist').value.trim() };
       if(editArr===songs){ data.phrase = eF('ePhrase').value; data.meaning = eF('eMeaning').value; data.note = eF('eNote').value; }
       if(editAudio){
@@ -1338,6 +1384,10 @@
         const { db, doc, updateDoc } = window.fb;
         await updateDoc(doc(db, colOf(editArr, editTarget), editTarget.id), data);
       }
+      const replaced = [];
+      if(data.audio && oldAudio && oldAudio!==data.audio) replaced.push(oldAudio);
+      if(data.cover && oldCover && oldCover!==data.cover) replaced.push(oldCover);
+      if(replaced.length) cloudinaryCleanup(replaced);
       renderTracks();
       if(currentIndex!==null && playlist[currentIndex]===editTarget){
         refreshNowPlayingUI();
