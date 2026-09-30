@@ -375,6 +375,97 @@
   .t-btn:disabled{opacity:.5;}
   .t-empty{text-align:center;color:var(--text-dim);font-size:13px;padding:22px 0;}
   .t-note{font-size:12px;color:var(--text-dim);line-height:1.5;}
+  /* ===== Administración (vista propia), papelera, avisos y diálogos ===== */
+  .edit-modal,.batch-modal{z-index:80;}
+  .p-admin-btn{display:flex;align-items:center;gap:12px;background:var(--surface-2);border:1px solid var(--divider);border-radius:14px;padding:13px 14px;}
+  .p-admin-btn .pa-ico{flex:none;width:34px;height:34px;border-radius:10px;background:rgba(30,215,96,.14);color:var(--green);display:flex;align-items:center;justify-content:center;}
+  .p-admin-btn .pa-ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+  .p-admin-btn .pa-tx{flex:1;}
+  .p-admin-btn .pa-badge{display:none;min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:rgba(255,107,107,.16);color:#ff8a8a;font-size:11.5px;font-weight:700;align-items:center;justify-content:center;}
+  .p-admin-btn .pa-badge.show{display:inline-flex;}
+  .p-admin-btn .pa-chev{flex:none;width:18px;height:18px;fill:none;stroke:var(--text-dim);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+  .adm-view{position:fixed;inset:0;z-index:70;background:var(--bg);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;transform:translateX(100%);visibility:hidden;transition:transform .32s cubic-bezier(.32,.72,0,1),visibility .32s;}
+  .adm-view.open{transform:none;visibility:visible;}
+  #trashView{z-index:71;}
+  .adm-wrap{max-width:480px;margin:0 auto;min-height:100%;padding:0 18px calc(34px + env(safe-area-inset-bottom,0px));}
+  .adm-top{position:relative;margin:0 -18px 20px;padding:calc(14px + env(safe-area-inset-top,0px)) 20px 24px;background:radial-gradient(120% 160% at 30% -10%,#3a1030 0%,#1a0a17 45%,var(--bg) 85%);overflow:hidden;}
+  .adm-top::after{content:'';position:absolute;inset:0;background:radial-gradient(60% 50% at 85% 0%,rgba(30,215,96,.18),transparent 70%);pointer-events:none;}
+  .adm-top > *{position:relative;z-index:1;}
+  .adm-back{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.28);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+  .adm-back:active{transform:scale(.92);}
+  .adm-back svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+  .adm-eyebrow{margin-top:20px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:700;}
+  .adm-title{font-size:30px;font-weight:800;letter-spacing:-.5px;margin:4px 0 6px;}
+  .adm-sub{font-size:13px;color:var(--text-dim);line-height:1.5;}
+  .adm-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px;}
+  .adm-stat{background:var(--surface);border:1px solid var(--divider);border-radius:14px;padding:13px 6px;text-align:center;}
+  .adm-stat b{display:block;font-size:22px;font-weight:800;}
+  .adm-stat span{font-size:11px;color:var(--text-dim);}
+  .adm-sec{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);font-weight:600;margin:0 4px 10px;}
+  .adm-card{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--divider);border-radius:16px;padding:14px;margin-bottom:10px;color:var(--text);font-family:var(--font);cursor:pointer;}
+  .adm-card:active{background:var(--surface-hover);}
+  .adm-ico{flex:none;width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(30,215,96,.12);color:var(--green);}
+  .adm-ico.red{background:rgba(255,107,107,.12);color:#ff6b6b;}
+  .adm-ico svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+  .adm-txt{flex:1;min-width:0;}
+  .adm-txt b{display:block;font-size:15px;font-weight:600;}
+  .adm-txt span{display:block;font-size:12px;color:var(--text-dim);margin-top:2px;line-height:1.4;}
+  .adm-badge{flex:none;min-width:24px;height:24px;padding:0 8px;border-radius:999px;background:rgba(255,107,107,.16);color:#ff8a8a;font-size:12px;font-weight:700;display:none;align-items:center;justify-content:center;}
+  .adm-badge.show{display:inline-flex;}
+  .adm-chev{flex:none;width:18px;height:18px;fill:none;stroke:var(--text-dim);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+  .tr-note{display:flex;gap:10px;align-items:flex-start;background:rgba(30,215,96,.07);border:1px solid rgba(30,215,96,.22);border-radius:14px;padding:12px 14px;margin-bottom:16px;font-size:12px;line-height:1.55;color:var(--text-dim);}
+  .tr-note svg{flex:none;width:18px;height:18px;margin-top:1px;fill:none;stroke:var(--green);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .tr-row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--divider);border-radius:14px;padding:10px;margin-bottom:8px;}
+  .tr-thumb{flex:none;width:52px;height:52px;border-radius:10px;background:var(--surface-2);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:20px;}
+  .tr-thumb img{width:100%;height:100%;object-fit:cover;}
+  .tr-info{flex:1;min-width:0;}
+  .tr-title{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tr-sub{font-size:12px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+  .tr-meta{font-size:11px;color:var(--green-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px;}
+  .tr-acts{flex:none;display:flex;gap:8px;}
+  .ic-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--divider);background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;color:var(--green);}
+  .ic-btn.danger{color:#ff6b6b;}
+  .ic-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .ic-btn:active{transform:scale(.9);}
+  .ic-btn:disabled{opacity:.4;pointer-events:none;}
+  .tr-empty{text-align:center;padding:54px 24px;color:var(--text-dim);font-size:13px;line-height:1.6;}
+  .tr-empty b{display:block;color:var(--text);font-size:15px;margin:12px 0 4px;}
+  .tr-empty-ico{width:58px;height:58px;border-radius:50%;margin:0 auto;background:var(--surface);border:1px solid var(--divider);display:flex;align-items:center;justify-content:center;color:var(--text-dim);}
+  .tr-empty-ico svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+
+  #toastBox{position:fixed;left:0;right:0;top:calc(12px + env(safe-area-inset-top,0px));z-index:120;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;padding:0 14px;}
+  .toast{pointer-events:auto;width:100%;max-width:440px;display:flex;align-items:center;gap:12px;background:#1f1f1f;color:#fff;border:1px solid rgba(255,255,255,.08);border-left:4px solid var(--tc);border-radius:14px;padding:12px 14px;box-shadow:0 12px 32px rgba(0,0,0,.55);transform:translateY(-18px);opacity:0;transition:transform .3s cubic-bezier(.32,.72,0,1),opacity .3s;}
+  .toast.in{transform:none;opacity:1;}
+  .toast.ok{--tc:#1ed760;--tb:rgba(30,215,96,.16);}
+  .toast.warn{--tc:#ffb454;--tb:rgba(255,180,84,.16);}
+  .toast.err{--tc:#ff6b6b;--tb:rgba(255,107,107,.16);}
+  .toast.info{--tc:#a7a7a7;--tb:rgba(255,255,255,.1);}
+  .toast .ti{flex:none;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--tb);color:var(--tc);}
+  .toast .ti svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+  .toast .tx{flex:1;min-width:0;}
+  .toast .tt{font-size:13.5px;font-weight:700;}
+  .toast .tm{font-size:12px;color:#b3b3b3;line-height:1.45;margin-top:2px;}
+  .toast .ta{flex:none;background:none;border:none;color:var(--tc);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;padding:8px 4px;}
+
+  .dlg-back{position:fixed;inset:0;z-index:110;background:rgba(0,0,0,.66);display:none;align-items:center;justify-content:center;padding:22px;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);}
+  .dlg-back.show{display:flex;}
+  .dlg{width:100%;max-width:340px;background:#1c1c1c;color:#fff;border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:24px 20px 18px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.6);animation:dlgIn .22s ease;}
+  @keyframes dlgIn{from{opacity:0;transform:translateY(10px) scale(.97);}to{opacity:1;transform:none;}}
+  .dlg-ico{width:54px;height:54px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;}
+  .dlg-ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .dlg-ico.danger{background:rgba(255,107,107,.14);color:#ff6b6b;}
+  .dlg-ico.ok{background:rgba(30,215,96,.14);color:var(--green);}
+  .dlg-ico.warn{background:rgba(255,180,84,.14);color:#ffb454;}
+  .dlg h4{margin:14px 0 6px;font-size:17px;font-weight:700;}
+  .dlg p{margin:0;font-size:13px;color:#b3b3b3;line-height:1.55;}
+  .dlg input{width:100%;margin-top:14px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:11px 14px;font-family:var(--font);font-size:14px;}
+  .dlg-acts{display:flex;gap:10px;margin-top:20px;}
+  .dlg-acts button{flex:1;border:none;border-radius:999px;padding:11px 12px;font-family:var(--font);font-size:13.5px;font-weight:700;cursor:pointer;}
+  .dlg-no{background:#2a2a2a;color:#fff;}
+  .dlg-yes{background:var(--green);color:#0a0a0a;}
+  .dlg-yes.danger{background:#ff6b6b;color:#1a0a0a;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <script type="module">
@@ -642,16 +733,47 @@
     </div>
   </div>
 </div>
-<div class="batch-modal" id="trashModal">
-  <div class="batch-card">
-    <h3>🗑️ Papelera</h3>
-    <div class="t-note">Las canciones eliminadas están aquí. Restaurar las devuelve a la lista. Eliminar definitivamente borra también el mp3 y la portada de Cloudinary y pide la contraseña de borrado.</div>
-    <div class="b-list" id="tList"></div>
-    <div class="edit-actions">
-      <button class="cancel-btn" id="tClose" type="button">Cerrar</button>
+<div class="adm-view" id="admView" aria-hidden="true">
+  <div class="adm-wrap">
+    <div class="adm-top">
+      <button class="adm-back" id="admBack" type="button" aria-label="Volver"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="adm-eyebrow">Panel</div>
+      <div class="adm-title">Administración</div>
+      <div class="adm-sub">Gestiona el contenido de vuestra playlist con calma y orden.</div>
     </div>
+    <div class="adm-stats">
+      <div class="adm-stat"><b id="stOurs">0</b><span>Nuestras</span></div>
+      <div class="adm-stat"><b id="stMine">0</b><span>Mías</span></div>
+      <div class="adm-stat"><b id="stTrash">0</b><span>En papelera</span></div>
+    </div>
+    <div class="adm-sec">Herramientas</div>
+    <button class="adm-card" id="admBatch" type="button">
+      <span class="adm-ico"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+      <span class="adm-txt"><b>Subir por lote</b><span>Agrega varias canciones a la vez con su portada.</span></span>
+      <svg class="adm-chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+    </button>
+    <button class="adm-card" id="admTrash" type="button">
+      <span class="adm-ico red"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></span>
+      <span class="adm-txt"><b>Papelera</b><span>Restaura o elimina definitivamente las canciones borradas.</span></span>
+      <span class="adm-badge" id="admTrashN"></span>
+      <svg class="adm-chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+    </button>
   </div>
 </div>
+<div class="adm-view" id="trashView" aria-hidden="true">
+  <div class="adm-wrap">
+    <div class="adm-top">
+      <button class="adm-back" id="trBack" type="button" aria-label="Volver"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="adm-eyebrow">Administración</div>
+      <div class="adm-title">Papelera</div>
+      <div class="adm-sub" id="trSub">No hay elementos eliminados</div>
+    </div>
+    <div class="tr-note"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span>Restaurar devuelve la canción a la lista. Eliminar definitivamente borra también su audio y su portada, y no se puede deshacer.</span></div>
+    <div id="trList"></div>
+  </div>
+</div>
+<div id="toastBox" aria-live="polite"></div>
+<div class="dlg-back" id="dlgBack"><div class="dlg" id="dlg" role="dialog" aria-modal="true"></div></div>
 <div class="psheet" id="psheet">
   <div class="p-handle"></div>
   <div class="p-avatar-wrap">
@@ -665,8 +787,7 @@
   <label class="p-label">Fecha de nacimiento</label>
   <div class="p-static" id="pBirth"></div>
   <div class="p-actions"><button class="save-btn" id="pSave">Guardar nombre</button><span class="p-status" id="pStatus"></span></div>
-  <button class="p-admin-btn" id="pAdmin" type="button">⚙️ Administrador</button>
-  <div class="p-admin-sub" id="pAdminSub"><button type="button" id="pBatch">📥 Subir por lote</button><button type="button" id="pTrash">🗑️ Papelera <span id="pTrashN"></span></button></div>
+  <button class="p-admin-btn" id="pAdmin" type="button"><span class="pa-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="pa-tx">Administrador</span><span class="pa-badge" id="pAdmBadge"></span><svg class="pa-chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></button>
   <button class="logout-btn" id="pLogout">Cerrar sesión</button>
 </div>
 
@@ -684,6 +805,68 @@
     document.getElementById('clockValue').textContent = `${days}d ${hours}h ${mins}m ${secs}s`;
   }
   updateClock(); setInterval(updateClock,1000);
+
+  // ----- Avisos y diálogos con el estilo de la página -----
+  const UI_ICO = {
+    ok:'<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>',
+    warn:'<svg viewBox="0 0 24 24"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    err:'<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    info:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+    trash:'<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>',
+    key:'<svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>'
+  };
+  function toast(title, msg, type, opts){
+    opts = opts || {}; type = type || 'info';
+    const box = document.getElementById('toastBox');
+    const el = document.createElement('div'); el.className = 'toast ' + type;
+    const ic = document.createElement('div'); ic.className = 'ti'; ic.innerHTML = UI_ICO[type] || UI_ICO.info;
+    const tx = document.createElement('div'); tx.className = 'tx';
+    const tt = document.createElement('div'); tt.className = 'tt'; tt.textContent = title; tx.appendChild(tt);
+    if(msg){ const tm = document.createElement('div'); tm.className = 'tm'; tm.textContent = msg; tx.appendChild(tm); }
+    el.appendChild(ic); el.appendChild(tx);
+    let timer = null;
+    const close = ()=>{ clearTimeout(timer); el.classList.remove('in'); setTimeout(()=>el.remove(), 320); };
+    if(opts.action){
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'ta'; b.textContent = opts.action.label;
+      b.addEventListener('click', ()=>{ close(); opts.action.run(); });
+      el.appendChild(b);
+    }
+    el.addEventListener('click', (e)=>{ if(e.target===el || e.target.closest('.tx')) close(); });
+    box.appendChild(el);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('in')));
+    timer = setTimeout(close, opts.ms || (opts.action ? 7000 : 4500));
+    while(box.children.length > 3) box.firstElementChild.remove();
+    return close;
+  }
+  let dlgCur = null;
+  function uiDialog(o){
+    if(dlgCur) dlgCur(null);
+    return new Promise(resolve=>{
+      const back = document.getElementById('dlgBack'), box = document.getElementById('dlg');
+      const mk = (tag, cls)=>{ const e = document.createElement(tag); if(cls) e.className = cls; return e; };
+      box.innerHTML = '';
+      const tone = o.tone || 'ok';
+      const ico = mk('div', 'dlg-ico ' + tone); ico.innerHTML = UI_ICO[o.icon || (tone==='danger' ? 'trash' : tone)] || UI_ICO.info;
+      const h = mk('h4'); h.textContent = o.title;
+      const p = mk('p'); p.textContent = o.message || '';
+      box.appendChild(ico); box.appendChild(h); box.appendChild(p);
+      let inp = null;
+      if(o.input){ inp = mk('input'); inp.type = 'password'; inp.placeholder = o.input; inp.autocomplete = 'off'; box.appendChild(inp); }
+      const acts = mk('div', 'dlg-acts');
+      const no = mk('button', 'dlg-no'); no.type = 'button'; no.textContent = o.cancelText || 'Cancelar';
+      const yes = mk('button', 'dlg-yes' + (tone==='danger' ? ' danger' : '')); yes.type = 'button'; yes.textContent = o.confirmText || 'Aceptar';
+      acts.appendChild(no); acts.appendChild(yes); box.appendChild(acts);
+      const onKey = (e)=>{ if(e.key==='Escape') done(inp ? null : false); else if(e.key==='Enter' && inp) done(inp.value); };
+      const done = (v)=>{ back.classList.remove('show'); dlgCur = null; document.removeEventListener('keydown', onKey); resolve(v); };
+      dlgCur = done;
+      no.addEventListener('click', ()=>done(inp ? null : false));
+      yes.addEventListener('click', ()=>done(inp ? inp.value : true));
+      back.onclick = (e)=>{ if(e.target===back) done(inp ? null : false); };
+      document.addEventListener('keydown', onKey);
+      back.classList.add('show');
+      if(inp) setTimeout(()=>inp.focus(), 60);
+    });
+  }
 
   // ----- Canciones (reemplaza frase/significado/nota/audio por lo real, o edítalo desde admin.html) -----
   const songs = [
@@ -1228,6 +1411,7 @@
     sheetIsOpen = false;
   }
   window.addEventListener('popstate', ()=>{
+    if(admPop()) return;
     if(profileOpen) closeProfileVisual();
     else if(sheetIsOpen) closeSheetVisual();
   });
@@ -1255,11 +1439,11 @@
       return { resource_type: m[2], public_id: decodeURIComponent(m[3]).replace(/\.[^./]+$/, '') };
     }catch(e){ return null; }
   }
-  function getDeleteToken(){
+  async function getDeleteToken(){
     let t = '';
     try{ t = localStorage.getItem('delToken') || ''; }catch(e){}
     if(!t){
-      t = (prompt('Contraseña de borrado (el APP_TOKEN que guardaste en Cloudflare). Se pide solo esta vez en este dispositivo:') || '').trim();
+      t = ((await uiDialog({ tone:'warn', icon:'key', title:'Contraseña de borrado', message:'Introduce el APP_TOKEN configurado en Cloudflare. Solo se solicitará una vez en este dispositivo.', input:'Contraseña', confirmText:'Continuar', cancelText:'Cancelar' })) || '').trim();
       if(t){ try{ localStorage.setItem('delToken', t); }catch(e){} }
     }
     return t;
@@ -1272,8 +1456,8 @@
     if(!items.length) return true; // portadas de iTunes o archivos de GitHub: no hay nada que borrar
     let token = '';
     if(silent){ try{ token = localStorage.getItem('delToken') || ''; }catch(e){} }
-    else token = getDeleteToken();
-    if(!token){ if(!silent) alert('No se borró nada de Cloudinary porque falta la contraseña.'); return false; }
+    else token = await getDeleteToken();
+    if(!token){ if(!silent) toast('Contraseña requerida', 'No se eliminó ningún archivo del almacenamiento porque no se ingresó la contraseña de borrado.', 'warn'); return false; }
     try{
       const r = await fetch(DELETE_WORKER, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1281,16 +1465,16 @@
       });
       if(r.status === 401){
         try{ localStorage.removeItem('delToken'); }catch(e){}
-        if(!silent) alert('Contraseña de borrado incorrecta. No se borró nada; la próxima vez te la vuelvo a pedir.');
+        if(!silent) toast('Contraseña incorrecta', 'No se eliminó ningún archivo. La contraseña se solicitará de nuevo la próxima vez.', 'err');
         return false;
       }
       const j = await r.json();
       if(!r.ok || !j.results) throw new Error((j && j.error) || 'respuesta inválida');
       const bad = j.results.filter(x=>x.result!=='ok' && x.result!=='not found');
-      if(bad.length){ if(!silent) alert('Algunos archivos no se borraron de Cloudinary: ' + bad.map(x=>x.result).join(', ')); return false; }
+      if(bad.length){ if(!silent) toast('Eliminación incompleta', 'Algunos archivos no pudieron eliminarse del almacenamiento: ' + bad.map(x=>x.result).join(', ') + '.', 'err'); return false; }
       return true;
     }catch(err){
-      if(!silent) alert('No se pudieron borrar los archivos de Cloudinary: ' + err.message);
+      if(!silent) toast('No se pudo completar la eliminación', 'Los archivos no pudieron eliminarse del almacenamiento (' + err.message + ').', 'err');
       return false;
     }
   }
@@ -1304,7 +1488,8 @@
     coverMenu.classList.remove('show');
     if(currentIndex===null) return;
     const arr = playlist, s = arr[currentIndex];
-    if(!confirm(`¿Mover "${s.title}" a la papelera?\n\nPodrás restaurarla desde ⚙️ Administrador → Papelera.`)) return;
+    const okDel = await uiDialog({ tone:'danger', icon:'trash', title:'¿Mover a la papelera?', message:`«${s.title}» dejará de mostrarse en la lista. Podrás restaurarla cuando quieras desde Administrador → Papelera.`, confirmText:'Mover a la papelera', cancelText:'Cancelar' });
+    if(!okDel) return;
     audio.pause(); isPlaying=false; setPlayIcons(false);
     mini.classList.remove('show');
     currentIndex = null;
@@ -1314,11 +1499,13 @@
     if(arr===mySongs) refreshMine();
     else if(s._col==='ourSongs') rebuildOurs();
     else { removedDefaults.add(s); rebuildOurs(); }
+    let trashOk = true;
     if(window.fb){
       const { db, doc, updateDoc } = window.fb;
       try{ await updateDoc(doc(db, colOf(arr,s), s.id), { trashed:true, trashedAt:now, trashedBy:myRole }); }
-      catch(err){ alert('No se pudo mover a la papelera en la nube: ' + err); }
+      catch(err){ trashOk = false; toast('No se pudo sincronizar', 'La canción se movió en este dispositivo, pero el cambio no se guardó en la nube (' + err + ').', 'err'); }
     }
+    if(trashOk) toast('Canción movida a la papelera', `«${s.title}» se conservará hasta que la elimines definitivamente.`, 'ok', { action:{ label:'Deshacer', run:()=>restoreSong({ s, col:colOf(arr,s) }) } });
   });
 
   const editModal = document.getElementById('editModal');
@@ -1631,8 +1818,8 @@
     bF('bDestOurs').classList.toggle('on', d==='ourSongs');
     bF('bDestMine').classList.toggle('on', d==='mySongs');
   }
-  bF('pAdmin').addEventListener('click', ()=>bF('pAdminSub').classList.toggle('show'));
-  bF('pBatch').addEventListener('click', openBatch);
+  bF('pAdmin').addEventListener('click', openAdmin);
+  bF('admBatch').addEventListener('click', openBatch);
   bF('bClose').addEventListener('click', closeBatch);
   batchModal.addEventListener('click', (e)=>{ if(e.target===batchModal) closeBatch(); });
   bF('bDestOurs').addEventListener('click', ()=>setBatchDest('ourSongs'));
@@ -1687,7 +1874,7 @@
     let todo = batchItems.filter(i=>i.read && i.state!=='done');
     if(!todo.length) return;
     const dups = todo.filter(i=>batchExists(i) || batchDupInBatch(i));
-    if(dups.length && !confirm(dups.length + ' parecen repetidas. ¿Subirlas de todos modos?\n\nAceptar = subir todas\nCancelar = omitir las repetidas')){
+    if(dups.length && !(await uiDialog({ tone:'warn', icon:'warn', title:'Posibles canciones repetidas', message: dups.length + (dups.length===1 ? ' archivo parece existir' : ' archivos parecen existir') + ' ya en la lista. ¿Deseas subirlos de todos modos?', confirmText:'Subir todos', cancelText:'Omitir repetidos' }))){
       dups.forEach(i=>{ i.state = 'skipped'; updateBatchRow(i); });
       todo = todo.filter(i=>!dups.includes(i));
       if(!todo.length){ updateBatchBtn(); return; }
@@ -1721,7 +1908,30 @@
   }
   bF('bUpload').addEventListener('click', runBatch);
 
-  // ----- Papelera: restaurar o eliminar definitivamente -----
+  // ----- Administración (vista propia) y Papelera -----
+  const ICO_RESTORE = '<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
+  const ICO_TRASH = UI_ICO.trash;
+  const admStack = [];
+  function admShow(v){ v.classList.add('open'); v.setAttribute('aria-hidden','false'); }
+  function admHide(v){ v.classList.remove('open'); v.setAttribute('aria-hidden','true'); }
+  function admPop(){ const v = admStack.pop(); if(!v) return false; admHide(v); return true; }
+  function admBack(){ if(admStack.length) history.back(); }
+  function openAdmin(){
+    if(!myRole) return;
+    if(profileOpen){ closeProfileVisual(); history.replaceState({ admin:true }, '', '#admin'); }
+    else history.pushState({ admin:true }, '', '#admin');
+    const v = document.getElementById('admView');
+    admStack.push(v); admShow(v); refreshTrash();
+  }
+  function openTrash(){
+    history.pushState({ trash:true }, '', '#papelera');
+    const v = document.getElementById('trashView');
+    admStack.push(v); admShow(v); renderTrash();
+  }
+  document.getElementById('admBack').addEventListener('click', admBack);
+  document.getElementById('trBack').addEventListener('click', admBack);
+  document.getElementById('admTrash').addEventListener('click', openTrash);
+
   function trashItems(){
     const out = [];
     defaults.forEach(d=>{ if(removedDefaults.has(d) && !d.purged) out.push({ s:d, col:'songs', label:'Nuestras (original)' }); });
@@ -1731,41 +1941,56 @@
   }
   function refreshTrash(){
     const n = trashItems().length;
-    const el = document.getElementById('pTrashN');
-    if(el) el.textContent = n ? '(' + n + ')' : '';
-    const m = document.getElementById('trashModal');
-    if(m && m.classList.contains('show')) renderTrash();
+    const setT = (id, v)=>{ const e = document.getElementById(id); if(e) e.textContent = v; };
+    setT('stOurs', songs.length); setT('stMine', mySongs.length); setT('stTrash', n);
+    [['admTrashN','show'],['pAdmBadge','show']].forEach(([id, cls])=>{
+      const e = document.getElementById(id); if(!e) return;
+      e.textContent = n || ''; e.classList.toggle(cls, n>0);
+    });
+    const tv = document.getElementById('trashView');
+    if(tv && tv.classList.contains('open')) renderTrash();
+  }
+  function fmtDate(ts){
+    try{ return new Date(ts).toLocaleDateString('es-MX', { day:'numeric', month:'short', year:'numeric' }); }catch(e){ return ''; }
   }
   function renderTrash(){
-    const box = document.getElementById('tList');
-    const items = trashItems();
+    const box = document.getElementById('trList'), items = trashItems();
     box.innerHTML = '';
-    if(!items.length){ box.innerHTML = '<div class="t-empty">La papelera está vacía</div>'; return; }
+    document.getElementById('trSub').textContent = items.length
+      ? (items.length===1 ? '1 canción en la papelera' : items.length + ' canciones en la papelera')
+      : 'No hay elementos eliminados';
+    if(!items.length){
+      box.innerHTML = '<div class="tr-empty"><div class="tr-empty-ico">' + ICO_TRASH + '</div><b>La papelera está vacía</b>Las canciones que elimines aparecerán aquí para que puedas restaurarlas.</div>';
+      return;
+    }
     items.forEach(it=>{
       const s = it.s;
-      const row = document.createElement('div'); row.className = 't-row';
-      const th = document.createElement('div'); th.className = 'b-thumb';
+      const row = document.createElement('div'); row.className = 'tr-row';
+      const th = document.createElement('div'); th.className = 'tr-thumb';
       if(s.cover){ const im = document.createElement('img'); im.src = s.cover; im.alt = ''; th.appendChild(im); }
       else { th.textContent = '♪'; if(s.grad) th.style.background = s.grad; }
-      const info = document.createElement('div'); info.className = 't-info';
-      const t1 = document.createElement('div'); t1.className = 't-title'; t1.textContent = s.title || '(sin título)';
-      const t2 = document.createElement('div'); t2.className = 't-sub';
-      const when = s.trashedAt ? ' · eliminada el ' + new Date(s.trashedAt).toLocaleDateString('es-MX') : '';
-      t2.textContent = (s.artist ? s.artist + ' · ' : '') + it.label + when;
-      const acts = document.createElement('div'); acts.className = 't-actions';
-      const bR = document.createElement('button'); bR.type = 'button'; bR.className = 't-btn'; bR.textContent = '↩ Restaurar';
-      const bD = document.createElement('button'); bD.type = 'button'; bD.className = 't-btn danger'; bD.textContent = 'Eliminar definitivamente';
-      bR.addEventListener('click', ()=>restoreTrashItem(it, bR, bD));
-      bD.addEventListener('click', ()=>purgeTrashItem(it, bR, bD));
+      const info = document.createElement('div'); info.className = 'tr-info';
+      const t1 = document.createElement('div'); t1.className = 'tr-title'; t1.textContent = s.title || '(sin título)';
+      const t2 = document.createElement('div'); t2.className = 'tr-sub'; t2.textContent = s.artist || 'Artista sin especificar';
+      const t3 = document.createElement('div'); t3.className = 'tr-meta';
+      t3.textContent = it.label + (s.trashedAt ? ' · eliminada el ' + fmtDate(s.trashedAt) : '');
+      info.appendChild(t1); info.appendChild(t2); info.appendChild(t3);
+      const acts = document.createElement('div'); acts.className = 'tr-acts';
+      const bR = document.createElement('button'); bR.type = 'button'; bR.className = 'ic-btn'; bR.innerHTML = ICO_RESTORE;
+      bR.setAttribute('aria-label', 'Restaurar'); bR.title = 'Restaurar';
+      const bD = document.createElement('button'); bD.type = 'button'; bD.className = 'ic-btn danger'; bD.innerHTML = ICO_TRASH;
+      bD.setAttribute('aria-label', 'Eliminar definitivamente'); bD.title = 'Eliminar definitivamente';
+      bR.addEventListener('click', ()=>restoreSong(it, [bR, bD]));
+      bD.addEventListener('click', ()=>purgeSong(it, [bR, bD]));
       acts.appendChild(bR); acts.appendChild(bD);
-      info.appendChild(t1); info.appendChild(t2); info.appendChild(acts);
-      row.appendChild(th); row.appendChild(info);
+      row.appendChild(th); row.appendChild(info); row.appendChild(acts);
       box.appendChild(row);
     });
   }
-  async function restoreTrashItem(it, bR, bD){
-    if(!window.fb) return;
-    bR.disabled = bD.disabled = true;
+  async function restoreSong(it, btns){
+    btns = btns || [];
+    if(!window.fb){ toast('Sin conexión', 'No hay conexión con el servidor. Inténtalo de nuevo en unos segundos.', 'warn'); return false; }
+    btns.forEach(b=>b.disabled = true);
     const { db, doc, updateDoc } = window.fb;
     const data = { trashed:false, trashedAt:null };
     if(it.col==='songs') data.deleted = false;
@@ -1774,18 +1999,24 @@
       it.s.trashed = false; it.s.trashedAt = null;
       if(it.col==='songs'){ it.s.deleted = false; removedDefaults.delete(it.s); }
       if(it.col==='mySongs') refreshMine(); else rebuildOurs();
+      toast('Canción restaurada', `«${it.s.title || 'Sin título'}» volvió a la lista.`, 'ok');
+      return true;
     }catch(err){
-      alert('No se pudo restaurar: ' + err);
-      bR.disabled = bD.disabled = false;
+      toast('No se pudo restaurar', 'Ocurrió un problema al restaurar la canción (' + err + ').', 'err');
+      btns.forEach(b=>b.disabled = false);
+      return false;
     }
   }
-  async function purgeTrashItem(it, bR, bD){
-    if(!window.fb) return;
-    if(!confirm('¿Eliminar "' + (it.s.title||'') + '" para siempre?\n\nSe borran también su mp3 y su portada de Cloudinary. No se puede deshacer.')) return;
-    bR.disabled = bD.disabled = true;
-    const ok = await cloudinaryCleanup([it.s.audio, it.s.cover]); // si falla, se queda en la papelera para reintentar
-    if(!ok){ bR.disabled = bD.disabled = false; return; }
+  async function purgeSong(it, btns){
+    btns = btns || [];
+    if(!window.fb){ toast('Sin conexión', 'No hay conexión con el servidor. Inténtalo de nuevo en unos segundos.', 'warn'); return; }
+    const ok = await uiDialog({ tone:'danger', icon:'trash', title:'¿Eliminar definitivamente?', message:`«${it.s.title || 'Sin título'}» se borrará junto con su audio y su portada. Esta acción no se puede deshacer.`, confirmText:'Eliminar', cancelText:'Cancelar' });
+    if(!ok) return;
+    btns.forEach(b=>b.disabled = true);
+    const cleaned = await cloudinaryCleanup([it.s.audio, it.s.cover]); // si falla, se queda en la papelera para reintentar
+    if(!cleaned){ btns.forEach(b=>b.disabled = false); return; }
     const { db, doc, updateDoc, deleteDoc } = window.fb;
+    let recOk = true;
     try{
       if(it.col==='songs'){ await updateDoc(doc(db, 'songs', it.s.id), { purged:true }); it.s.purged = true; }
       else {
@@ -1793,18 +2024,12 @@
         if(it.col==='mySongs') allMine = allMine.filter(x=>x.id!==it.s.id); else allOurs = allOurs.filter(x=>x.id!==it.s.id);
       }
     }catch(err){
-      alert('Se borraron los archivos de Cloudinary, pero no se pudo quitar el registro: ' + err);
+      recOk = false;
+      toast('Eliminación parcial', 'Los archivos se eliminaron, pero no se pudo quitar el registro de la canción (' + err + ').', 'warn');
     }
+    if(recOk) toast('Canción eliminada', `«${it.s.title || 'Sin título'}» se eliminó de forma definitiva.`, 'ok');
     refreshTrash();
   }
-  function openTrash(){
-    if(profileOpen){ closeProfileVisual(); history.back(); }
-    renderTrash();
-    document.getElementById('trashModal').classList.add('show');
-  }
-  document.getElementById('pTrash').addEventListener('click', openTrash);
-  document.getElementById('tClose').addEventListener('click', ()=>document.getElementById('trashModal').classList.remove('show'));
-  document.getElementById('trashModal').addEventListener('click', (e)=>{ if(e.target.id==='trashModal') e.target.classList.remove('show'); });
 
   // Tabs
   document.querySelectorAll('.tabs button').forEach(btn=>{
