@@ -487,6 +487,8 @@
   .sel-bar .ic-btn{width:38px;height:38px;}
   .sel-bar .sb-n{flex:1;min-width:0;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .sel-bar .sb-all{background:none;border:none;color:var(--green);font-family:var(--font);font-size:13px;font-weight:700;padding:8px 6px;cursor:pointer;}
+  .dup-note{display:none;align-self:flex-start;background:rgba(255,180,84,.12);border:1px solid rgba(255,180,84,.45);color:#ffb454;border-radius:12px;padding:8px 12px;font-size:12.5px;line-height:1.45;}
+  .dup-note.show{display:block;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <script type="module">
@@ -1252,6 +1254,7 @@
       <div class="add-photo-form" style="display:none;">
         <input class="f-title" placeholder="Título">
         <input class="f-artist" placeholder="Artista">
+        <div class="dup-note"></div>
         <div class="file-row">
           <button type="button" class="pick-btn b-audio">Elegir mp3</button>
           <span class="pick-name n-audio">Sin archivo</span>
@@ -1274,6 +1277,15 @@
     const bar = q('.upload-bar'), fill = q('.upload-bar span'), status = q('.mt-status'), saveBtn = q('.save-btn');
     let pickedAudio = null, pickedCover = null, webCover = '', embeddedCover = null;
     const results = q('.cover-results');
+    const dupNote = q('.dup-note');
+    function checkDup(){
+      const where = findDuplicate(q('.f-title').value, q('.f-artist').value, !isShared);
+      if(where){ dupNote.textContent = '⚠️ Parece que esta canción ya existe en ' + where + '.'; dupNote.classList.add('show'); }
+      else { dupNote.classList.remove('show'); dupNote.textContent = ''; }
+      return where;
+    }
+    q('.f-title').addEventListener('input', checkDup);
+    q('.f-artist').addEventListener('input', checkDup);
 
     q('.b-search').addEventListener('click', async ()=>{
       const tt = q('.f-title').value.trim(), aa = q('.f-artist').value.trim();
@@ -1305,7 +1317,7 @@
       const pristine = (!tNow && !aNow) || (tNow===lastAuto.title && aNow===lastAuto.artist);
       const prevEmb = embeddedCover; embeddedCover = null;
       if(pristine){
-        q('.f-title').value = ''; q('.f-artist').value = ''; lastAuto = { title:'', artist:'' };
+        q('.f-title').value = ''; q('.f-artist').value = ''; lastAuto = { title:'', artist:'' }; checkDup();
         webCover = '';
         if(pickedCover && pickedCover===prevEmb) pickedCover = null;
         if(!pickedCover){ q('.n-cover').textContent = 'Opcional'; results.innerHTML = ''; results.classList.remove('show'); }
@@ -1325,6 +1337,7 @@
             chip.dataset.title = t.title; chip.dataset.artist = t.artist || '';
             chip.textContent = t.artist ? `✨ Usar "${t.artist} – ${t.title}"` : `✨ Usar "${t.title}"`;
             if(!q('.f-title').value.trim()){ q('.f-title').value = t.title; if(t.artist && !q('.f-artist').value.trim()) q('.f-artist').value = t.artist; lastAuto = { title:q('.f-title').value.trim(), artist:q('.f-artist').value.trim() }; }
+            checkDup();
           }
           if(t.cover){ embeddedCover = t.cover; }
           if(t.cover && !pickedCover && !webCover){
@@ -1339,6 +1352,7 @@
       q('.f-title').value = chip.dataset.title || '';
       if(chip.dataset.artist) q('.f-artist').value = chip.dataset.artist;
       lastAuto = { title:q('.f-title').value.trim(), artist:q('.f-artist').value.trim() };
+      checkDup();
     });
     q('.i-cover').addEventListener('change', (e)=>{
       pickedCover = e.target.files[0] || null;
@@ -1351,9 +1365,7 @@
       const title = q('.f-title').value.trim();
       if(!title || !pickedAudio) return;
       const artistNow = q('.f-artist').value.trim();
-      const dupKey = normKey(title, artistNow);
-      const dupIn = songs.some(x=>normKey(x.title, x.artist)===dupKey) ? 'Nuestras canciones'
-                  : mySongs.some(x=>normKey(x.title, x.artist)===dupKey) ? 'Mis canciones' : '';
+      const dupIn = findDuplicate(title, artistNow, !isShared);
       if(dupIn){
         const go = await uiDialog({ tone:'warn', icon:'warn', title:'Esta canción ya existe', message:`«${artistNow ? artistNow + ' – ' : ''}${title}» ya está en ${dupIn}. ¿Deseas subirla de todos modos?`, confirmText:'Subir de todos modos', cancelText:'Cancelar' });
         if(!go) return;
@@ -1377,7 +1389,7 @@
         else data.owner = myRole;
         await addDoc(collection(db, collName), data);
         status.textContent = '✓ Canción agregada';
-        q('.f-title').value = ''; q('.f-artist').value = '';
+        q('.f-title').value = ''; q('.f-artist').value = ''; dupNote.classList.remove('show');
         pickedAudio = null; pickedCover = null; webCover = ''; embeddedCover = null;
         results.innerHTML = ''; results.classList.remove('show');
         q('.n-audio').textContent = 'Sin archivo';
@@ -1710,7 +1722,21 @@
   let batchItems = [], batchDest = 'ourSongs';
   const BATCH_MAX_AUDIO = 100 * 1048576; // tope por archivo de audio del plan gratis de Cloudinary (verifícalo en tu panel)
   const fmtMB = b=>(b/1048576).toFixed(1) + ' MB';
-  const normKey = (t,a)=>(t||'').trim().toLowerCase() + '|' + (a||'').trim().toLowerCase();
+  const normTxt = (x)=>(x||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const normKey = (t,a)=>normTxt(t) + '|' + normTxt(a);
+  // ¿Ya existe? Mismo título y artista igual, parecido o vacío en alguno de los dos
+  function findDuplicate(title, artist, preferMine){
+    const t = normTxt(title), a = normTxt(artist);
+    if(!t) return '';
+    const match = (x)=>{
+      if(normTxt(x.title)!==t) return false;
+      const b = normTxt(x.artist);
+      return !a || !b || a===b || a.includes(b) || b.includes(a);
+    };
+    const lists = preferMine ? [['Mis canciones', mySongs], ['Nuestras canciones', songs]] : [['Nuestras canciones', songs], ['Mis canciones', mySongs]];
+    for(const [label, arr] of lists){ if(arr.some(match)) return label; }
+    return '';
+  }
   function batchExists(it){
     const k = normKey(it.title, it.artist);
     if(!it.title.trim()) return false;
