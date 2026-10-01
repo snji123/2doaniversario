@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Para Ti</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Para Ti">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
@@ -520,12 +527,19 @@
     .adm-view.open .adm-stat:nth-child(3){animation-delay:500ms;}
     .row-anim > *{animation:rvUp .5s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--i,0) * 45ms + 180ms);}
   }
+  .off-row{display:flex;gap:8px;margin:-6px 0 16px;}
+  .off-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 8px;border-radius:12px;border:1px solid var(--divider);background:var(--surface-2);color:var(--text);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;}
+  .off-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;}
+  .off-btn.on{border-color:rgba(30,215,96,.45);color:var(--green);}
+  .off-btn:disabled{opacity:.6;}
+  .off-dot{color:var(--green);font-weight:800;margin-right:4px;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <script type="module">
   // Firebase conectado directo por CDN (sin npm, funciona tal cual en GitHub Pages)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
+    initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
     getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, onSnapshot, addDoc, deleteDoc
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -539,11 +553,25 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  // Caché local de Firestore: la lista de canciones se ve aun sin internet
+  let db;
+  try {
+    db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+  } catch (err) {
+    console.warn('Caché sin conexión no disponible, uso modo normal', err);
+    db = getFirestore(app);
+  }
 
   // Se expone en window para que el script principal (más abajo) lo use
   window.fb = { db, collection, doc, setDoc, getDoc, getDocs, updateDoc, onSnapshot, addDoc, deleteDoc };
   window.dispatchEvent(new Event('firebase-ready'));
+
+  // Registro del service worker (página instalable y abre sin conexión)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW no registrado', err));
+    });
+  }
 </script>
 </head>
 <body class="locked">
@@ -722,6 +750,10 @@
     </div>
     <h2 id="sheetTitle"></h2>
     <div class="by" id="sheetArtist"></div>
+    <div class="off-row">
+      <button type="button" class="off-btn" id="offBtn"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg><span id="offBtnTx">Guardar sin conexión</span></button>
+      <button type="button" class="off-btn" id="dlFileBtn"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg><span>Descargar archivo</span></button>
+    </div>
     <div class="block" id="blkPhrase"><h3>La frase</h3><p class="phrase" id="sheetPhrase"></p></div>
     <div class="block" id="blkMeaning"><h3>Lo que significa</h3><p id="sheetMeaning"></p></div>
     <div class="block" id="blkNote"><h3>Mi nota para ti</h3><div class="note-box"><p id="sheetNote"></p></div></div>
@@ -848,6 +880,7 @@
     <button class="ic-btn" id="smSelX" type="button" aria-label="Cancelar selección"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="sb-n" id="smSelN">Seleccionadas (0)</div>
     <button class="sb-all" id="smSelAll" type="button">Todas</button>
+    <button class="ic-btn" id="smSelOff" type="button" aria-label="Guardar seleccionadas sin conexión"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg></button>
     <button class="ic-btn danger" id="smSelDel" type="button" aria-label="Mover seleccionadas a la papelera"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
   </div>
 </div>
@@ -987,7 +1020,103 @@
   const mySongs = [];
   let playlist = songs; // lista que se está reproduciendo (nuestras o mías)
   const listMine = document.getElementById('panel-mias-list');
-  const bgOf = s => (s.cover ? `url('${s.cover}') center/cover no-repeat, ` : '') + s.grad;
+  const bgOf = s => (covOf(s) ? `url('${covOf(s)}') center/cover no-repeat, ` : '') + s.grad;
+
+  // ----- Modo sin conexión: audio y portada guardados en el dispositivo (IndexedDB) -----
+  const OFF = new Map();
+  const offKey = s => s.id || s.title;
+  let offDbP = null;
+  const offDb = () => offDbP || (offDbP = new Promise((res,rej)=>{
+    const r = indexedDB.open('paraTiOffline', 1);
+    r.onupgradeneeded = ()=>r.result.createObjectStore('files', { keyPath:'key' });
+    r.onsuccess = ()=>res(r.result); r.onerror = ()=>rej(r.error);
+  }));
+  const offTx = (mode, fn) => offDb().then(db=>new Promise((res,rej)=>{
+    const t = db.transaction('files', mode); const rq = fn(t.objectStore('files'));
+    t.oncomplete = ()=>res(rq && rq.result); t.onerror = ()=>rej(t.error); t.onabort = ()=>rej(t.error);
+  }));
+  function offIndex(r){
+    const o = OFF.get(r.key); if(o){ URL.revokeObjectURL(o.a); if(o.c) URL.revokeObjectURL(o.c); }
+    OFF.set(r.key, { audioUrl:r.audioUrl, a:URL.createObjectURL(r.audio), c:r.cover ? URL.createObjectURL(r.cover) : '', size:r.size, blob:r.audio });
+  }
+  const offGet = s => { const e = OFF.get(offKey(s)); return e && e.audioUrl===s.audio ? e : null; };
+  const audioSrc = s => (offGet(s) || {}).a || s.audio;
+  function covOf(s){ const e = offGet(s); return (e && e.c) || s.cover; }
+  const T_OK = UI_ICO.ok ? 'ok' : (UI_ICO.success ? 'success' : 'info');
+  const T_ERR = UI_ICO.err ? 'err' : (UI_ICO.error ? 'error' : (UI_ICO.danger ? 'danger' : 'info'));
+  function offRefresh(){
+    renderTracks();
+    if(typeof renderAdminSongs==='function') renderAdminSongs();
+    offBtnState();
+  }
+  function offBtnState(){
+    const s = playlist[currentIndex], b = document.getElementById('offBtn');
+    if(!b) return;
+    const on = !!(s && offGet(s));
+    b.classList.toggle('on', on);
+    document.getElementById('offBtnTx').textContent = on ? 'Guardada sin conexión ✓' : 'Guardar sin conexión';
+  }
+  async function offFetch(u){
+    const r = await fetch(new URL(u, location.href).href);
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.blob();
+  }
+  async function offSave(s){
+    if(offGet(s)) return;
+    const a = await offFetch(s.audio);
+    let c = null;
+    if(s.cover){ try{ c = await offFetch(s.cover); }catch(e){} }
+    const rec = { key:offKey(s), audioUrl:s.audio, audio:a, cover:c, size:a.size + (c ? c.size : 0), ts:Date.now() };
+    await offTx('readwrite', st=>st.put(rec));
+    offIndex(rec);
+    if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+  }
+  async function offRemove(s){
+    const k = offKey(s), o = OFF.get(k);
+    await offTx('readwrite', st=>st.delete(k));
+    if(o){ URL.revokeObjectURL(o.a); if(o.c) URL.revokeObjectURL(o.c); OFF.delete(k); }
+  }
+  async function offSaveMany(arr){
+    const todo = arr.filter(x=>!offGet(x));
+    if(!todo.length){ toast('Sin cambios', 'Las canciones seleccionadas ya están guardadas sin conexión.', 'info'); return; }
+    let ok = 0, fail = 0;
+    for(let i=0;i<todo.length;i++){
+      toast('Guardando sin conexión', 'Canción ' + (i+1) + ' de ' + todo.length + ': ' + (todo[i].title||''), 'info', { ms:2200 });
+      try{ await offSave(todo[i]); ok++; }catch(e){ console.warn(e); fail++; }
+    }
+    offRefresh();
+    toast(fail ? 'Guardado con avisos' : 'Listo para usar sin conexión',
+      ok + (ok===1 ? ' canción guardada' : ' canciones guardadas') + (fail ? ' · ' + fail + ' no se pudieron descargar. Revisa tu conexión.' : '.'), fail ? T_ERR : T_OK);
+  }
+  async function offDownloadFile(s){
+    try{
+      const e = offGet(s);
+      const blob = e ? e.blob : await offFetch(s.audio);
+      const t = blob.type || '';
+      const ext = t.includes('mpeg') ? 'mp3' : t.includes('mp4') || t.includes('aac') ? 'm4a' : t.includes('ogg') ? 'ogg' : t.includes('wav') ? 'wav' : ((s.audio.split('?')[0].match(/\.(\w{2,4})$/)||[])[1] || 'mp3');
+      const name = ((s.artist ? s.artist + ' - ' : '') + (s.title || 'cancion')).replace(/[\\/:*?"<>|]/g, '') + '.' + ext;
+      const u = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(u), 4000);
+      toast('Descarga iniciada', name, T_OK);
+    }catch(e){ console.warn(e); toast('No se pudo descargar', 'Revisa tu conexión e inténtalo de nuevo.', T_ERR); }
+  }
+  offDb().then(db=>new Promise(res=>{ const rq = db.transaction('files').objectStore('files').getAll(); rq.onsuccess = ()=>res(rq.result||[]); rq.onerror = ()=>res([]); }))
+    .then(all=>{ all.forEach(offIndex); offRefresh(); }).catch(()=>{});
+  document.getElementById('offBtn').addEventListener('click', async ()=>{
+    const s = playlist[currentIndex]; if(!s) return;
+    const b = document.getElementById('offBtn'); b.disabled = true;
+    try{
+      if(offGet(s)){ await offRemove(s); toast('Copia eliminada', 'La canción ya no se guarda en este dispositivo.', 'info'); }
+      else { document.getElementById('offBtnTx').textContent = 'Guardando…'; await offSave(s); toast('Guardada sin conexión', '«' + (s.title||'') + '» ya suena sin internet.', T_OK); }
+    }catch(e){ console.warn(e); toast('No se pudo guardar', 'Revisa tu conexión o el espacio disponible.', T_ERR); }
+    b.disabled = false; offRefresh();
+  });
+  document.getElementById('dlFileBtn').addEventListener('click', ()=>{ const s = playlist[currentIndex]; if(s) offDownloadFile(s); });
+  document.getElementById('smSelOff').addEventListener('click', async ()=>{
+    const b = document.getElementById('smSelOff'); b.disabled = true;
+    await offSaveMany([...smSel]); b.disabled = false;
+  });
 
   // ----- Efectos de aparición: al hacer scroll y en cascada al entrar -----
   const RV_ON = ('IntersectionObserver' in window) && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -1062,6 +1191,7 @@
       `;
       row.querySelector('.t-title').textContent = s.title;
       row.querySelector('.t-artist').textContent = s.artist || '';
+      if(offGet(s)) row.querySelector('.t-artist').insertAdjacentHTML('afterbegin','<span class="off-dot" title="Guardada sin conexión">↓</span>');
       row.querySelector('.heart').addEventListener('click', (e)=>{ e.stopPropagation(); toggleHeart(arr,i); });
       row.addEventListener('click', ()=>{
         if(playlist!==arr){ playlist = arr; currentIndex = null; }
@@ -1520,10 +1650,12 @@
     ['blkPhrase','blkMeaning','blkNote','blkHer'].forEach(id=>{ document.getElementById(id).style.display = ours ? '' : 'none'; });
   }
 
+  const _rnp = refreshNowPlayingUI;
+  refreshNowPlayingUI = function(){ _rnp.apply(this, arguments); if(typeof offBtnState==='function') offBtnState(); };
   function playIndex(i){
     currentIndex = i;
     const s = playlist[i];
-    audio.src = s.audio;
+    audio.src = audioSrc(s);
     audio.currentTime = 0;
     audio.play().then(()=>{ isPlaying=true; setPlayIcons(true); renderTracks(); }).catch(()=>{ isPlaying=false; setPlayIcons(false); });
     mini.classList.add('show');
@@ -2225,11 +2357,11 @@
       const row = document.createElement('div'); row.className = 'tr-row';
       const chk = document.createElement('div'); chk.className = 'tr-check'; chk.innerHTML = ICO_CHECK;
       const th = document.createElement('div'); th.className = 'tr-thumb';
-      if(s.cover){ const im = document.createElement('img'); im.src = s.cover; im.alt = ''; im.draggable = false; th.appendChild(im); }
+      if(covOf(s)){ const im = document.createElement('img'); im.src = covOf(s); im.alt = ''; im.draggable = false; th.appendChild(im); }
       else { th.textContent = '♪'; if(s.grad) th.style.background = s.grad; }
       const info = document.createElement('div'); info.className = 'tr-info';
       const t1 = document.createElement('div'); t1.className = 'tr-title'; t1.textContent = s.title || '(sin título)';
-      const t2 = document.createElement('div'); t2.className = 'tr-sub'; t2.textContent = s.artist || 'Artista sin especificar';
+      const t2 = document.createElement('div'); t2.className = 'tr-sub'; t2.textContent = (offGet(s) ? '↓ ' : '') + (s.artist || 'Artista sin especificar');
       info.appendChild(t1); info.appendChild(t2);
       const acts = document.createElement('div'); acts.className = 'tr-acts';
       const bE = document.createElement('button'); bE.type = 'button'; bE.className = 'ic-btn'; bE.innerHTML = ICO_EDIT;
