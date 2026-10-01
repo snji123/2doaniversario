@@ -1295,9 +1295,23 @@
     });
     q('.b-audio').addEventListener('click', ()=>q('.i-audio').click());
     q('.b-cover').addEventListener('click', ()=>q('.i-cover').click());
+    // Valores rellenados automáticamente: si el usuario no los tocó, una nueva selección los reemplaza
+    let lastAuto = { title:'', artist:'' };
     q('.i-audio').addEventListener('change', (e)=>{
-      pickedAudio = e.target.files[0] || null;
-      embeddedCover = null;
+      const newFile = e.target.files[0] || null;
+      if(!newFile && pickedAudio) return; // se canceló el selector: se conserva la selección anterior
+      pickedAudio = newFile;
+      const tNow = q('.f-title').value.trim(), aNow = q('.f-artist').value.trim();
+      const pristine = (!tNow && !aNow) || (tNow===lastAuto.title && aNow===lastAuto.artist);
+      const prevEmb = embeddedCover; embeddedCover = null;
+      if(pristine){
+        q('.f-title').value = ''; q('.f-artist').value = ''; lastAuto = { title:'', artist:'' };
+        webCover = '';
+        if(pickedCover && pickedCover===prevEmb) pickedCover = null;
+        if(!pickedCover){ q('.n-cover').textContent = 'Opcional'; results.innerHTML = ''; results.classList.remove('show'); }
+      } else if(prevEmb && pickedCover===prevEmb){
+        pickedCover = null; q('.n-cover').textContent = 'Opcional'; results.innerHTML = ''; results.classList.remove('show');
+      }
       q('.n-audio').textContent = pickedAudio ? pickedAudio.name : 'Sin archivo';
       if(pickedAudio){
         const { artist, title } = parseSongFilename(pickedAudio.name);
@@ -1310,7 +1324,7 @@
           if(t.title){
             chip.dataset.title = t.title; chip.dataset.artist = t.artist || '';
             chip.textContent = t.artist ? `✨ Usar "${t.artist} – ${t.title}"` : `✨ Usar "${t.title}"`;
-            if(!q('.f-title').value.trim()){ q('.f-title').value = t.title; if(t.artist && !q('.f-artist').value.trim()) q('.f-artist').value = t.artist; }
+            if(!q('.f-title').value.trim()){ q('.f-title').value = t.title; if(t.artist && !q('.f-artist').value.trim()) q('.f-artist').value = t.artist; lastAuto = { title:q('.f-title').value.trim(), artist:q('.f-artist').value.trim() }; }
           }
           if(t.cover){ embeddedCover = t.cover; }
           if(t.cover && !pickedCover && !webCover){
@@ -1324,6 +1338,7 @@
     chip.addEventListener('click', ()=>{
       q('.f-title').value = chip.dataset.title || '';
       if(chip.dataset.artist) q('.f-artist').value = chip.dataset.artist;
+      lastAuto = { title:q('.f-title').value.trim(), artist:q('.f-artist').value.trim() };
     });
     q('.i-cover').addEventListener('change', (e)=>{
       pickedCover = e.target.files[0] || null;
@@ -1335,6 +1350,14 @@
       if(!window.fb || !myRole) return;
       const title = q('.f-title').value.trim();
       if(!title || !pickedAudio) return;
+      const artistNow = q('.f-artist').value.trim();
+      const dupKey = normKey(title, artistNow);
+      const dupIn = songs.some(x=>normKey(x.title, x.artist)===dupKey) ? 'Nuestras canciones'
+                  : mySongs.some(x=>normKey(x.title, x.artist)===dupKey) ? 'Mis canciones' : '';
+      if(dupIn){
+        const go = await uiDialog({ tone:'warn', icon:'warn', title:'Esta canción ya existe', message:`«${artistNow ? artistNow + ' – ' : ''}${title}» ya está en ${dupIn}. ¿Deseas subirla de todos modos?`, confirmText:'Subir de todos modos', cancelText:'Cancelar' });
+        if(!go) return;
+      }
       saveBtn.disabled = true; bar.classList.add('show');
       try{
         status.textContent = 'Subiendo canción…';
