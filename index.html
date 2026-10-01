@@ -489,6 +489,37 @@
   .sel-bar .sb-all{background:none;border:none;color:var(--green);font-family:var(--font);font-size:13px;font-weight:700;padding:8px 6px;cursor:pointer;}
   .dup-note{display:none;align-self:flex-start;background:rgba(255,180,84,.12);border:1px solid rgba(255,180,84,.45);color:#ffb454;border-radius:12px;padding:8px 12px;font-size:12.5px;line-height:1.45;}
   .dup-note.show{display:block;}
+  /* ===== Efectos de aparición (reveal) ===== */
+  .rv{opacity:0;transform:translate3d(0,26px,0) scale(.97);transition:opacity .55s ease var(--rv-d,0ms),transform .75s cubic-bezier(.22,1,.36,1) var(--rv-d,0ms) !important;will-change:opacity,transform;}
+  .rv[data-rv="zoom"]{transform:scale(.55);}
+  .rv[data-rv="left"]{transform:translate3d(-34px,0,0);}
+  .rv[data-rv="right"]{transform:translate3d(34px,0,0);}
+  .rv.rv-in{opacity:1;transform:none;}
+  @keyframes rvUp{from{opacity:0;transform:translate3d(0,20px,0);}to{opacity:1;transform:none;}}
+  @keyframes rvPop{from{opacity:0;transform:scale(.82);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion:no-preference){
+    .psheet.open > *, .adm-view.open .adm-wrap > *, .sheet.open .sheet-inner > *{animation:rvUp .55s cubic-bezier(.22,1,.36,1) backwards;}
+    .adm-view.open .adm-wrap > #smList, .adm-view.open .adm-wrap > #trList{animation:none;}
+    .adm-view.open .adm-stat{animation:rvPop .5s cubic-bezier(.22,1,.36,1) backwards;}
+    .psheet.open > :nth-child(1), .adm-view.open .adm-wrap > :nth-child(1), .sheet.open .sheet-inner > :nth-child(1){animation-delay:165ms;}
+    .psheet.open > :nth-child(2), .adm-view.open .adm-wrap > :nth-child(2), .sheet.open .sheet-inner > :nth-child(2){animation-delay:220ms;}
+    .psheet.open > :nth-child(3), .adm-view.open .adm-wrap > :nth-child(3), .sheet.open .sheet-inner > :nth-child(3){animation-delay:275ms;}
+    .psheet.open > :nth-child(4), .adm-view.open .adm-wrap > :nth-child(4), .sheet.open .sheet-inner > :nth-child(4){animation-delay:330ms;}
+    .psheet.open > :nth-child(5), .adm-view.open .adm-wrap > :nth-child(5), .sheet.open .sheet-inner > :nth-child(5){animation-delay:385ms;}
+    .psheet.open > :nth-child(6), .adm-view.open .adm-wrap > :nth-child(6), .sheet.open .sheet-inner > :nth-child(6){animation-delay:440ms;}
+    .psheet.open > :nth-child(7), .adm-view.open .adm-wrap > :nth-child(7), .sheet.open .sheet-inner > :nth-child(7){animation-delay:495ms;}
+    .psheet.open > :nth-child(8), .adm-view.open .adm-wrap > :nth-child(8), .sheet.open .sheet-inner > :nth-child(8){animation-delay:550ms;}
+    .psheet.open > :nth-child(9), .adm-view.open .adm-wrap > :nth-child(9), .sheet.open .sheet-inner > :nth-child(9){animation-delay:605ms;}
+    .psheet.open > :nth-child(10), .adm-view.open .adm-wrap > :nth-child(10), .sheet.open .sheet-inner > :nth-child(10){animation-delay:660ms;}
+    .psheet.open > :nth-child(11), .adm-view.open .adm-wrap > :nth-child(11), .sheet.open .sheet-inner > :nth-child(11){animation-delay:715ms;}
+    .psheet.open > :nth-child(12), .adm-view.open .adm-wrap > :nth-child(12), .sheet.open .sheet-inner > :nth-child(12){animation-delay:770ms;}
+    .psheet.open > :nth-child(13), .adm-view.open .adm-wrap > :nth-child(13), .sheet.open .sheet-inner > :nth-child(13){animation-delay:825ms;}
+    .psheet.open > :nth-child(14), .adm-view.open .adm-wrap > :nth-child(14), .sheet.open .sheet-inner > :nth-child(14){animation-delay:880ms;}
+    .adm-view.open .adm-stat:nth-child(1){animation-delay:340ms;}
+    .adm-view.open .adm-stat:nth-child(2){animation-delay:420ms;}
+    .adm-view.open .adm-stat:nth-child(3){animation-delay:500ms;}
+    .row-anim > *{animation:rvUp .5s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--i,0) * 45ms + 180ms);}
+  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <script type="module">
@@ -958,6 +989,57 @@
   const listMine = document.getElementById('panel-mias-list');
   const bgOf = s => (s.cover ? `url('${s.cover}') center/cover no-repeat, ` : '') + s.grad;
 
+  // ----- Efectos de aparición: al hacer scroll y en cascada al entrar -----
+  const RV_ON = ('IntersectionObserver' in window) && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const rvSeen = new Set();
+  let rvIO = null, rvReady = false, rvFirst = true, rvPending = [];
+  function rvDone(el){ el.classList.remove('rv','rv-in'); el.removeAttribute('data-rv'); el.style.removeProperty('--rv-d'); }
+  function rvStart(){
+    if(rvReady || !RV_ON) return;
+    rvReady = true; rvFirst = true;
+    rvIO = new IntersectionObserver((entries)=>{
+      const vis = entries.filter(e=>e.isIntersecting).sort((a,b)=>(a.boundingClientRect.top - b.boundingClientRect.top) || (a.boundingClientRect.left - b.boundingClientRect.left));
+      const base = rvFirst ? 140 : 0;
+      if(vis.length) rvFirst = false;
+      vis.forEach((e,i)=>{
+        const el = e.target; rvIO.unobserve(el);
+        if(el._rvk) rvSeen.add(el._rvk);
+        const d = base + Math.min(i, 18) * 55;
+        el.style.setProperty('--rv-d', d + 'ms');
+        requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('rv-in')));
+        setTimeout(()=>rvDone(el), d + 1000);
+      });
+    }, { threshold:0.05, rootMargin:'0px 0px -5% 0px' });
+    rvPending.splice(0).forEach(el=>{ if(el.isConnected) rvIO.observe(el); });
+  }
+  function rv(el, kind, key){
+    if(!RV_ON || !el || el.classList.contains('rv')) return;
+    el.classList.add('rv'); if(kind) el.setAttribute('data-rv', kind);
+    if(key) el._rvk = key;
+    if(rvReady && rvIO) rvIO.observe(el); else rvPending.push(el);
+  }
+  const RV_STATIC = [['.hero .avatar-btn','zoom'],['.hero .greeting','up'],['.hero .playlist-title','up'],['.hero .playlist-sub','up'],
+    ['.hero-actions .icon-btn','zoom'],['.hero-actions .play-fab','zoom'],['.stat-chip','up'],
+    ['.tabs button[data-tab="canciones"]','left'],['.tabs button[data-tab="mias"]','right'],['.add-fab','zoom']];
+  function rvTagStatic(){ RV_STATIC.forEach(([sel,k])=>document.querySelectorAll(sel).forEach(el=>rv(el,k))); }
+  function rvReset(){
+    rvReady = false; if(rvIO){ rvIO.disconnect(); rvIO = null; }
+    rvPending = []; rvSeen.clear(); rvTagStatic();
+  }
+  // Reproduce una cascada rápida sobre las filas de una lista ya visible (abrir vistas, cambiar de pestaña)
+  function playRows(box){
+    if(!RV_ON || !box || box.querySelector('.rv')) return;
+    [...box.children].forEach((c,i)=>c.style.setProperty('--i', Math.min(i, 14)));
+    box.classList.remove('row-anim'); void box.offsetWidth; box.classList.add('row-anim');
+    clearTimeout(box._ra); box._ra = setTimeout(()=>box.classList.remove('row-anim'), 1500);
+  }
+  if(RV_ON){
+    new MutationObserver(()=>{
+      if(document.body.classList.contains('locked')){ if(rvReady) rvReset(); }
+      else if(!rvReady){ setTimeout(()=>{ if(!document.body.classList.contains('locked')) rvStart(); }, 260); }
+    }).observe(document.body, { attributes:true, attributeFilter:['class'] });
+  }
+
   function renderInto(container, arr){
     container.innerHTML = '';
     if(!arr.length){
@@ -986,6 +1068,8 @@
         openSheet(i);
       });
       container.appendChild(row);
+      const rk = (arr===mySongs ? 'm:' : 'o:') + (s.id || s.title);
+      if(!rvSeen.has(rk)) rv(row, 'up', rk);
     });
   }
   function renderTracks(){ renderInto(list, songs); renderInto(listMine, mySongs); }
@@ -2038,7 +2122,7 @@
   function openTrash(){
     history.pushState({ trash:true }, '', '#papelera');
     const v = document.getElementById('trashView');
-    admStack.push(v); admShow(v); renderTrash();
+    admStack.push(v); admShow(v); renderTrash(); playRows(document.getElementById('trList'));
   }
   document.getElementById('admBack').addEventListener('click', admBack);
   document.getElementById('trBack').addEventListener('click', admBack);
@@ -2054,13 +2138,13 @@
     const v = document.getElementById('songsView');
     smQuery = ''; document.getElementById('smQ').value = '';
     exitSelMode();
-    admStack.push(v); admShow(v); renderAdminSongs();
+    admStack.push(v); admShow(v); renderAdminSongs(); playRows(document.getElementById('smList'));
   }
   function setSmTab(t){
     smTab = t; exitSelMode();
     document.getElementById('smTabOurs').classList.toggle('on', t==='ours');
     document.getElementById('smTabMine').classList.toggle('on', t==='mine');
-    renderAdminSongs();
+    renderAdminSongs(); playRows(document.getElementById('smList'));
   }
   document.getElementById('smTabOurs').addEventListener('click', ()=>setSmTab('ours'));
   document.getElementById('smTabMine').addEventListener('click', ()=>setSmTab('mine'));
@@ -2295,6 +2379,7 @@
       const tab = btn.dataset.tab;
       document.getElementById('panel-canciones').style.display = tab==='canciones' ? '' : 'none';
       document.getElementById('panel-mias').style.display = tab==='mias' ? '' : 'none';
+      playRows(document.getElementById(tab==='mias' ? 'panel-mias-list' : 'panel-canciones-list'));
     });
   });
 
@@ -2443,6 +2528,7 @@
       p.classList.remove('shake'); void p.offsetWidth; p.classList.add('shake');
     }
   });
+  rvTagStatic();
   // Si ya entró antes en este celular, pasa directo
   try{
     const saved = localStorage.getItem('paraTiRole');
