@@ -1,5 +1,5 @@
 // Service worker de "Para Ti" — paso 1: la página abre sin conexión.
-const VERSION = 'v3';
+const VERSION = 'v5';
 const SHELL = `shell-${VERSION}`;
 const RUNTIME = `runtime-${VERSION}`;
 const SHELL_FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
@@ -18,6 +18,22 @@ self.addEventListener('activate', e => {
       .then(() => self.clients.claim())
   );
 });
+
+// Primero la red (para ver siempre la versión nueva) y, si no hay internet o tarda, la copia guardada
+async function networkFirst(req, cacheName) {
+  const cache = await caches.open(cacheName);
+  try {
+    const res = await Promise.race([
+      fetch(req, { cache: 'no-cache' }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000))
+    ]);
+    if (res && res.ok) cache.put(req, res.clone());
+    return res;
+  } catch (err) {
+    const cached = await cache.match(req, { ignoreSearch: req.mode === 'navigate' });
+    return cached || (req.mode === 'navigate' ? cache.match('./index.html') : Response.error());
+  }
+}
 
 // Primero la copia guardada y en segundo plano la actualiza (así abre al instante y sin internet)
 async function staleWhileRevalidate(req, cacheName) {
@@ -38,7 +54,8 @@ self.addEventListener('fetch', e => {
 
   // Archivos propios de la página
   if (url.origin === location.origin) {
-    e.respondWith(staleWhileRevalidate(req, SHELL));
+    const isCode = req.mode === 'navigate' || /\.(html|js|json)$/.test(url.pathname) || url.pathname.endsWith('/');
+    e.respondWith(isCode ? networkFirst(req, SHELL) : staleWhileRevalidate(req, SHELL));
     return;
   }
   // Librerías y fuentes
