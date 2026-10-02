@@ -114,6 +114,10 @@
   .cover .bars span{width:3px;background:var(--green);border-radius:2px;animation:eq 0.8s ease-in-out infinite;}
   .cover .bars span:nth-child(2){animation-delay:.2s;}
   .cover .bars span:nth-child(3){animation-delay:.4s;}
+  .track.paused .cover .bars span{animation:none;}
+  .track.paused .cover .bars span:nth-child(1){height:6px;}
+  .track.paused .cover .bars span:nth-child(2){height:14px;}
+  .track.paused .cover .bars span:nth-child(3){height:9px;}
   @keyframes eq{0%,100%{height:4px;}50%{height:14px;}}
   .t-meta{flex:1;min-width:0;}
   .t-title{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -809,6 +813,7 @@
     <button class="active" data-tab="canciones">Nuestras canciones</button>
     <button data-tab="mias">Mis canciones</button>
     <button data-tab="albumes">Álbumes</button>
+    <button data-tab="encanta">Me encanta</button>
   </nav>
 
   <main>
@@ -822,6 +827,9 @@
     </section>
     <section id="panel-albumes" style="display:none;">
       <div id="panel-albumes-list"></div>
+    </section>
+    <section id="panel-encanta" style="display:none;">
+      <div id="panel-encanta-list"></div>
     </section>
   </main>
 </div>
@@ -1389,7 +1397,7 @@
     }
     arr.forEach((s,i)=>{
       const row = document.createElement('div');
-      row.className = 'track' + (playlist===arr && currentIndex===i && isPlaying ? ' playing' : '');
+      row.className = 'track' + (playlist===arr && currentIndex===i ? ' playing' + (isPlaying ? '' : ' paused') : '');
       row.innerHTML = `
         <div class="t-num">${i+1}</div>
         <div class="cover" style="background:${bgOf(s)}">
@@ -1414,7 +1422,19 @@
       if(!rvSeen.has(rk)) rv(row, 'up', rk);
     });
   }
-  function renderTracks(){ renderInto(list, songs); renderInto(listMine, mySongs); if(typeof renderAlbums==='function') renderAlbums(); if(typeof offHeal==='function') offHeal(); }
+  // ----- Me encanta: todas las canciones con corazón verde -----
+  const likedArr = [];
+  function renderLiked(){
+    const box = document.getElementById('panel-encanta-list'); if(!box) return;
+    const keep = (playlist===likedArr && currentIndex!==null) ? likedArr[currentIndex] : null;
+    const all = [...songs, ...mySongs];
+    likedArr.length = 0;
+    all.forEach(x=>{ if(x.liked || x===keep) likedArr.push(x); });
+    if(keep){ const ni = likedArr.indexOf(keep); if(ni>=0) currentIndex = ni; }
+    renderInto(box, likedArr);
+    if(!likedArr.length) box.innerHTML = '<div class="empty"><span>Aún no hay canciones que te encanten</span>Toca el corazón de una canción para verla aquí.</div>';
+  }
+  function renderTracks(){ renderInto(list, songs); renderInto(listMine, mySongs); renderLiked(); if(typeof renderAlbums==='function') renderAlbums(); if(typeof offHeal==='function') offHeal(); }
   renderTracks();
 
   // ----- Firestore: sincroniza canciones (título/frase/nota/corazón/nota de ella) -----
@@ -2667,7 +2687,7 @@
   let albOpen = null;
   function albGroups(){
     const m = new Map();
-    [...songs, ...mySongs].forEach(x=>{
+    mySongs.forEach(x=>{
       const name = albMain(x.artist), k = albNorm(name) || '_';
       if(!m.has(k)) m.set(k, { key:k, name:name || 'Sin artista', songs:[] });
       m.get(k).songs.push(x);
@@ -2681,8 +2701,9 @@
   var customAlbums = [];
   var albReady = false;
   const allSongsList = () => [...songs, ...mySongs];
+  const albSongs = () => mySongs;
   function albCustom(){
-    const by = new Map(allSongsList().map(x=>[x.id, x]));
+    const by = new Map(albSongs().map(x=>[x.id, x]));
     return customAlbums.map(c=>{
       const k = 'c:' + c.id, arr = albArrs.get(k) || []; albArrs.set(k, arr);
       arr.length = 0; (c.songIds||[]).forEach(id=>{ const x = by.get(id); if(x) arr.push(x); });
@@ -2743,7 +2764,7 @@
   let edId = null, edSel = [], edQ = '';
   const CHK = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
   function edCoverOpts(){
-    const sel = document.getElementById('albEdCover'), cur = sel.value, by = new Map(allSongsList().map(x=>[x.id,x]));
+    const sel = document.getElementById('albEdCover'), cur = sel.value, by = new Map(albSongs().map(x=>[x.id,x]));
     sel.innerHTML = '';
     const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Automática (primera canción)'; sel.appendChild(o0);
     edSel.forEach(id=>{ const x = by.get(id); if(!x) return; const o = document.createElement('option'); o.value = id; o.textContent = x.title + (x.artist ? ' – ' + x.artist : ''); sel.appendChild(o); });
@@ -2752,7 +2773,7 @@
   function edRender(){
     const list = document.getElementById('albEdList'), q = albNorm(edQ);
     list.innerHTML = '';
-    allSongsList().filter(x=>!q || albNorm(x.title + ' ' + (x.artist||'')).includes(q)).forEach(x=>{
+    albSongs().filter(x=>!q || albNorm(x.title + ' ' + (x.artist||'')).includes(q)).forEach(x=>{
       const r = document.createElement('div'); r.className = 'pick-row' + (edSel.includes(x.id) ? ' on' : '');
       r.innerHTML = '<div class="pick-cov" style="background:' + bgOf(x) + '"></div><div class="pick-meta"><b></b><span></span></div><div class="pick-chk">' + CHK + '</div>';
       r.querySelector('b').textContent = x.title; r.querySelector('span').textContent = x.artist || '';
@@ -3110,7 +3131,8 @@
       document.getElementById('panel-canciones').style.display = tab==='canciones' ? '' : 'none';
       document.getElementById('panel-mias').style.display = tab==='mias' ? '' : 'none';
       document.getElementById('panel-albumes').style.display = tab==='albumes' ? '' : 'none';
-      if(tab==='albumes') renderAlbums(); else playRows(document.getElementById(tab==='mias' ? 'panel-mias-list' : 'panel-canciones-list'));
+      document.getElementById('panel-encanta').style.display = tab==='encanta' ? '' : 'none';
+      if(tab==='albumes') renderAlbums(); else playRows(document.getElementById(tab==='mias' ? 'panel-mias-list' : tab==='encanta' ? 'panel-encanta-list' : 'panel-canciones-list'));
     });
   });
 
