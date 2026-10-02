@@ -533,6 +533,42 @@
   .off-btn.on{border-color:rgba(30,215,96,.45);color:var(--green);}
   .off-btn:disabled{opacity:.6;}
   .off-dot{color:var(--green);font-weight:800;margin-right:4px;}
+  .tabs{overflow-x:auto;scrollbar-width:none;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tabs button{flex:none;}
+  .alb-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px 14px;padding:12px 20px 120px;}
+  .alb-card{cursor:pointer;animation:rvUp .5s cubic-bezier(.22,1,.36,1) backwards;}
+  .alb-card:active{transform:scale(.97);}
+  .alb-cov{aspect-ratio:1;border-radius:14px;background-size:cover;background-position:center;box-shadow:0 10px 26px rgba(0,0,0,.45);}
+  .alb-name{margin-top:9px;font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .alb-sub{font-size:12px;opacity:.6;margin-top:2px;}
+  #albView{z-index:14;}
+  #albView .adm-wrap{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px));}
+  .alb-hero{display:flex;flex-direction:column;align-items:center;gap:16px;padding:6px 0 20px;}
+  .alb-big{width:62%;max-width:240px;aspect-ratio:1;border-radius:18px;background-size:cover;background-position:center;box-shadow:0 18px 44px rgba(0,0,0,.55);}
+  .alb-play{display:flex;align-items:center;gap:8px;padding:12px 26px;border:0;border-radius:999px;background:var(--green);color:#04210f;font-family:var(--font);font-size:14.5px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(30,215,96,.3);}
+  .alb-play svg{width:16px;height:16px;fill:currentColor;}
+  .alb-h{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 0;font-size:19px;font-weight:800;}
+  .alb-new .alb-cov{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#17331f,#1d1d1d);border:1.5px dashed rgba(30,215,96,.55);box-shadow:none;color:var(--green);}
+  .alb-new .alb-cov svg{width:38px;height:38px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;}
+  .alb-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .alb-sec{background:var(--surface-2);color:var(--text);box-shadow:none;border:1px solid var(--divider);}
+  .alb-input{width:100%;box-sizing:border-box;margin:6px 0 14px;padding:13px 14px;border-radius:12px;border:1px solid var(--divider);background:var(--surface);color:var(--text);font-family:var(--font);font-size:15px;}
+  .alb-lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.6;font-weight:700;margin-top:4px;}
+  .pick-row{display:flex;align-items:center;gap:12px;padding:8px 4px;border-radius:12px;cursor:pointer;}
+  .pick-row.on{background:rgba(30,215,96,.1);}
+  .pick-cov{width:46px;height:46px;border-radius:8px;background-size:cover;background-position:center;flex:none;}
+  .pick-meta{flex:1;min-width:0;}
+  .pick-meta b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pick-meta span{font-size:12px;opacity:.6;}
+  .pick-chk{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.3);flex:none;display:flex;align-items:center;justify-content:center;}
+  .pick-row.on .pick-chk{background:var(--green);border-color:var(--green);color:#04210f;}
+  .pick-chk svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;opacity:0;}
+  .pick-row.on .pick-chk svg{opacity:1;}
+  .alb-bar{position:sticky;bottom:0;display:flex;gap:10px;padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,var(--bg) 28%);margin-top:10px;}
+  .alb-bar .alb-play{flex:1;justify-content:center;}
+  .alb-del{flex:none;width:48px;border-radius:50%;border:1px solid rgba(255,90,90,.5);background:transparent;color:#ff6b6b;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .alb-del svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <script type="module">
@@ -692,6 +728,7 @@
   <nav class="tabs">
     <button class="active" data-tab="canciones">Nuestras canciones</button>
     <button data-tab="mias">Mis canciones</button>
+    <button data-tab="albumes">Álbumes</button>
   </nav>
 
   <main>
@@ -702,6 +739,9 @@
     <section id="panel-mias" style="display:none;">
       <div id="adder-mine"></div>
       <div id="panel-mias-list"></div>
+    </section>
+    <section id="panel-albumes" style="display:none;">
+      <div id="panel-albumes-list"></div>
     </section>
   </main>
 </div>
@@ -838,6 +878,11 @@
       <span class="adm-txt"><b>Canciones</b><span>Consulta, edita o elimina las canciones de la playlist.</span></span>
       <svg class="adm-chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
     </button>
+    <button class="adm-card" id="admAlbums" type="button">
+      <span class="adm-ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/></svg></span>
+      <span class="adm-txt"><b>Álbumes</b><span>Crea, edita o elimina tus álbumes personalizados.</span></span>
+      <svg class="adm-chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+    </button>
     <button class="adm-card" id="admBatch" type="button">
       <span class="adm-ico"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
       <span class="adm-txt"><b>Subir por lote</b><span>Agrega varias canciones a la vez con su portada.</span></span>
@@ -861,6 +906,50 @@
     </div>
     <div class="tr-note"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span>Restaurar devuelve la canción a la lista. Eliminar definitivamente borra también su audio y su portada, y no se puede deshacer.</span></div>
     <div id="trList"></div>
+  </div>
+</div>
+<div class="adm-view" id="albAdmView" aria-hidden="true">
+  <div class="adm-wrap">
+    <div class="adm-top">
+      <button class="adm-back" id="albAdmBack" type="button" aria-label="Volver"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="adm-eyebrow">Administración</div>
+      <div class="adm-title">Álbumes</div>
+      <div class="adm-sub" id="albAdmSub"></div>
+    </div>
+    <button class="alb-play" id="albAdmNew" type="button" style="width:100%;justify-content:center;margin-bottom:16px"><svg viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>Nuevo álbum</button>
+    <div id="albAdmList"></div>
+  </div>
+</div>
+<div class="adm-view" id="albEdView" aria-hidden="true">
+  <div class="adm-wrap">
+    <div class="adm-top">
+      <button class="adm-back" id="albEdBack" type="button" aria-label="Volver"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="adm-eyebrow">Álbumes personalizados</div>
+      <div class="adm-title" id="albEdTitle">Nuevo álbum</div>
+    </div>
+    <div class="alb-lbl">Nombre</div>
+    <input class="alb-input" id="albEdName" maxlength="40" placeholder="Ej. Nostalgia, Para hacer ejercicio" autocomplete="off">
+    <div class="alb-lbl">Portada</div>
+    <select class="alb-input" id="albEdCover"></select>
+    <div class="alb-lbl" id="albEdCount">Canciones</div>
+    <label class="adm-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="albEdQ" type="search" placeholder="Buscar canción o artista"></label>
+    <div id="albEdList"></div>
+    <div class="alb-bar"><button class="alb-del" id="albEdDel" type="button" aria-label="Eliminar álbum" style="display:none"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button><button class="alb-play" id="albEdSave" type="button">Guardar álbum</button></div>
+  </div>
+</div>
+<div class="adm-view" id="albView" aria-hidden="true">
+  <div class="adm-wrap">
+    <div class="adm-top">
+      <button class="adm-back" id="albBack" type="button" aria-label="Volver"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="adm-eyebrow">Álbum</div>
+      <div class="adm-title" id="albTitle"></div>
+      <div class="adm-sub" id="albSub"></div>
+    </div>
+    <div class="alb-hero">
+      <div class="alb-big" id="albCover"></div>
+      <div class="alb-row"><button class="alb-play" id="albPlay" type="button"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>Reproducir</button><button class="alb-play alb-sec" id="albEdit" type="button" style="display:none">Editar</button></div>
+    </div>
+    <div id="albList"></div>
   </div>
 </div>
 <div class="adm-view" id="songsView" aria-hidden="true">
@@ -1217,7 +1306,7 @@
       if(!rvSeen.has(rk)) rv(row, 'up', rk);
     });
   }
-  function renderTracks(){ renderInto(list, songs); renderInto(listMine, mySongs); }
+  function renderTracks(){ renderInto(list, songs); renderInto(listMine, mySongs); if(typeof renderAlbums==='function') renderAlbums(); }
   renderTracks();
 
   // ----- Firestore: sincroniza canciones (título/frase/nota/corazón/nota de ella) -----
@@ -1322,6 +1411,10 @@
       snap.forEach(d=>{ profiles[d.id] = d.data(); });
       applyProfile();
     });
+    onSnapshot(collection(db,'albums'), snap=>{
+      customAlbums = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+      renderAlbums();
+    }, err=>{ console.warn('albums', err); toast('Álbumes personalizados no disponibles', 'Revisa las reglas de Firestore para la colección «albums».', 'warn'); });
   }
   if(window.fb){ initFirestoreSongs(); initFirestoreExtra(); }
   else window.addEventListener('firebase-ready', ()=>{ initFirestoreSongs(); initFirestoreExtra(); });
@@ -1723,9 +1816,9 @@
     sheetIsOpen = false;
   }
   window.addEventListener('popstate', ()=>{
+    if(sheetIsOpen){ closeSheetVisual(); return; }
     if(admPop()) return;
     if(profileOpen) closeProfileVisual();
-    else if(sheetIsOpen) closeSheetVisual();
   });
   document.getElementById('sheetPlayBtn').addEventListener('click', togglePlay);
   document.getElementById('sheetNextBtn').addEventListener('click', nextTrack);
@@ -2256,6 +2349,7 @@
   function admPop(){
     const v = admStack.pop(); if(!v) return false;
     if(v.id==='songsView' && smSelMode){ admStack.push(v); history.pushState({ songs:true }, '', '#canciones'); exitSelMode(); return true; }
+    if(v.id==='albView') albOpen = null;
     admHide(v); return true;
   }
   function admBack(){ if(admStack.length) history.back(); }
@@ -2271,6 +2365,200 @@
     const v = document.getElementById('trashView');
     admStack.push(v); admShow(v); renderTrash(); playRows(document.getElementById('trList'));
   }
+  // ----- Álbumes automáticos (agrupados por artista) -----
+  const albNorm = t => (t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const albMain = a => (a||'').split(/\s*(?:,|;|\bfeat\.?|\bft\.?)\s*/i)[0].trim();
+  const albArrs = new Map();
+  let albOpen = null;
+  function albGroups(){
+    const m = new Map();
+    [...songs, ...mySongs].forEach(x=>{
+      const name = albMain(x.artist), k = albNorm(name) || '_';
+      if(!m.has(k)) m.set(k, { key:k, name:name || 'Sin artista', songs:[] });
+      m.get(k).songs.push(x);
+    });
+    return [...m.values()].map(g=>{
+      const arr = albArrs.get(g.key) || []; albArrs.set(g.key, arr);
+      arr.length = 0; arr.push(...g.songs); g.songs = arr; return g;
+    }).sort((a,b)=> a.key==='_' ? 1 : b.key==='_' ? -1 : a.name.localeCompare(b.name,'es'));
+  }
+  const albCount = n => n + (n===1 ? ' canción' : ' canciones');
+  var customAlbums = [];
+  var albReady = false;
+  const allSongsList = () => [...songs, ...mySongs];
+  function albCustom(){
+    const by = new Map(allSongsList().map(x=>[x.id, x]));
+    return customAlbums.map(c=>{
+      const k = 'c:' + c.id, arr = albArrs.get(k) || []; albArrs.set(k, arr);
+      arr.length = 0; (c.songIds||[]).forEach(id=>{ const x = by.get(id); if(x) arr.push(x); });
+      return { key:k, id:c.id, name:c.name || 'Álbum', songs:arr, custom:true, coverId:c.coverId || '' };
+    }).sort((x,y)=>x.name.localeCompare(y.name,'es'));
+  }
+  const albAll = () => [...albCustom(), ...albGroups()];
+  const albCoverSong = a => (a.coverId && a.songs.find(x=>x.id===a.coverId)) || a.songs.find(x=>covOf(x)) || a.songs[0];
+  function albCard(a, i){
+    const c = document.createElement('div'); c.className = 'alb-card'; c.style.animationDelay = Math.min(i,12)*40 + 'ms';
+    const cs = albCoverSong(a);
+    c.innerHTML = '<div class="alb-cov" style="' + (cs ? 'background:' + bgOf(cs) : 'background:linear-gradient(135deg,#2a2a2a,#151515)') + '"></div><div class="alb-name"></div><div class="alb-sub"></div>';
+    c.querySelector('.alb-name').textContent = a.name;
+    c.querySelector('.alb-sub').textContent = albCount(a.songs.length);
+    c.addEventListener('click', ()=>openAlbum(a.key));
+    return c;
+  }
+  function renderAlbums(){
+    const box = document.getElementById('panel-albumes-list'); if(!box || !albReady) return;
+    box.innerHTML = '';
+    const sec = (title, cards, first)=>{
+      const h = document.createElement('div'); h.className = 'alb-h'; h.textContent = title; box.appendChild(h);
+      const grid = document.createElement('div'); grid.className = 'alb-grid'; grid.style.paddingBottom = '8px';
+      if(first) grid.appendChild(first); cards.forEach(c=>grid.appendChild(c)); box.appendChild(grid);
+    };
+    const nw = document.createElement('div'); nw.className = 'alb-card alb-new';
+    nw.innerHTML = '<div class="alb-cov"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="alb-name">Nuevo álbum</div><div class="alb-sub">Crea el tuyo</div>';
+    nw.addEventListener('click', ()=>openAlbumEditor(null));
+    sec('Mis álbumes', albCustom().map(albCard), nw);
+    const g = albGroups();
+    if(g.length) sec('Por artista', g.map(albCard));
+    box.lastElementChild.style.paddingBottom = '120px';
+    if(albOpen){ const a = albAll().find(x=>x.key===albOpen); if(a) fillAlbum(a); else albClose(); }
+    renderAdminAlbums();
+  }
+  function albClose(){
+    albOpen = null;
+    const v = document.getElementById('albView'), i = admStack.indexOf(v);
+    if(i>=0){ admStack.splice(i,1); admHide(v); }
+  }
+  function fillAlbum(a){
+    if(!a){ albOpen = null; return; }
+    const cs = albCoverSong(a);
+    document.getElementById('albTitle').textContent = a.name;
+    document.getElementById('albSub').textContent = albCount(a.songs.length) + (a.custom ? ' · álbum personalizado' : '');
+    document.getElementById('albCover').style.background = cs ? bgOf(cs) : 'linear-gradient(135deg,#2a2a2a,#151515)';
+    document.getElementById('albEdit').style.display = a.custom ? '' : 'none';
+    renderInto(document.getElementById('albList'), a.songs);
+  }
+  function openAlbum(key){
+    albOpen = key; fillAlbum(albAll().find(x=>x.key===key));
+    history.pushState({ album:true }, '', '#album');
+    const v = document.getElementById('albView'); v.scrollTop = 0;
+    admStack.push(v); admShow(v);
+  }
+
+  // ----- Editor de álbumes personalizados -----
+  let edId = null, edSel = [], edQ = '';
+  const CHK = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+  function edCoverOpts(){
+    const sel = document.getElementById('albEdCover'), cur = sel.value, by = new Map(allSongsList().map(x=>[x.id,x]));
+    sel.innerHTML = '';
+    const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Automática (primera canción)'; sel.appendChild(o0);
+    edSel.forEach(id=>{ const x = by.get(id); if(!x) return; const o = document.createElement('option'); o.value = id; o.textContent = x.title + (x.artist ? ' – ' + x.artist : ''); sel.appendChild(o); });
+    sel.value = [...sel.options].some(o=>o.value===cur) ? cur : '';
+  }
+  function edRender(){
+    const list = document.getElementById('albEdList'), q = albNorm(edQ);
+    list.innerHTML = '';
+    allSongsList().filter(x=>!q || albNorm(x.title + ' ' + (x.artist||'')).includes(q)).forEach(x=>{
+      const r = document.createElement('div'); r.className = 'pick-row' + (edSel.includes(x.id) ? ' on' : '');
+      r.innerHTML = '<div class="pick-cov" style="background:' + bgOf(x) + '"></div><div class="pick-meta"><b></b><span></span></div><div class="pick-chk">' + CHK + '</div>';
+      r.querySelector('b').textContent = x.title; r.querySelector('span').textContent = x.artist || '';
+      r.addEventListener('click', ()=>{
+        const i = edSel.indexOf(x.id); if(i>=0) edSel.splice(i,1); else edSel.push(x.id);
+        r.classList.toggle('on'); edCount(); edCoverOpts();
+      });
+      list.appendChild(r);
+    });
+    if(!list.children.length) list.innerHTML = '<div class="empty"><span>Sin resultados</span>Prueba con otra búsqueda.</div>';
+    edCount();
+  }
+  const edCount = () => { document.getElementById('albEdCount').textContent = 'Canciones · ' + edSel.length + (edSel.length===1 ? ' seleccionada' : ' seleccionadas'); };
+  function openAlbumEditor(id){
+    const c = id ? customAlbums.find(x=>x.id===id) : null;
+    edId = c ? c.id : null; edSel = c ? [...(c.songIds||[])] : []; edQ = '';
+    document.getElementById('albEdTitle').textContent = c ? 'Editar álbum' : 'Nuevo álbum';
+    document.getElementById('albEdName').value = c ? (c.name||'') : '';
+    document.getElementById('albEdQ').value = '';
+    document.getElementById('albEdDel').style.display = c ? '' : 'none';
+    edCoverOpts(); document.getElementById('albEdCover').value = c ? (c.coverId||'') : '';
+    edRender();
+    history.pushState({ albed:true }, '', '#editar-album');
+    const v = document.getElementById('albEdView'); v.scrollTop = 0;
+    admStack.push(v); admShow(v);
+  }
+  async function edSave(){
+    const name = document.getElementById('albEdName').value.trim();
+    if(!name){ toast('Falta el nombre', 'Escribe un nombre para el álbum.', 'warn'); return; }
+    if(!edSel.length){ toast('Álbum vacío', 'Selecciona al menos una canción.', 'warn'); return; }
+    if(!window.fb || !myRole){ toast('Sin conexión', 'No hay conexión con el servidor. Inténtalo de nuevo en unos segundos.', 'warn'); return; }
+    const { db, collection, doc, addDoc, updateDoc } = window.fb;
+    const data = { name, songIds:[...edSel], coverId:document.getElementById('albEdCover').value || '', updatedAt:Date.now() };
+    const b = document.getElementById('albEdSave'); b.disabled = true;
+    try{
+      if(edId) await updateDoc(doc(db,'albums',edId), data);
+      else await addDoc(collection(db,'albums'), { ...data, createdAt:Date.now(), createdBy:myRole });
+      toast('Álbum guardado', '«' + name + '» ya está en Mis álbumes.', 'ok');
+      admBack();
+    }catch(e){ console.warn(e); toast('No se pudo guardar', 'Revisa tu conexión o los permisos de Firestore.', 'err'); }
+    b.disabled = false;
+  }
+  async function albDelete(id, inEditor){
+    const c = customAlbums.find(x=>x.id===id); if(!c) return;
+    const ok = await uiDialog({ tone:'danger', title:'Eliminar álbum', message:'Se eliminará «' + (c.name||'Álbum') + '». Las canciones no se borran.', confirmText:'Eliminar' });
+    if(!ok) return;
+    try{
+      await window.fb.deleteDoc(window.fb.doc(window.fb.db,'albums',c.id));
+      toast('Álbum eliminado', 'Las canciones siguen en tu biblioteca.', 'ok');
+      if(albOpen==='c:'+c.id) albClose();
+      if(inEditor) admBack();
+    }catch(e){ console.warn(e); toast('No se pudo eliminar', 'Revisa tu conexión o los permisos de Firestore.', 'err'); }
+  }
+  const edDelete = () => albDelete(edId, true);
+  function renderAdminAlbums(){
+    const v = document.getElementById('albAdmView');
+    if(!v || !v.classList.contains('open')) return;
+    const list = albCustom(), box = document.getElementById('albAdmList');
+    document.getElementById('albAdmSub').textContent = list.length + (list.length===1 ? ' álbum personalizado' : ' álbumes personalizados');
+    box.innerHTML = '';
+    if(!list.length){ box.innerHTML = '<div class="tr-empty"><div class="tr-empty-ico">' + ICO_EDIT + '</div><b>Aún no hay álbumes</b>Crea el primero con el botón de arriba.</div>'; return; }
+    list.forEach(a=>{
+      const row = document.createElement('div'); row.className = 'tr-row';
+      const th = document.createElement('div'); th.className = 'tr-thumb';
+      const cs = albCoverSong(a);
+      if(cs && covOf(cs)){ const im = document.createElement('img'); im.src = covOf(cs); im.alt = ''; im.draggable = false; th.appendChild(im); }
+      else { th.textContent = '♪'; if(cs && cs.grad) th.style.background = cs.grad; }
+      const info = document.createElement('div'); info.className = 'tr-info';
+      const t1 = document.createElement('div'); t1.className = 'tr-title'; t1.textContent = a.name;
+      const t2 = document.createElement('div'); t2.className = 'tr-sub'; t2.textContent = albCount(a.songs.length);
+      info.appendChild(t1); info.appendChild(t2);
+      const acts = document.createElement('div'); acts.className = 'tr-acts';
+      const bE = document.createElement('button'); bE.type = 'button'; bE.className = 'ic-btn'; bE.innerHTML = ICO_EDIT; bE.setAttribute('aria-label','Editar'); bE.title = 'Editar';
+      const bD = document.createElement('button'); bD.type = 'button'; bD.className = 'ic-btn danger'; bD.innerHTML = ICO_TRASH; bD.setAttribute('aria-label','Eliminar'); bD.title = 'Eliminar';
+      bE.addEventListener('click', ()=>openAlbumEditor(a.id));
+      bD.addEventListener('click', ()=>albDelete(a.id, false));
+      acts.appendChild(bE); acts.appendChild(bD);
+      row.appendChild(th); row.appendChild(info); row.appendChild(acts); box.appendChild(row);
+    });
+  }
+  function openAlbAdm(){
+    history.pushState({ albadm:true }, '', '#albumes-admin');
+    const v = document.getElementById('albAdmView'); v.scrollTop = 0;
+    admStack.push(v); admShow(v); renderAdminAlbums();
+  }
+  document.getElementById('admAlbums').addEventListener('click', openAlbAdm);
+  document.getElementById('albAdmBack').addEventListener('click', admBack);
+  document.getElementById('albAdmNew').addEventListener('click', ()=>openAlbumEditor(null));
+  document.getElementById('albEdBack').addEventListener('click', admBack);
+  document.getElementById('albEdSave').addEventListener('click', edSave);
+  document.getElementById('albEdDel').addEventListener('click', edDelete);
+  document.getElementById('albEdQ').addEventListener('input', e=>{ edQ = e.target.value; edRender(); });
+  document.getElementById('albEdit').addEventListener('click', ()=>{ const a = albAll().find(x=>x.key===albOpen); if(a && a.custom) openAlbumEditor(a.id); });
+  document.getElementById('albBack').addEventListener('click', admBack);
+  document.getElementById('albPlay').addEventListener('click', ()=>{
+    const a = albAll().find(x=>x.key===albOpen); if(!a || !a.songs.length) return;
+    if(playlist!==a.songs){ playlist = a.songs; currentIndex = null; }
+    playIndex(0);
+  });
+  albReady = true; renderAlbums();
+
   document.getElementById('admBack').addEventListener('click', admBack);
   document.getElementById('trBack').addEventListener('click', admBack);
   document.getElementById('admTrash').addEventListener('click', openTrash);
@@ -2526,7 +2814,8 @@
       const tab = btn.dataset.tab;
       document.getElementById('panel-canciones').style.display = tab==='canciones' ? '' : 'none';
       document.getElementById('panel-mias').style.display = tab==='mias' ? '' : 'none';
-      playRows(document.getElementById(tab==='mias' ? 'panel-mias-list' : 'panel-canciones-list'));
+      document.getElementById('panel-albumes').style.display = tab==='albumes' ? '' : 'none';
+      if(tab==='albumes') renderAlbums(); else playRows(document.getElementById(tab==='mias' ? 'panel-mias-list' : 'panel-canciones-list'));
     });
   });
 
