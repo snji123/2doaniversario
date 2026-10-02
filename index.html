@@ -1214,11 +1214,32 @@
   }));
   function offIndex(r){
     const o = OFF.get(r.key); if(o){ URL.revokeObjectURL(o.a); if(o.c) URL.revokeObjectURL(o.c); }
-    OFF.set(r.key, { audioUrl:r.audioUrl, a:URL.createObjectURL(r.audio), c:r.cover ? URL.createObjectURL(r.cover) : '', size:r.size, blob:r.audio });
+    OFF.set(r.key, { audioUrl:r.audioUrl, coverUrl:r.coverUrl, a:URL.createObjectURL(r.audio), c:r.cover ? URL.createObjectURL(r.cover) : '', size:r.size, blob:r.audio });
   }
   const offGet = s => { const e = OFF.get(offKey(s)); return e && e.audioUrl===s.audio ? e : null; };
   const audioSrc = s => (offGet(s) || {}).a || s.audio;
-  function covOf(s){ const e = offGet(s); return (e && e.c) || s.cover; }
+  function covOf(s){
+    const e = offGet(s);
+    if(e && e.c && (e.coverUrl === s.cover || (e.coverUrl === undefined && !navigator.onLine))) return e.c;
+    return s.cover;
+  }
+  const offHealing = new Set();
+  async function offHeal(){
+    if(!albReady || !navigator.onLine) return;
+    let changed = false;
+    for(const x of allSongsList()){
+      const e = offGet(x); if(!e) continue;
+      if(e.coverUrl === x.cover || (e.coverUrl === undefined && !x.cover)) continue;
+      const k = offKey(x); if(offHealing.has(k)) continue;
+      offHealing.add(k);
+      try{
+        const c = x.cover ? await offFetch(x.cover) : null;
+        const rec = await offTx('readonly', st=>st.get(k));
+        if(rec){ rec.cover = c; rec.coverUrl = x.cover || ''; rec.size = (rec.audio ? rec.audio.size : 0) + (c ? c.size : 0); await offTx('readwrite', st=>st.put(rec)); offIndex(rec); changed = true; }
+      }catch(_){} finally{ offHealing.delete(k); }
+    }
+    if(changed) renderTracks();
+  }
   const T_OK = UI_ICO.ok ? 'ok' : (UI_ICO.success ? 'success' : 'info');
   const T_ERR = UI_ICO.err ? 'err' : (UI_ICO.error ? 'error' : (UI_ICO.danger ? 'danger' : 'info'));
   function offRefresh(){
@@ -1243,7 +1264,7 @@
     const a = await offFetch(s.audio);
     let c = null;
     if(s.cover){ try{ c = await offFetch(s.cover); }catch(e){} }
-    const rec = { key:offKey(s), audioUrl:s.audio, audio:a, cover:c, size:a.size + (c ? c.size : 0), ts:Date.now() };
+    const rec = { key:offKey(s), audioUrl:s.audio, coverUrl:s.cover || '', audio:a, cover:c, size:a.size + (c ? c.size : 0), ts:Date.now() };
     await offTx('readwrite', st=>st.put(rec));
     offIndex(rec);
     if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
@@ -1393,14 +1414,15 @@
       if(!rvSeen.has(rk)) rv(row, 'up', rk);
     });
   }
-  function renderTracks(){ renderInto(list, songs); renderInto(listMine, mySongs); if(typeof renderAlbums==='function') renderAlbums(); }
+  function renderTracks(){ renderInto(list, songs); renderInto(listMine, mySongs); if(typeof renderAlbums==='function') renderAlbums(); if(typeof offHeal==='function') offHeal(); }
   renderTracks();
 
   // ----- Firestore: sincroniza canciones (título/frase/nota/corazón/nota de ella) -----
   const defaults = songs.slice();
   const removedDefaults = new Set();
   let allOurs = [];
-  const colOf = (arr, s) => arr===mySongs ? 'mySongs' : (s._col || 'songs');
+  const colOf = (arr, s) => (arr===mySongs || mySongs.includes(s)) ? 'mySongs' : (s._col || 'songs');
+  const homeArr = s => mySongs.includes(s) ? mySongs : songs;
   function rebuildOurs(){
     const keep = (playlist===songs && currentIndex!==null) ? songs[currentIndex] : null;
     songs.length = 0;
@@ -2165,7 +2187,7 @@
   document.getElementById('menuDelete').addEventListener('click', async ()=>{
     coverMenu.classList.remove('show');
     if(currentIndex===null) return;
-    const arr = playlist, s = arr[currentIndex];
+    const s = playlist[currentIndex], arr = homeArr(s);
     const okDel = await confirmTrash(s);
     if(!okDel) return;
     await trashSong(arr, s);
@@ -2174,7 +2196,7 @@
   const confirmTrash = (s)=> uiDialog({ tone:'danger', icon:'trash', title:'¿Mover a la papelera?', message:`«${s.title}» dejará de mostrarse en la lista. Podrás restaurarla cuando quieras desde Administrador → Papelera.`, confirmText:'Mover a la papelera', cancelText:'Cancelar' });
   async function trashSong(arr, s, opts){
     opts = opts || {};
-    const playing = currentIndex!==null && playlist===arr && arr[currentIndex]===s;
+    const playing = currentIndex!==null && playlist[currentIndex]===s;
     if(playing){
       audio.pause(); isPlaying=false; setPlayIcons(false);
       mini.classList.remove('show');
@@ -2203,7 +2225,7 @@
   document.getElementById('menuEdit').addEventListener('click', ()=>{
     coverMenu.classList.remove('show');
     if(currentIndex===null) return;
-    openEditFor(playlist, playlist[currentIndex]);
+    openEditFor(homeArr(playlist[currentIndex]), playlist[currentIndex]);
   });
   function openEditFor(arr, s){
     editArr = arr; editTarget = s;
