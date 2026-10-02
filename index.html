@@ -161,8 +161,15 @@
     position:absolute;left:0;right:0;bottom:0;padding:20px 16px 16px;
     background:linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.35) 55%, transparent 100%);
   }
-  .sheet-progress-bar{height:3px;border-radius:2px;background:rgba(255,255,255,0.25);margin-bottom:6px;cursor:pointer;overflow:hidden;}
-  .sheet-progress-fill{height:100%;width:0%;background:var(--green);border-radius:2px;}
+  .sheet-progress-bar{position:relative;height:4px;border-radius:2px;background:rgba(255,255,255,0.25);margin:6px 7px 10px;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;}
+  .sheet-progress-bar::before{content:'';position:absolute;left:-12px;right:-12px;top:-16px;bottom:-16px;}
+  .sheet-progress-fill{position:relative;height:100%;width:0%;background:var(--green);border-radius:2px;}
+  .sheet-progress-fill::after{content:'';position:absolute;right:-7px;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.5);transition:transform .15s;}
+  .sheet-progress-bar.drag .sheet-progress-fill::after{transform:scale(1.45);}
+  @keyframes swNext{from{opacity:.2;transform:translateX(46px)}to{opacity:1;transform:none}}
+  @keyframes swPrev{from{opacity:.2;transform:translateX(-46px)}to{opacity:1;transform:none}}
+  .big-cover.sw-next{animation:swNext .32s cubic-bezier(.22,1,.36,1);}
+  .big-cover.sw-prev{animation:swPrev .32s cubic-bezier(.22,1,.36,1);}
   .sheet-times{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.85);margin-bottom:10px;}
   .sheet-controls-row{display:flex;align-items:center;justify-content:center;gap:26px;}
   .sheet-nav-btn{background:none;border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:6px;}
@@ -1780,8 +1787,9 @@
   document.getElementById('mpPlayBtn').addEventListener('click', (e)=>{ e.stopPropagation(); togglePlay(); });
   mini.addEventListener('click', ()=>{ if(currentIndex!==null) openSheet(currentIndex); });
   document.getElementById('heroPlay').addEventListener('click', togglePlay);
+  var seekDrag = false;
   audio.addEventListener('timeupdate', ()=>{
-    if(audio.duration){
+    if(audio.duration && !seekDrag){
       const pct = (audio.currentTime/audio.duration*100)+'%';
       document.getElementById('mpProgress').style.width = pct;
       document.getElementById('sheetProgressFill').style.width = pct;
@@ -1823,12 +1831,58 @@
   document.getElementById('sheetPlayBtn').addEventListener('click', togglePlay);
   document.getElementById('sheetNextBtn').addEventListener('click', nextTrack);
   document.getElementById('sheetPrevBtn').addEventListener('click', prevTrack);
-  document.getElementById('sheetProgressBar').addEventListener('click', (e)=>{
-    if(!audio.duration) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = (e.clientX - rect.left) / rect.width;
-    audio.currentTime = ratio * audio.duration;
-  });
+  // Barra de progreso: tocar o arrastrar el puntito
+  (function(){
+    const bar = document.getElementById('sheetProgressBar'), fill = document.getElementById('sheetProgressFill');
+    let ratio = 0;
+    const calc = e => { const r = bar.getBoundingClientRect(); return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); };
+    const preview = e => {
+      ratio = calc(e);
+      fill.style.width = (ratio*100) + '%';
+      document.getElementById('mpProgress').style.width = (ratio*100) + '%';
+      document.getElementById('sheetTimeCur').textContent = fmtTime(ratio * audio.duration);
+    };
+    bar.addEventListener('pointerdown', e=>{
+      if(!audio.duration) return;
+      seekDrag = true; bar.classList.add('drag');
+      try{ bar.setPointerCapture(e.pointerId); }catch(_){}
+      preview(e); e.preventDefault();
+    });
+    bar.addEventListener('pointermove', e=>{ if(seekDrag) preview(e); });
+    const end = e=>{
+      if(!seekDrag) return;
+      seekDrag = false; bar.classList.remove('drag');
+      if(e.type==='pointerup' && audio.duration) audio.currentTime = ratio * audio.duration;
+    };
+    bar.addEventListener('pointerup', end);
+    bar.addEventListener('pointercancel', end);
+  })();
+
+  // Deslizar a los lados para cambiar de canción (ficha y mini reproductor)
+  (function(){
+    const cover = document.getElementById('sheetCover');
+    function attach(el, animate){
+      let x0 = 0, y0 = 0, ok = false;
+      el.addEventListener('touchstart', e=>{
+        ok = e.touches.length===1 && !e.target.closest('.sheet-progress-bar, button, input, textarea, select, .cover-menu');
+        if(ok){ x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }
+      }, { passive:true });
+      el.addEventListener('touchend', e=>{
+        if(!ok) return; ok = false;
+        const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+        if(Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)*1.5 || !playlist.length) return;
+        if(navigator.vibrate) navigator.vibrate(8);
+        const next = dx < 0;
+        if(next) nextTrack(); else prevTrack();
+        if(animate){
+          cover.classList.remove('sw-next','sw-prev'); void cover.offsetWidth;
+          cover.classList.add(next ? 'sw-next' : 'sw-prev');
+        }
+      }, { passive:true });
+    }
+    attach(sheet, true);
+    attach(mini, false);
+  })();
   document.getElementById('closeSheet').addEventListener('click', ()=>{
     if(sheetIsOpen) history.back(); // dispara popstate, que cierra la ficha (no sale de la página)
   });
