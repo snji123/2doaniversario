@@ -609,6 +609,36 @@
   .sp-aux.on{color:var(--green);}
   .sp-aux.on::after{content:'';position:absolute;bottom:2px;width:4px;height:4px;border-radius:50%;background:var(--green);}
   .sheet .off-row{margin:6px 0 24px;}
+  /* ajuste fino: más discreto */
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+  .sp-top{margin:-6px 0 8px;}
+  .sp-chev{width:36px;height:36px;} .sp-chev svg{width:24px;height:24px;}
+  .sp-ctx span{font-size:10.5px;opacity:.7;letter-spacing:.01em;}
+  .sp-ctx b{font-size:12.5px;font-weight:700;}
+  .sp-menu .cover-menu-btn{width:36px;height:36px;} .sp-menu .cover-menu-btn svg{width:20px;height:20px;}
+  .sheet .big-cover{margin:8px 6px 22px;width:calc(100% - 12px);border-radius:8px;box-shadow:0 14px 36px rgba(0,0,0,.45);}
+  .sp-info{gap:6px;margin-bottom:10px;}
+  .sheet .sp-txt h2{font-size:20px;font-weight:700;letter-spacing:-.2px;margin:0 0 2px;}
+  .sheet .sp-txt .by{font-size:13.5px;}
+  .sp-acts{flex:none;display:flex;align-items:center;}
+  .sp-ic,.sp-like{width:38px;height:38px;}
+  .sp-ic{border:0;background:none;color:rgba(255,255,255,.7);cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;}
+  .sp-ic svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+  .sp-ic.on{color:var(--green);}
+  .sp-ic.on circle{fill:var(--green);}
+  .sp-ic.on path{stroke:#04210f;}
+  .sp-ic:disabled svg{animation:spPulse .9s ease-in-out infinite;}
+  @keyframes spPulse{50%{opacity:.35}}
+  .sp-like svg{width:25px;height:25px;}
+  .sheet .sheet-progress-bar{height:3px;margin:6px 6px 6px;}
+  .sheet .sheet-progress-fill::after{width:12px;height:12px;margin-top:-6px;right:-6px;}
+  .sheet .sheet-times{font-size:11px;margin-bottom:8px;}
+  .sheet .sheet-controls-row{margin-bottom:12px;}
+  .sheet .sheet-play-btn{width:60px;height:60px;}
+  .sheet .sheet-play-btn svg{width:26px;height:26px;}
+  .sheet .sheet-nav-btn svg{width:30px;height:30px;}
+  .sp-aux svg{width:23px;height:23px;}
+  .sheet-bg{opacity:1 !important;transition:opacity .4s;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <script type="module">
@@ -817,7 +847,11 @@
     <div class="big-cover" id="sheetCover"></div>
     <div class="sp-info">
       <div class="sp-txt"><h2 id="sheetTitle"></h2><div class="by" id="sheetArtist"></div></div>
-      <button class="sp-like" id="sheetLike" type="button" aria-label="Me gusta"><svg viewBox="0 0 24 24"><path d="M12 21s-6.7-4.35-9.3-8.1C.7 9.6 2 6 5.2 5.2c2-.5 4 .4 5.2 2.1L12 9.4l1.6-2.1c1.2-1.7 3.2-2.6 5.2-2.1C22 6 23.3 9.6 21.3 12.9 18.7 16.65 12 21 12 21z"/></svg></button>
+      <div class="sp-acts">
+        <button type="button" class="sp-ic" id="offBtn" aria-label="Guardar sin conexión"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v8M8.5 12.5l3.5 3.5 3.5-3.5"/></svg><span id="offBtnTx" class="sr">Guardar sin conexión</span></button>
+        <button type="button" class="sp-ic" id="dlFileBtn" aria-label="Descargar archivo"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 20h14"/></svg><span class="sr">Descargar archivo</span></button>
+              <button class="sp-like" id="sheetLike" type="button" aria-label="Me gusta"><svg viewBox="0 0 24 24"><path d="M12 21s-6.7-4.35-9.3-8.1C.7 9.6 2 6 5.2 5.2c2-.5 4 .4 5.2 2.1L12 9.4l1.6-2.1c1.2-1.7 3.2-2.6 5.2-2.1C22 6 23.3 9.6 21.3 12.9 18.7 16.65 12 21 12 21z"/></svg></button>
+      </div>
     </div>
     <div class="sheet-progress-bar" id="sheetProgressBar"><div class="sheet-progress-fill" id="sheetProgressFill"></div></div>
     <div class="sheet-times"><span id="sheetTimeCur">0:00</span><span id="sheetTimeDur">0:00</span></div>
@@ -833,10 +867,6 @@
         <svg width="22" height="22" viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
       </button>
       <button class="sp-aux" id="repeatBtn" type="button" aria-label="Repetir canción"><svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/><path d="M11.5 10.5l1-.8v4.6" stroke-width="1.6"/></svg></button>
-    </div>
-    <div class="off-row">
-      <button type="button" class="off-btn" id="offBtn"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg><span id="offBtnTx">Guardar sin conexión</span></button>
-      <button type="button" class="off-btn" id="dlFileBtn"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg><span>Descargar archivo</span></button>
     </div>
     <div class="block" id="blkPhrase"><h3>La frase</h3><p class="phrase" id="sheetPhrase"></p></div>
     <div class="block" id="blkMeaning"><h3>Lo que significa</h3><p id="sheetMeaning"></p></div>
@@ -1247,7 +1277,7 @@
     }catch(e){ console.warn(e); toast('No se pudo guardar', 'Revisa tu conexión o el espacio disponible.', T_ERR); }
     b.disabled = false; offRefresh();
   });
-  document.getElementById('dlFileBtn').addEventListener('click', ()=>{ const s = playlist[currentIndex]; if(s) offDownloadFile(s); });
+  document.getElementById('dlFileBtn').addEventListener('click', async e=>{ const s = playlist[currentIndex]; if(!s) return; const b = e.currentTarget; if(await offDownloadFile(s, true)){ b.classList.add('on'); setTimeout(()=>b.classList.remove('on'), 1600); toast('Descarga iniciada', (s.title||'Canción') + ' se guarda en Descargas.', T_OK); } else toast('No se pudo descargar', 'Revisa tu conexión e inténtalo de nuevo.', T_ERR); });
   document.getElementById('smSelFile').addEventListener('click', async ()=>{
     const arr = [...smSel]; if(!arr.length) return;
     const b = document.getElementById('smSelFile'); b.disabled = true;
@@ -1884,6 +1914,42 @@
     const arr = songs.includes(x) ? songs : mySongs, i = arr.indexOf(x); if(i<0) return;
     toggleHeart(arr, i); spUpdate();
   });
+  const spColors = new Map();
+  function spColor(url){
+    if(spColors.has(url)) return Promise.resolve(spColors.get(url));
+    return new Promise((res,rej)=>{
+      const im = new Image(); im.crossOrigin = 'anonymous';
+      im.onload = ()=>{
+        try{
+          const c = document.createElement('canvas'); c.width = c.height = 24;
+          const g = c.getContext('2d'); g.drawImage(im, 0, 0, 24, 24);
+          const d = g.getImageData(0, 0, 24, 24).data;
+          let r=0, gr=0, b=0, w=0;
+          for(let i=0;i<d.length;i+=4){
+            const mx = Math.max(d[i],d[i+1],d[i+2]), mn = Math.min(d[i],d[i+1],d[i+2]);
+            if(mx < 28) continue;
+            const wt = 0.15 + (mx - mn) / 255;
+            r += d[i]*wt; gr += d[i+1]*wt; b += d[i+2]*wt; w += wt;
+          }
+          if(!w) return rej(new Error('sin color'));
+          let col = [r/w, gr/w, b/w];
+          const m = Math.max(...col), k = m > 150 ? 150 / m : 1;
+          col = col.map(v=>Math.round(v*k*0.9));
+          spColors.set(url, col); res(col);
+        }catch(e){ rej(e); }
+      };
+      im.onerror = ()=>rej(new Error('imagen'));
+      im.src = url;
+    });
+  }
+  function spBg(x){
+    const url = covOf(x), bg = document.getElementById('sheetBg');
+    if(!url){ bg.style.background = x.grad || ''; return; }
+    spColor(url).then(c=>{
+      if(playlist[currentIndex] !== x) return;
+      bg.style.background = 'linear-gradient(180deg, rgb(' + c.join(',') + ') 0%, rgba(' + c.map(v=>Math.round(v*0.5)).join(',') + ',1) 48%, #121212 100%)';
+    }).catch(()=>{ if(playlist[currentIndex]===x) bg.style.background = x.grad || ''; });
+  }
   function spUpdate(){
     if(currentIndex===null) return;
     const x = playlist[currentIndex]; if(!x) return;
@@ -1893,6 +1959,7 @@
     else { const g = albAll().find(a=>a.songs===playlist); if(g) ctx = 'Álbum ' + g.name; }
     document.getElementById('spCtx').textContent = ctx;
     document.getElementById('sheetLike').classList.toggle('on', !!x.liked);
+    spBg(x);
   }
   // Barra de progreso: tocar o arrastrar el puntito
   (function(){
