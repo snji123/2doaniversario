@@ -639,6 +639,14 @@
   .sheet .sheet-nav-btn svg{width:30px;height:30px;}
   .sp-aux svg{width:23px;height:23px;}
   .sheet-bg{opacity:1 !important;transition:opacity .4s;}
+  .sp-main{display:flex;flex-direction:column;min-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 56px);min-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 56px);}
+  .sp-bottom{margin-top:auto;padding-top:20px;padding-bottom:18px;}
+  .sp-info{margin-bottom:14px;}
+  .sheet .sheet-times{margin-bottom:16px;}
+  .sheet .sheet-controls-row{margin-bottom:6px;}
+  .cube-wrap{inset:0 !important;width:auto !important;height:auto !important;background:#000;perspective:1500px;}
+  .cube-face *{animation:none !important;}
+  .cube-face{overflow:hidden;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <script type="module">
@@ -831,6 +839,7 @@
 <div class="sheet" id="sheet">
   <div class="sheet-bg" id="sheetBg"></div>
   <div class="sheet-inner">
+    <div class="sp-main"><div class="sp-head">
     <div class="sp-top">
       <button class="sp-chev" id="closeSheet" aria-label="Cerrar"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
       <div class="sp-ctx"><span>Reproduciendo desde</span><b id="spCtx">Nuestras canciones</b></div>
@@ -845,6 +854,7 @@
       </div>
     </div>
     <div class="big-cover" id="sheetCover"></div>
+    </div><div class="sp-bottom">
     <div class="sp-info">
       <div class="sp-txt"><h2 id="sheetTitle"></h2><div class="by" id="sheetArtist"></div></div>
       <div class="sp-acts">
@@ -868,6 +878,7 @@
       </button>
       <button class="sp-aux" id="repeatBtn" type="button" aria-label="Repetir canción"><svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/><path d="M11.5 10.5l1-.8v4.6" stroke-width="1.6"/></svg></button>
     </div>
+    </div></div>
     <div class="block" id="blkPhrase"><h3>La frase</h3><p class="phrase" id="sheetPhrase"></p></div>
     <div class="block" id="blkMeaning"><h3>Lo que significa</h3><p id="sheetMeaning"></p></div>
     <div class="block" id="blkNote"><h3>Mi nota para ti</h3><div class="note-box"><p id="sheetNote"></p></div></div>
@@ -1988,45 +1999,107 @@
     bar.addEventListener('pointercancel', end);
   })();
 
-  // Deslizar a los lados para cambiar de canción (ficha y mini reproductor)
+  // Deslizar a los lados: cubo 3D que sigue al dedo (ficha completa) y deslizamiento simple en el mini reproductor
   (function(){
-    const cover = document.getElementById('sheetCover');
-    let cubeBusy = false;
-    function attach(el, animate){
-      let x0 = 0, y0 = 0, ok = false;
-      el.addEventListener('touchstart', e=>{
-        ok = e.touches.length===1 && !e.target.closest('.sheet-progress-bar, button, input, textarea, select, .cover-menu');
-        if(ok){ x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }
-      }, { passive:true });
-      el.addEventListener('touchend', e=>{
-        if(!ok) return; ok = false;
-        const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
-        if(Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)*1.5 || !playlist.length) return;
-        if(navigator.vibrate) navigator.vibrate(8);
-        const next = dx < 0;
-        if(animate && !cubeBusy && !matchMedia('(prefers-reduced-motion: reduce)').matches){
-          const r = cover.getBoundingClientRect();
-          const mk = () => { const c = cover.cloneNode(true); c.removeAttribute('id'); c.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id')); c.classList.add('cube-face'); return c; };
-          const out = mk();
-          if(next) nextTrack(); else prevTrack(true);
-          const inn = mk(), w = r.width, sgn = next ? 1 : -1;
-          const wrap = document.createElement('div'); wrap.className = 'cube-wrap';
-          wrap.style.cssText = 'left:' + r.left + 'px;top:' + r.top + 'px;width:' + w + 'px;height:' + r.height + 'px;';
-          const cube = document.createElement('div'); cube.className = 'cube';
-          cube.style.transform = 'translateZ(' + (-w/2) + 'px) rotateY(0deg)';
-          out.style.transform = 'translateZ(' + (w/2) + 'px)';
-          inn.style.transform = 'rotateY(' + (90*sgn) + 'deg) translateZ(' + (w/2) + 'px)';
-          cube.appendChild(out); cube.appendChild(inn); wrap.appendChild(cube); sheet.appendChild(wrap);
-          cubeBusy = true; cover.style.visibility = 'hidden';
-          void cube.offsetWidth;
-          cube.style.transform = 'translateZ(' + (-w/2) + 'px) rotateY(' + (-90*sgn) + 'deg)';
-          setTimeout(()=>{ wrap.remove(); cover.style.visibility = ''; cubeBusy = false; }, 540);
-        } else { if(next) nextTrack(); else prevTrack(true); }
-      }, { passive:true });
+    let busy = false;
+    const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const pick = () => {
+      const L = playlist.length, c = currentIndex;
+      let n = (c + 1) % L;
+      if(shuffleOn && L > 1){ do{ n = Math.floor(Math.random()*L); }while(n === c); }
+      return { next:n, prev:(c - 1 + L) % L };
+    };
+    function face(x){
+      const f = sheet.cloneNode(true);
+      f.removeAttribute('id'); f.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id'));
+      f.classList.add('cube-face'); f.classList.add('open'); f.style.visibility = 'visible';
+      if(x){
+        const q = k => f.querySelector(k);
+        q('.sp-txt h2').textContent = x.title || ''; q('.sp-txt .by').textContent = x.artist || '';
+        q('.big-cover').style.background = bgOf(x);
+        q('.sp-like').classList.toggle('on', !!x.liked);
+        q('.sp-ic').classList.toggle('on', !!offGet(x));
+        q('.sheet-progress-fill').style.width = '0%';
+        const t = f.querySelectorAll('.sheet-times span'); t[0].textContent = '0:00'; t[1].textContent = '';
+        f.querySelectorAll('.block').forEach(n=>n.style.display = 'none');
+        const bg = q('.sheet-bg'), url = covOf(x), c = url && spColors.get(url);
+        const paint = col => { bg.style.background = 'linear-gradient(180deg, rgb(' + col.join(',') + ') 0%, rgba(' + col.map(v=>Math.round(v*0.5)).join(',') + ',1) 48%, #121212 100%)'; };
+        if(c) paint(c); else { bg.style.background = x.grad || ''; if(url) spColor(url).then(paint).catch(()=>{}); }
+      }
+      return f;
     }
-    attach(sheet, true);
-    attach(mini, false);
+    let st = null;
+    sheet.addEventListener('touchstart', e=>{
+      st = null;
+      if(busy || playlist.length < 2 || e.touches.length !== 1 || currentIndex === null) return;
+      if(e.target.closest('.sheet-progress-bar, input, textarea, select, .cover-menu')) return;
+      st = { x:e.touches[0].clientX, y:e.touches[0].clientY, mode:null, dx:0, vx:0, lx:e.touches[0].clientX, lt:Date.now() };
+    }, { passive:true });
+    sheet.addEventListener('touchmove', e=>{
+      if(!st) return;
+      const t = e.touches[0], dx = t.clientX - st.x, dy = t.clientY - st.y;
+      if(!st.mode && (Math.abs(dx) > 8 || Math.abs(dy) > 8)){
+        if(Math.abs(dx) > Math.abs(dy)*1.2){ st.mode = 'h'; if(!reduce()) startCube(); } else st.mode = 'v';
+      }
+      if(st.mode !== 'h') return;
+      e.preventDefault();
+      const now = Date.now(); if(now > st.lt){ st.vx = (t.clientX - st.lx) / (now - st.lt); st.lx = t.clientX; st.lt = now; }
+      st.dx = dx; if(st.cube) turn(dx);
+    }, { passive:false });
+    sheet.addEventListener('touchend', ()=>{ if(st && st.mode === 'h') release(); st = null; }, { passive:true });
+    sheet.addEventListener('touchcancel', ()=>{ if(st && st.mode === 'h') release(true); st = null; }, { passive:true });
+
+    function startCube(){
+      const W = innerWidth, idx = pick();
+      const wrap = document.createElement('div'); wrap.className = 'cube-wrap';
+      const cube = document.createElement('div'); cube.className = 'cube'; cube.style.transition = 'none';
+      cube.style.transform = 'translateZ(' + (-W/2) + 'px) rotateY(0deg)';
+      const cur = face(null), nx = face(playlist[idx.next]), pv = face(playlist[idx.prev]);
+      cur.style.transform = 'translateZ(' + (W/2) + 'px)';
+      nx.style.transform = 'rotateY(90deg) translateZ(' + (W/2) + 'px)';
+      pv.style.transform = 'rotateY(-90deg) translateZ(' + (W/2) + 'px)';
+      [cur, nx, pv].forEach(f=>cube.appendChild(f));
+      wrap.appendChild(cube); document.body.appendChild(wrap);
+      const si = sheet.querySelector('.sheet-inner'), ci = cur.querySelector('.sheet-inner');
+      if(si && ci) ci.scrollTop = si.scrollTop;
+      st.cube = { wrap, cube, W, idx };
+    }
+    function turn(dx){
+      const c = st.cube, deg = Math.max(-90, Math.min(90, dx / c.W * 90));
+      c.cube.style.transition = 'none';
+      c.cube.style.transform = 'translateZ(' + (-c.W/2) + 'px) rotateY(' + deg + 'deg)';
+    }
+    function release(cancel){
+      const dx = st.dx, vx = st.vx;
+      if(!st.cube){
+        if(!cancel && Math.abs(dx) > 60){ if(dx < 0) nextTrack(); else prevTrack(true); }
+        return;
+      }
+      const c = st.cube, W = c.W;
+      const go = !cancel && (Math.abs(dx) > W*0.28 || (Math.abs(vx) > 0.45 && Math.abs(dx) > 30));
+      const dir = go ? (dx < 0 ? 1 : -1) : 0;
+      busy = true;
+      c.cube.style.transition = 'transform .36s cubic-bezier(.2,.8,.25,1)';
+      c.cube.style.transform = 'translateZ(' + (-W/2) + 'px) rotateY(' + (-90*dir) + 'deg)';
+      if(go && navigator.vibrate) navigator.vibrate(8);
+      setTimeout(()=>{
+        if(dir) playIndex(dir === 1 ? c.idx.next : c.idx.prev);
+        requestAnimationFrame(()=>{ c.wrap.remove(); busy = false; });
+      }, 380);
+    }
+
+    // Mini reproductor: deslizamiento simple
+    let x0 = 0, y0 = 0, ok = false;
+    mini.addEventListener('touchstart', e=>{ ok = e.touches.length === 1; if(ok){ x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; } }, { passive:true });
+    mini.addEventListener('touchend', e=>{
+      if(!ok) return; ok = false;
+      const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+      if(Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)*1.5 || !playlist.length) return;
+      if(navigator.vibrate) navigator.vibrate(8);
+      if(dx < 0) nextTrack(); else prevTrack(true);
+    }, { passive:true });
   })();
+
   document.getElementById('closeSheet').addEventListener('click', ()=>{
     if(sheetIsOpen) history.back(); // dispara popstate, que cierra la ficha (no sale de la página)
   });
