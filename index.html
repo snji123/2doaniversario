@@ -3162,12 +3162,14 @@
     const box = document.getElementById('galBox'), cv = document.getElementById('galCanvas'), hint = document.getElementById('galHint');
     const ctx = cv.getContext('2d');
     const D = 520, F = 420, PITCH0 = -0.38;
+    // Cámara LIBRE: M = rotación mundo→cámara (3x3, por filas). Gira en los 3 ejes sin límites; (camX,camY,camZ) = punto al que mira (se puede mover)
+    let M = [1,0,0, 0,Math.cos(PITCH0),-Math.sin(PITCH0), 0,Math.sin(PITCH0),Math.cos(PITCH0)];
     let Z0 = 1, ZMIN = .7, ZMAX = 5; // se calculan en resize() para que el corazón completo quepa en pantalla
     let W = 0, H = 0, dpr = 1, K = 1, running = false, raf = 0, last = 0, ro = null;
-    let yaw = 0, vYaw = 0, pitch = PITCH0, vPitch = 0, spin = 0, phase = 0, clock = 0;
-    let zoom = 1, tz = 1, resetting = false, spritesBuilt = false, sized = false;
+    let spin = 0, phase = 0, clock = 0;
+    let zoom = 1, tz = 1, spritesBuilt = false, sized = false;
     let skip = 1, frames = 0, acc = 0, built = false, interactive = false, hintTm = 0;
-    let idle = 0, freeHint = false, focus = -1, wF = 0, camX = 0, camY = 0, camZ = 0, drawT = 0, lastWheel = 0;
+    let camX = 0, camY = 0, camZ = 0, drawT = 0;
     const gal = [], stars = [], trail = [], sprites = [];
 
     // Forma del corazón: las 3 galaxias están SOBRE su contorno (ali y axel arriba, nosotros en la punta de abajo)
@@ -3274,17 +3276,38 @@
       // zoom inicial: que quepa todo el corazón (3 galaxias) en pantalla
       const fit = Math.min(.9 * (W/2) / (190 * F/D * K), .9 * (H/2) / (215 * F/D * K));
       const first = !sized || tz === Z0;
-      Z0 = fit; ZMIN = fit * .7; ZMAX = fit * 6;
+      Z0 = fit; ZMIN = fit * .35; ZMAX = fit * 9;
       if(first){ zoom = tz = Z0; }
       sized = true;
     }
 
-    // proyección: deja el resultado en px, py, pp, pz (la cámara gira alrededor del punto cam)
+    // helpers de la cámara libre
+    function resetView(){ M = [1,0,0, 0,Math.cos(PITCH0),-Math.sin(PITCH0), 0,Math.sin(PITCH0),Math.cos(PITCH0)]; camX = camY = camZ = 0; tz = zoom = Z0; }
+    // gira la cámara 'a' radianes sobre un eje de la PANTALLA (0 = horizontal, 1 = vertical, 2 = el que sale de la pantalla / rodar)
+    function rot(ax, a){
+      const c = Math.cos(a), s_ = Math.sin(a), o = M;
+      const r = ax === 0 ? [1,0,0, 0,c,-s_, 0,s_,c] : ax === 1 ? [c,0,s_, 0,1,0, -s_,0,c] : [c,-s_,0, s_,c,0, 0,0,1];
+      const n = new Array(9);
+      for(let i=0;i<3;i++) for(let j=0;j<3;j++) n[i*3+j] = r[i*3]*o[j] + r[i*3+1]*o[3+j] + r[i*3+2]*o[6+j];
+      // re-ortonormalizar para que no se deforme con el tiempo
+      let l = Math.hypot(n[0],n[1],n[2]); n[0]/=l; n[1]/=l; n[2]/=l;
+      const d = n[3]*n[0] + n[4]*n[1] + n[5]*n[2]; n[3]-=d*n[0]; n[4]-=d*n[1]; n[5]-=d*n[2];
+      l = Math.hypot(n[3],n[4],n[5]); n[3]/=l; n[4]/=l; n[5]/=l;
+      n[6] = n[1]*n[5] - n[2]*n[4]; n[7] = n[2]*n[3] - n[0]*n[5]; n[8] = n[0]*n[4] - n[1]*n[3];
+      M = n;
+    }
+    // mueve el punto de vista en el plano de la pantalla (arriba/abajo/izquierda/derecha respecto a como estés mirando)
+    function pan(dx, dy){
+      const k = 1 / (F / D * K * zoom);
+      camX -= (M[0]*dx + M[3]*dy) * k; camY -= (M[1]*dx + M[4]*dy) * k; camZ -= (M[2]*dx + M[5]*dy) * k;
+      const L = Math.hypot(camX, camY, camZ), LM = 650; if(L > LM){ const f = LM / L; camX *= f; camY *= f; camZ *= f; }
+    }
+
+    // proyección: deja el resultado en px, py, pp, pz (la cámara mira al punto cam con la rotación M)
     let px = 0, py = 0, pp = 1, pz = 0;
-    function proj(x, y, z, cy, sy, cp, sp){
+    function proj(x, y, z){
       x -= camX; y -= camY; z -= camZ;
-      const x1 = x*cy + z*sy, z1 = -x*sy + z*cy;
-      const y2 = y*cp - z1*sp, z2 = y*sp + z1*cp;
+      const x1 = M[0]*x + M[1]*y + M[2]*z, y2 = M[3]*x + M[4]*y + M[5]*z, z2 = M[6]*x + M[7]*y + M[8]*z;
       const d = D + z2; if(d < 70) return false;
       pp = F / d * K * zoom; pz = z2;
       px = W/2 + x1 * pp; py = H*.5 + y2 * pp;
@@ -3301,33 +3324,18 @@
       clock += dt; drawT += dt;
       const playing = (typeof isPlaying !== 'undefined') && isPlaying;
       phase += dt * (playing ? 7.4 : 4.6);
-      const free = sstep(.15, .55, wF); // 0 = vista del corazón (fija) · 1 = dentro de una galaxia (se puede girar libre)
-      if(ptrs.size === 0){
-        yaw += vYaw * dt * 60 * free; vYaw *= Math.exp(-dt * 3);
-        pitch += vPitch * dt * 60 * free; vPitch *= Math.exp(-dt * 3);
-      }
-      yaw -= Math.round(yaw / 6.28319) * 6.28319;
-      { const k = Math.min(1, dt * 3 * (1 - free)); yaw -= yaw * k; pitch += (PITCH0 - pitch) * k; }
-      if(resetting){ pitch += (PITCH0 - pitch) * Math.min(1, dt * 6); if(Math.abs(pitch - PITCH0) < .004) resetting = false; }
-      pitch = clamp(pitch, -1.45, 1.1);
-      // el zoom avanza con "peso": tiene una velocidad máxima para que se note el acercamiento
-      { const dl = Math.log(tz / zoom), lim = (resetting ? 2.4 : .85) * dt;
-        zoom *= Math.exp(clamp(dl * Math.min(1, dt * 3.2), -lim, lim)); }
+      // La cámara NO se mueve sola: solo cambia con tus dedos (sin inercia, sin balanceo, sin volver al centro)
+      zoom = tz;
       spin += dt * .16;
       const beat = 1 + .045 * Math.sin(phase) + (playing ? .05 * Math.pow(Math.max(0, Math.sin(phase * .5)), 8) : 0);
-      // cámara: al acercarte, el centro de la vista viaja hasta la galaxia elegida (y regresa al alejarte)
-      const r = zoom / Z0; wF = sstep(1.08, 2.2, r);
-      if(interactive && wF > .7 && !freeHint){ freeHint = true; showHint('Desliza para girar la galaxia'); } else if(wF < .1) freeHint = false;
-      { const G0 = focus >= 0 ? GN[focus] : null, k = Math.min(1, dt * 4);
-        camX += ((G0 ? G0.x * wF : 0) - camX) * k; camY += ((G0 ? G0.y * wF : 0) - camY) * k; camZ += ((G0 ? G0.z * wF : 0) - camZ) * k; }
-      const swayY = yaw + .25 * (1 - free) * Math.sin(clock * .4), cy = Math.cos(swayY), sy = Math.sin(swayY), cp = Math.cos(pitch), sp = Math.sin(pitch);
+      const r = zoom / Z0;
 
       ctx.clearRect(0, 0, W, H);
       ctx.globalCompositeOperation = 'lighter';
       ctx.fillStyle = '#fff';
       for(let i=0;i<stars.length;i+=skip){
         const s = stars[i];
-        if(!proj(s.x, s.y, s.z, cy, sy, cp, sp)) continue;
+        if(!proj(s.x, s.y, s.z)) continue;
         ctx.globalAlpha = s.a * (.7 + .3*Math.sin(clock*2 + i));
         const z = Math.max(1, s.s * 1.3 * Math.sqrt(pp)); ctx.fillRect(px, py, z, z);
       }
@@ -3336,12 +3344,12 @@
         const p = gal[i];
         if(p.col !== lastC){ ctx.fillStyle = p.col; lastC = p.col; }
         place(p.gi, p.r, p.y, p.a + spin * GN[p.gi].dir);
-        if(!proj(gx, gy, gz, cy, sy, cp, sp)) continue;
+        if(!proj(gx, gy, gz)) continue;
         ctx.globalAlpha = Math.min(.85, .35 + pp*.35);
         const z = Math.min(6, Math.max(1, p.s * 1.5 * Math.sqrt(pp))); ctx.fillRect(px - z/2, py - z/2, z, z);
       }
       for(const G of GN){
-        if(!proj(G.x, G.y, G.z, cy, sy, cp, sp)) continue;
+        if(!proj(G.x, G.y, G.z)) continue;
         G.sx = px; G.sy = py; G.sr = GR * pp;
         const R = GR * .45 * pp, g = ctx.createRadialGradient(px, py, 0, px, py, R);
         g.addColorStop(0, 'rgba(255,245,235,.6)'); g.addColorStop(.35, `rgba(${G.glow},.22)`); g.addColorStop(1, `rgba(${G.glow},0)`);
@@ -3354,7 +3362,7 @@
           const p = trail[i];
           if(p.u > pe) continue;
           if(p.g !== lastH){ ctx.fillStyle = PAL_H[p.g]; lastH = p.g; }
-          if(!proj(p.x, p.y, p.z, cy, sy, cp, sp)) continue;
+          if(!proj(p.x, p.y, p.z)) continue;
           const wave = .5 + .5 * Math.sin(6.2832 * (p.u * 2 - clock * .12));
           const head = pe < 1 ? clamp(1 - (pe - p.u) * 14, 0, 1) : 0;
           ctx.globalAlpha = clamp((.3 + .55 * wave * wave + head) * pul * (.6 + .4 * Math.sin(clock * 2 + p.ph)), 0, 1);
@@ -3368,14 +3376,14 @@
       for(const sp_ of sprites){
         if(sp_.bad || (sp_.kind==='img' && !sp_.ok)) continue;
         place(sp_.gi, sp_.rr, sp_.y + Math.sin(clock * .9 + sp_.ph) * 4, sp_.a0 + clock * sp_.w * GN[sp_.gi].dir);
-        if(!proj(gx, gy, gz, cy, sy, cp, sp)) continue;
+        if(!proj(gx, gy, gz)) continue;
         list.push({ s: sp_, x: px, y: py, p: pp, z: pz });
       }
       list.sort((a,b)=>b.z - a.z);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       for(const it of list){
         const s = it.s, al = Math.max(.25, Math.min(1, 1 - (it.z + 200) / 620));
-        const ds = dsZ * (s.gi === focus ? 1 : 1 - wF * .9);
+        const ds = dsZ;
         if(s.kind === 'txt'){
           const fpx = Math.min(64, s.sz * it.p * (.08 + .6 * ds)); if(fpx < 3) continue;
           ctx.globalAlpha = al * clamp((fpx - 3) / 8, 0, 1); ctx.font = `600 ${fpx}px Poppins, system-ui, sans-serif`;
@@ -3404,70 +3412,60 @@
       clearTimeout(hintTm); hintTm = setTimeout(()=>{ hint.style.opacity = '0'; }, 3800);
     }
     // Modo ver (por defecto): la galaxia solo se mira y los deslizamientos cambian de página.
-    // Doble toque: modo explorar (un dedo gira, dos dedos hacen zoom hacia la galaxia que tengas más cerca). Otro doble toque: vuelve a la vista inicial.
-    const ptrs = new Map(); let pinchD = 0, tapT = 0, tapX = 0, tapY = 0;
-    // elige a qué galaxia te vas a acercar (la más cercana a tus dedos); se queda fija hasta que te alejes
-    function pick(sx, sy){
-      if(wF > .05) return;
-      const rc = cv.getBoundingClientRect(); sx -= rc.left; sy -= rc.top;
-      let best = -1, bd = 1e12;
-      GN.forEach((G, i)=>{ const d = (G.sx - sx) * (G.sx - sx) + (G.sy - sy) * (G.sy - sy); if(d < bd){ bd = d; best = i; } });
-      focus = best;
-    }
-    // toca una galaxia (en modo explorar) y la cámara vuela hasta ella
-    function flyTo(sx, sy){
-      if(wF > .05) return;
-      const rc = cv.getBoundingClientRect(); sx -= rc.left; sy -= rc.top;
-      let best = -1, bd = 1e12;
-      GN.forEach((G, i)=>{ const d = Math.hypot(G.sx - sx, G.sy - sy); if(d < Math.max(G.sr * 1.2, 45) && d < bd){ bd = d; best = i; } });
-      if(best < 0) return;
-      focus = best; tz = clamp(Z0 * 3.2, ZMIN, ZMAX);
-    }
+    // Doble toque: modo explorar con cámara totalmente libre. Otro doble toque: vuelve a la vista inicial.
+    //  · 1 dedo (o clic izquierdo): gira en cualquier dirección, incluso diagonal y por encima/debajo, sin límites
+    //  · 2 dedos: pellizcar = acercar/alejar · arrastrar = mover la vista (arriba/abajo/lados) · girar los dedos = rodar la cámara
+    //  · ratón: clic derecho o Shift + arrastrar = mover · Alt + arrastrar = rodar · rueda = zoom
+    const ptrs = new Map(); let pinch = null, tapT = 0, tapX = 0, tapY = 0;
     function setMode(on){
-      interactive = on; ptrs.clear(); pinchD = 0;
-      if(on){ showHint('Toca o pellizca una galaxia para acercarte · doble toque para salir'); }
-      else { tz = Z0; resetting = true; vPitch = 0; vYaw = 0; showHint('Doble toque para explorar'); }
+      interactive = on; ptrs.clear(); pinch = null;
+      if(on){ showHint('1 dedo: girar · 2 dedos: zoom, mover y rodar · doble toque: salir'); }
+      else { resetView(); showHint('Doble toque para explorar'); }
+    }
+    function twoTouch(){
+      const [a, b] = [...ptrs.values()];
+      return { d: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), ang: Math.atan2(b.y - a.y, b.x - a.x), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
     }
     function onDown(e){
-      ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY, x0:e.clientX, y0:e.clientY, t:performance.now() });
+      ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY, x0:e.clientX, y0:e.clientY, t:performance.now(), btn:e.button });
       try{ cv.setPointerCapture(e.pointerId); }catch(_){}
-      if(interactive && ptrs.size === 2){ const [a,b] = [...ptrs.values()]; pinchD = Math.hypot(a.x-b.x, a.y-b.y); pick((a.x+b.x)/2, (a.y+b.y)/2); }
+      pinch = (interactive && ptrs.size === 2) ? twoTouch() : null;
     }
     function onMove(e){
       const p = ptrs.get(e.pointerId); if(!p) return;
       const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
       if(!interactive) return;
       if(ptrs.size === 1){
-        resetting = false;
-        if(wF > .35){ // solo se gira dentro de una galaxia; el corazón se queda de frente
-          yaw -= dx * .008; pitch = clamp(pitch + dy * .006, -1.45, 1.1);
-          vYaw = clamp(-dx * .0016, -.06, .06); vPitch = clamp(dy * .0012, -.04, .04);
-        }
+        if(e.pointerType === 'mouse' && (p.btn === 2 || p.btn === 1 || e.shiftKey)) pan(dx, dy);
+        else if(e.pointerType === 'mouse' && e.altKey) rot(2, dx * .008);
+        else { rot(1, -dx * .007); rot(0, dy * .007); }
       } else if(ptrs.size >= 2){
-        const [a,b] = [...ptrs.values()], d = Math.hypot(a.x-b.x, a.y-b.y);
-        if(pinchD > 0) tz = clamp(tz * Math.pow(d / pinchD, .5), ZMIN, ZMAX);
-        pinchD = d;
+        const t = twoTouch();
+        if(pinch){
+          pan(t.cx - pinch.cx, t.cy - pinch.cy);
+          tz = clamp(tz * t.d / pinch.d, ZMIN, ZMAX); zoom = tz;
+          let da = t.ang - pinch.ang; if(da > Math.PI) da -= 2 * Math.PI; else if(da < -Math.PI) da += 2 * Math.PI;
+          rot(2, da);
+        }
+        pinch = t;
       }
     }
     function onUp(e){
       const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId);
-      if(ptrs.size < 2) pinchD = 0;
+      pinch = (interactive && ptrs.size === 2) ? twoTouch() : null;
       if(!p || e.type === 'pointercancel' || ptrs.size) return;
       const n = performance.now();
       if(Math.hypot(e.clientX - p.x0, e.clientY - p.y0) < 12 && n - p.t < 260){
         if(n - tapT < 340 && Math.hypot(e.clientX - tapX, e.clientY - tapY) < 60){ tapT = 0; setMode(!interactive); }
-        else {
-          tapT = n; tapX = e.clientX; tapY = e.clientY;
-          if(interactive){ const tt = n, cx = e.clientX, cy = e.clientY; setTimeout(()=>{ if(tapT === tt && interactive) flyTo(cx, cy); }, 360); }
-        }
+        else { tapT = n; tapX = e.clientX; tapY = e.clientY; }
       }
     }
     cv.addEventListener('pointerdown', onDown); cv.addEventListener('pointermove', onMove);
     cv.addEventListener('pointerup', onUp); cv.addEventListener('pointercancel', onUp);
+    cv.addEventListener('contextmenu', e=>{ if(interactive) e.preventDefault(); });
     cv.addEventListener('wheel', e=>{
       if(!interactive) return; e.preventDefault();
-      const n = performance.now(); if(n - lastWheel > 350) pick(e.clientX, e.clientY); lastWheel = n;
-      tz = clamp(tz * Math.exp(-e.deltaY * .0007), ZMIN, ZMAX);
+      tz = clamp(tz * Math.exp(-e.deltaY * .001), ZMIN, ZMAX); zoom = tz;
     }, { passive:false });
 
     document.addEventListener('visibilitychange', ()=>{
@@ -3485,7 +3483,7 @@
       },
       stop(){ running = false; if(raf){ cancelAnimationFrame(raf); raf = 0; } },
       isInteractive(){ return interactive; },
-      exit(){ interactive = false; ptrs.clear(); pinchD = 0; tz = zoom = Z0; pitch = PITCH0; resetting = false; vPitch = 0; vYaw = 0; yaw = 0; focus = -1; wF = 0; camX = camY = camZ = 0; }
+      exit(){ interactive = false; ptrs.clear(); pinch = null; resetView(); }
     };
   })();
 
