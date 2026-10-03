@@ -287,12 +287,11 @@
   .avatar-btn img{width:100%;height:100%;object-fit:cover;display:block;}
   .avatar-btn svg{width:36px;height:34px;}
   /* ---- Barra superior (Reproductor / Galaxia) y página de la galaxia ---- */
-  .topnav{position:fixed;top:0;left:0;right:0;z-index:13;padding-top:env(safe-area-inset-top,0px);transition:background .25s;}
-  .topnav.solid{background:rgba(10,10,10,.84);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
-  .tn-inner{position:relative;display:flex;justify-content:center;gap:30px;height:44px;align-items:center;}
-  .tn-btn{background:none;border:none;color:var(--text-dim);font-family:var(--font);font-size:15px;font-weight:600;padding:10px 4px;cursor:pointer;transition:color .2s;}
-  .tn-btn.on{color:#fff;}
-  .tn-ind{position:absolute;bottom:3px;left:0;height:3px;width:24px;border-radius:3px;background:var(--green);will-change:transform;}
+  .topnav{position:fixed;top:0;left:0;right:0;z-index:13;padding-top:env(safe-area-inset-top,0px);pointer-events:none;will-change:opacity,transform;}
+  .tn-inner{position:relative;height:44px;}
+  .tn-title{position:absolute;left:0;right:0;top:0;height:44px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;letter-spacing:.2px;color:#fff;text-shadow:0 1px 10px rgba(0,0,0,.55);transition:opacity .3s ease, transform .4s cubic-bezier(.22,1,.36,1);}
+  .tn-title.b{opacity:0;}
+  .topnav.drag .tn-title{transition:none;}
   .gal-page{position:fixed;inset:0;z-index:12;overflow:hidden;touch-action:none;transform:translateX(100%);visibility:hidden;
     background:radial-gradient(70% 50% at 50% 42%,rgba(180,40,120,.30),transparent 70%),radial-gradient(90% 60% at 50% 90%,rgba(90,60,200,.26),transparent 70%),#07030d;
     transition:transform .34s cubic-bezier(.22,1,.36,1), visibility 0s linear .34s;}
@@ -803,14 +802,13 @@
   </div>
 </div>
 
-<nav class="topnav" id="topnav" aria-label="Secciones">
+<nav class="topnav" id="topnav" aria-hidden="true">
   <div class="tn-inner">
-    <button type="button" class="tn-btn on" data-page="player">Reproductor</button>
-    <button type="button" class="tn-btn" data-page="galaxia">Galaxia</button>
-    <span class="tn-ind" id="tnInd"></span>
+    <span class="tn-title" id="tnA">Reproductor</span>
+    <span class="tn-title b" id="tnB">Galaxia</span>
   </div>
 </nav>
-<div class="gal-page" id="galBox" aria-hidden="true"><canvas id="galCanvas"></canvas><div class="gal-hint" id="galHint">Arrastra para girar · pellizca para acercar</div></div>
+<div class="gal-page" id="galBox" aria-hidden="true"><canvas id="galCanvas"></canvas><div class="gal-hint" id="galHint">Doble toque para explorar</div></div>
 
 <div class="wrap">
 
@@ -1983,7 +1981,7 @@
     if(sheetIsOpen){ closeSheetVisual(); return; }
     if(admPop()) return;
     if(profileOpen){ closeProfileVisual(); return; }
-    if(galOpen) setGalaxy(false);
+    if(galOpen) setGalaxy(false, outSide);
   });
   document.getElementById('sheetPlayBtn').addEventListener('click', togglePlay);
   document.getElementById('sheetNextBtn').addEventListener('click', nextTrack);
@@ -3150,25 +3148,29 @@
 
   // ----- Galaxia: corazón de partículas, frases y fotos flotando (pantalla completa) -----
   // Cambia aquí las frases que flotan alrededor del corazón
+  // Imágenes de la galaxia: carpeta del repositorio y nombres de los archivos
+  const GALAXY_IMG_DIR = 'galaxia/';
+  const GALAXY_IMAGES = []; // ej.: ['foto1.jpg', 'foto2.png']
   const GALAXY_WORDS = ['Te amo','Eres mi sol','Amor de mi vida','Siempre juntos','Eres preciosa','Me encantas','Te adoro','My love','Eres mi todo'];
   const galaxy = (function(){
     const box = document.getElementById('galBox'), cv = document.getElementById('galCanvas'), hint = document.getElementById('galHint');
     const ctx = cv.getContext('2d');
-    const D = 520, F = 420, PITCH0 = -0.38;
+    const D = 520, F = 420, PITCH0 = -0.38, Z0 = .32, ZMIN = .2, ZMAX = 5;
     let W = 0, H = 0, dpr = 1, K = 1, running = false, raf = 0, last = 0, ro = null;
     let yaw = 0, vYaw = 0.0022, pitch = PITCH0, vPitch = 0, spin = 0, phase = 0, clock = 0;
-    let zoom = 1, tz = 1, resetting = false;
-    let skip = 1, frames = 0, acc = 0, hintT = 0, built = false;
+    let zoom = Z0, tz = Z0, resetting = false, spritesBuilt = false;
+    let skip = 1, frames = 0, acc = 0, built = false, interactive = false, hintTm = 0;
     const gal = [], stars = [], heart = [], sprites = [];
     const PAL_G = ['rgba(255,244,214,.95)','rgba(255,160,205,.9)','rgba(240,110,190,.85)','rgba(160,130,255,.85)','rgba(110,200,255,.8)'];
     const PAL_H = ['rgba(255,176,210,.95)','rgba(255,255,255,.95)','rgba(255,110,165,.9)'];
     const gauss = ()=> (Math.random()+Math.random()+Math.random()-1.5)/1.5;
     const clamp = (v,a,b)=> Math.max(a, Math.min(b, v));
+    const sstep = (a,b,x)=>{ const t = clamp((x-a)/(b-a), 0, 1); return t*t*(3-2*t); };
     const weak = (navigator.hardwareConcurrency || 4) <= 4;
 
     function build(){
       if(built) return; built = true;
-      const NG = weak ? 1000 : 1700, NH = weak ? 520 : 780, NS = weak ? 160 : 280;
+      const NG = weak ? 1000 : 1700, NH = weak ? 700 : 1100, NS = weak ? 160 : 280;
       for(let i=0;i<NG;i++){
         const arm = i % 3, r = Math.pow(Math.random(), .62) * 200 + 6;
         const a = r * .034 + arm * 2.0944 + gauss() * (.55 * (1 - r/230) + .08);
@@ -3180,29 +3182,35 @@
       for(let i=0;i<NH;i++){
         const t = Math.random() * Math.PI * 2, k = 1 - Math.pow(Math.random(), 3) * .3;
         const x = 16 * Math.pow(Math.sin(t), 3), y = 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
-        heart.push({ x: x*5.4*k, y: -y*5.4*k, z: gauss()*12, s: Math.random()*1.5 + .8, g: i % 3 });
+        heart.push({ x: x*5.4*k, y: -y*5.4*k, z: gauss()*12, s: Math.random()*1.5 + .8, g: i % 3, d: Math.random(), r: Math.sqrt(Math.random()) * 170, a: Math.random() * 6.2832, ys: 40 + gauss() * 10 });
       }
       heart.sort((p,q)=>p.g-q.g);
     }
 
-    // Fotos: portadas de las canciones y fotos de perfil
+    // Imágenes (de la carpeta del repositorio) y frases repartidas alrededor del corazón
+    function prepImg(sp, img){
+      try{
+        const c = document.createElement('canvas'); c.width = c.height = 192;
+        const m = Math.min(img.naturalWidth, img.naturalHeight) || 1;
+        c.getContext('2d').drawImage(img, (img.naturalWidth - m) / 2, (img.naturalHeight - m) / 2, m, m, 0, 0, 192, 192);
+        sp.bmp = c; sp.ok = true;
+      }catch(e){ sp.bad = true; }
+    }
     function buildSprites(){
+      if(spritesBuilt) return; spritesBuilt = true;
       sprites.length = 0;
-      const urls = [];
-      const add = u=>{ if(u && !urls.includes(u)) urls.push(u); };
-      try{ [...songs, ...mySongs].forEach(s=>add(covOf(s))); }catch(e){}
-      try{ Object.values(profiles).forEach(p=>add(p && p.photo)); }catch(e){}
-      urls.slice(0, 10).forEach(u=>{
-        const img = new Image(); const sp = { kind:'img', img, ok:false };
-        img.onload = ()=>{ sp.ok = true; }; img.onerror = ()=>{ sp.bad = true; };
-        img.src = u; sprites.push(sp);
+      GALAXY_IMAGES.forEach(name=>{
+        const img = new Image(), sp = { kind:'img', ok:false };
+        img.decoding = 'async';
+        img.onload = ()=>prepImg(sp, img); img.onerror = ()=>{ sp.bad = true; };
+        img.src = GALAXY_IMG_DIR + encodeURIComponent(name); sprites.push(sp);
       });
       GALAXY_WORDS.forEach(w=>sprites.push({ kind:'txt', text:w }));
+      for(let i=sprites.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [sprites[i], sprites[j]] = [sprites[j], sprites[i]]; }
+      const n = sprites.length;
       sprites.forEach((sp, i)=>{
-        const a = (i / sprites.length) * Math.PI * 2 + Math.random() * .5;
-        const r = (sp.kind==='img' ? 120 : 150) + Math.random() * 120;
-        sp.x = Math.cos(a) * r; sp.z = Math.sin(a) * r;
-        sp.y = (sp.kind==='img' ? -60 : -30) + (Math.random() - .5) * 200;
+        const a = i * 2.39996 + Math.random() * .3, r = 95 + 150 * Math.sqrt((i + .5) / n) + Math.random() * 20;
+        sp.x = Math.cos(a) * r; sp.z = Math.sin(a) * r; sp.y = (Math.random() - .5) * 230;
         sp.ph = Math.random() * 6.28; sp.sz = sp.kind==='img' ? 40 + Math.random()*16 : 13 + Math.random()*4;
       });
     }
@@ -3254,7 +3262,7 @@
         const s = stars[i];
         if(!proj(s.x, s.y, s.z, cy, sy, cp, sp)) continue;
         ctx.globalAlpha = s.a * (.7 + .3*Math.sin(clock*2 + i));
-        const z = s.s * pp * 1.3; ctx.fillRect(px, py, z, z);
+        const z = Math.max(1, s.s * 1.3 * Math.sqrt(pp)); ctx.fillRect(px, py, z, z);
       }
       let lastG = -1;
       for(let i=0;i<gal.length;i+=skip){
@@ -3263,31 +3271,42 @@
         const ang = p.a + spin;
         if(!proj(Math.cos(ang) * p.r, p.y, Math.sin(ang) * p.r, cy, sy, cp, sp)) continue;
         ctx.globalAlpha = Math.min(1, .35 + pp*.5);
-        const z = p.s * pp * 1.7; ctx.fillRect(px - z/2, py - z/2, z, z);
+        const z = Math.min(7, Math.max(1, p.s * 1.7 * Math.sqrt(pp))); ctx.fillRect(px - z/2, py - z/2, z, z);
       }
       if(proj(0, 40, 0, cy, sy, cp, sp)){
         const R = 70 * pp, g = ctx.createRadialGradient(px, py, 0, px, py, R);
         g.addColorStop(0, 'rgba(255,240,230,.55)'); g.addColorStop(.4, 'rgba(255,150,200,.18)'); g.addColorStop(1, 'rgba(255,150,200,0)');
         ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(px - R, py - R, R*2, R*2);
       }
-      // corazón: anclado sobre la galaxia y siempre de frente a ti, con un balanceo suave
+      // corazón: de lejos son puntitos sueltos en la galaxia; al acercarte se juntan y forman el corazón
+      const fh = sstep(.8, 2.0, zoom);
       if(proj(0, -100, 0, cy, sy, cp, sp)){
         const ax = px, ay = py, ap = pp;
         const yh = Math.sin(clock * .55) * .5, chy = Math.cos(yh), shy = Math.sin(yh);
-        const R = 120 * ap, g = ctx.createRadialGradient(ax, ay, 0, ax, ay, R);
-        g.addColorStop(0, 'rgba(255,90,150,.28)'); g.addColorStop(1, 'rgba(255,90,150,0)');
-        ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(ax - R, ay - R, R*2, R*2);
+        if(fh > .02){
+          const R = 120 * ap, g = ctx.createRadialGradient(ax, ay, 0, ax, ay, R);
+          g.addColorStop(0, 'rgba(255,90,150,.28)'); g.addColorStop(1, 'rgba(255,90,150,0)');
+          ctx.globalAlpha = fh; ctx.fillStyle = g; ctx.fillRect(ax - R, ay - R, R*2, R*2);
+        }
         let lastH = -1;
         for(let i=0;i<heart.length;i+=skip){
           const p = heart[i];
           if(p.g !== lastH){ ctx.fillStyle = PAL_H[p.g]; lastH = p.g; }
-          const lx = p.x * beat, ly = p.y * beat;
-          const rx = lx * chy + p.z * shy;
-          ctx.globalAlpha = .85;
-          const z = p.s * ap * 1.9; ctx.fillRect(ax + rx * ap - z/2, ay + ly * ap - z/2, z, z);
+          const e0 = clamp(fh * 1.5 - p.d * .5, 0, 1), e = e0 * e0 * (3 - 2 * e0);
+          const lx = p.x * beat, ly = p.y * beat, rx = lx * chy + p.z * shy;
+          let X = ax + rx * ap, Y = ay + ly * ap;
+          if(e < 1){
+            const an = p.a + spin;
+            if(!proj(Math.cos(an) * p.r, p.ys, Math.sin(an) * p.r, cy, sy, cp, sp)) continue;
+            X = px + (X - px) * e; Y = py + (Y - py) * e;
+          }
+          ctx.globalAlpha = .55 + .35 * e;
+          const z = Math.min(7, Math.max(1, p.s * 1.9 * Math.sqrt(ap))); ctx.fillRect(X - z/2, Y - z/2, z, z);
         }
       }
       ctx.globalCompositeOperation = 'source-over';
+      // imágenes y frases: casi invisibles de lejos, cada vez más grandes y nítidas al acercarte
+      const ds = sstep(.35, 2.4, zoom), cap = Math.min(W, H) * .42;
       const list = [];
       for(const sp_ of sprites){
         if(sp_.bad || (sp_.kind==='img' && !sp_.ok)) continue;
@@ -3300,55 +3319,72 @@
       for(const it of list){
         const s = it.s, al = Math.max(.25, Math.min(1, 1 - (it.z + 200) / 620));
         if(s.kind === 'txt'){
-          ctx.globalAlpha = al; ctx.font = `600 ${Math.max(8, s.sz * it.p)}px Poppins, system-ui, sans-serif`;
-          ctx.shadowColor = 'rgba(255,90,170,.9)'; ctx.shadowBlur = 8;
+          const fpx = Math.min(64, s.sz * it.p * (.12 + .88 * ds)); if(fpx < 3) continue;
+          ctx.globalAlpha = al * clamp((fpx - 3) / 8, 0, 1); ctx.font = `600 ${fpx}px Poppins, system-ui, sans-serif`;
+          ctx.shadowColor = 'rgba(255,90,170,.9)'; ctx.shadowBlur = fpx > 10 ? 8 : 0;
           ctx.fillStyle = '#fff'; ctx.fillText(s.text, it.x, it.y); ctx.shadowBlur = 0;
         } else {
-          const z = s.sz * it.p, rr = Math.max(3, z * .16);
-          ctx.save(); ctx.globalAlpha = al; ctx.beginPath();
+          const z = Math.min(cap, s.sz * it.p * (.18 + .82 * ds)); if(z < 1.5) continue;
+          const al2 = al * (.35 + .65 * ds), rr = Math.max(2, z * .16);
+          if(z < 7){ ctx.globalAlpha = al2; ctx.drawImage(s.bmp, it.x - z/2, it.y - z/2, z, z); continue; }
+          ctx.save(); ctx.globalAlpha = al2; ctx.beginPath();
           if(ctx.roundRect) ctx.roundRect(it.x - z/2, it.y - z/2, z, z, rr); else ctx.rect(it.x - z/2, it.y - z/2, z, z);
           ctx.clip();
-          try{ ctx.drawImage(s.img, it.x - z/2, it.y - z/2, z, z); }catch(e){ s.bad = true; }
+          try{ ctx.drawImage(s.bmp, it.x - z/2, it.y - z/2, z, z); }catch(e){ s.bad = true; }
           ctx.restore();
-          ctx.globalAlpha = al * .55; ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1;
-          ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(it.x - z/2, it.y - z/2, z, z, rr); else ctx.rect(it.x - z/2, it.y - z/2, z, z); ctx.stroke();
+          if(z > 16){
+            ctx.globalAlpha = al2 * .55; ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1;
+            ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(it.x - z/2, it.y - z/2, z, z, rr); else ctx.rect(it.x - z/2, it.y - z/2, z, z); ctx.stroke();
+          }
         }
       }
       ctx.globalAlpha = 1;
-      if(hint && hintT < 6){ hintT += dt; if(hintT >= 5) hint.style.opacity = '0'; }
     }
 
-    // Gestos: un dedo gira en cualquier dirección, dos dedos hacen zoom, doble toque reinicia
-    const ptrs = new Map(); let pinchD = 0, lastTap = 0;
+    function showHint(t){
+      if(!hint) return; hint.textContent = t; hint.style.opacity = '1';
+      clearTimeout(hintTm); hintTm = setTimeout(()=>{ hint.style.opacity = '0'; }, 3800);
+    }
+    // Modo ver (por defecto): la galaxia solo se mira y los deslizamientos cambian de página.
+    // Doble toque: modo explorar (un dedo gira en cualquier dirección, dos dedos hacen zoom). Otro doble toque: vuelve a la vista inicial.
+    const ptrs = new Map(); let pinchD = 0, tapT = 0, tapX = 0, tapY = 0;
+    function setMode(on){
+      interactive = on; ptrs.clear(); pinchD = 0;
+      if(on){ showHint('Pellizca para acercarte · doble toque para salir'); }
+      else { tz = Z0; resetting = true; vPitch = 0; vYaw = .0022; showHint('Doble toque para explorar'); }
+    }
     function onDown(e){
-      if(e.clientX < 22 && ptrs.size === 0) return; // el borde izquierdo se reserva para volver
-      ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY });
+      ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY, x0:e.clientX, y0:e.clientY, t:performance.now() });
       try{ cv.setPointerCapture(e.pointerId); }catch(_){}
-      if(ptrs.size === 2){ const [a,b] = [...ptrs.values()]; pinchD = Math.hypot(a.x-b.x, a.y-b.y); }
-      if(ptrs.size === 1){
-        const n = performance.now();
-        if(n - lastTap < 300){ tz = 1; resetting = true; vYaw = .0022; vPitch = 0; }
-        lastTap = n;
-      }
-      hintT = Math.max(hintT, 4.2);
+      if(interactive && ptrs.size === 2){ const [a,b] = [...ptrs.values()]; pinchD = Math.hypot(a.x-b.x, a.y-b.y); }
     }
     function onMove(e){
       const p = ptrs.get(e.pointerId); if(!p) return;
       const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+      if(!interactive) return;
       if(ptrs.size === 1){
         resetting = false;
         yaw += dx * .008; pitch = clamp(pitch - dy * .006, -1.5, .75);
         vYaw = clamp(dx * .0016, -.06, .06); vPitch = clamp(-dy * .0012, -.04, .04);
       } else if(ptrs.size >= 2){
         const [a,b] = [...ptrs.values()], d = Math.hypot(a.x-b.x, a.y-b.y);
-        if(pinchD > 0) tz = clamp(tz * d / pinchD, .55, 4);
+        if(pinchD > 0) tz = clamp(tz * d / pinchD, ZMIN, ZMAX);
         pinchD = d;
       }
     }
-    function onUp(e){ ptrs.delete(e.pointerId); if(ptrs.size < 2) pinchD = 0; }
+    function onUp(e){
+      const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId);
+      if(ptrs.size < 2) pinchD = 0;
+      if(!p || e.type === 'pointercancel' || ptrs.size) return;
+      const n = performance.now();
+      if(Math.hypot(e.clientX - p.x0, e.clientY - p.y0) < 12 && n - p.t < 260){
+        if(n - tapT < 340 && Math.hypot(e.clientX - tapX, e.clientY - tapY) < 60){ tapT = 0; setMode(!interactive); }
+        else { tapT = n; tapX = e.clientX; tapY = e.clientY; }
+      }
+    }
     cv.addEventListener('pointerdown', onDown); cv.addEventListener('pointermove', onMove);
     cv.addEventListener('pointerup', onUp); cv.addEventListener('pointercancel', onUp);
-    cv.addEventListener('wheel', e=>{ e.preventDefault(); tz = clamp(tz * Math.exp(-e.deltaY * .0015), .55, 4); }, { passive:false });
+    cv.addEventListener('wheel', e=>{ if(!interactive) return; e.preventDefault(); tz = clamp(tz * Math.exp(-e.deltaY * .0015), ZMIN, ZMAX); }, { passive:false });
 
     document.addEventListener('visibilitychange', ()=>{
       if(document.hidden){ if(raf){ cancelAnimationFrame(raf); raf = 0; } }
@@ -3358,40 +3394,46 @@
       start(){
         if(running) return;
         build(); buildSprites();
-        running = true; hintT = 0; if(hint) hint.style.opacity = '1';
+        running = true; showHint('Doble toque para explorar');
         if(!ro && window.ResizeObserver){ ro = new ResizeObserver(()=>resize()); ro.observe(box); }
         resize(); last = 0;
         if(!raf && !document.hidden) raf = requestAnimationFrame(frame);
       },
-      stop(){ running = false; if(raf){ cancelAnimationFrame(raf); raf = 0; } }
+      stop(){ running = false; if(raf){ cancelAnimationFrame(raf); raf = 0; } },
+      isInteractive(){ return interactive; },
+      exit(){ interactive = false; ptrs.clear(); pinchD = 0; tz = zoom = Z0; pitch = PITCH0; resetting = false; vPitch = 0; vYaw = .0022; }
     };
   })();
 
-  // ----- Barra superior: Reproductor ⇄ Galaxia (desliza para cambiar de página) -----
-  const galPage = document.getElementById('galBox'), topnav = document.getElementById('topnav'), tnInd = document.getElementById('tnInd');
-  const tnBtns = [...topnav.querySelectorAll('.tn-btn')];
-  let galOpen = false;
-  function tnMove(p){
-    const a = tnBtns[0], b = tnBtns[1];
-    const ca = a.offsetLeft + a.offsetWidth / 2, cb = b.offsetLeft + b.offsetWidth / 2;
-    tnInd.style.transform = `translateX(${ca + (cb - ca) * p - 12}px)`;
-    tnBtns[0].classList.toggle('on', p < .5); tnBtns[1].classList.toggle('on', p >= .5);
+  // ----- Título superior (Reproductor → Galaxia) y cambio de página deslizando -----
+  const galPage = document.getElementById('galBox'), topnav = document.getElementById('topnav');
+  const tnA = document.getElementById('tnA'), tnB = document.getElementById('tnB');
+  let galOpen = false, curP = 0, curSide = 1, outSide = 1;
+  // p: 0 = reproductor, 1 = galaxia; side: de qué lado está la galaxia (1 derecha, -1 izquierda)
+  function navUpdate(p, side){
+    curP = p; if(side) curSide = side;
+    tnA.style.opacity = String(1 - p); tnA.style.transform = `translateX(${-curSide * p * 40}px)`;
+    tnB.style.opacity = String(p);     tnB.style.transform = `translateX(${curSide * (1 - p) * 40}px)`;
+    const f = Math.min(1, window.scrollY / 110) * (1 - p); // se desvanece al bajar por el reproductor
+    topnav.style.opacity = String(1 - f); topnav.style.transform = `translateY(${-f * 10}px)`;
   }
-  function setGalaxy(open){
-    galOpen = open;
-    galPage.classList.remove('drag', 'vis'); galPage.style.transform = '';
-    galPage.classList.toggle('open', open); galPage.setAttribute('aria-hidden', String(!open));
-    topnav.classList.toggle('solid', !open && window.scrollY > 8);
-    tnMove(open ? 1 : 0);
-    if(open) galaxy.start(); else setTimeout(()=>{ if(!galOpen) galaxy.stop(); }, 400);
+  function setGalaxy(open, side){
+    galOpen = open; galPage.classList.remove('drag'); topnav.classList.remove('drag');
+    if(open){
+      galPage.style.transform = ''; galPage.classList.add('open'); galPage.classList.remove('vis');
+      navUpdate(1, curSide); galaxy.start();
+    } else {
+      const sd = side || outSide || 1;
+      galPage.classList.remove('open'); galPage.classList.add('vis'); galPage.style.transform = `translateX(${sd * 100}%)`;
+      navUpdate(0, sd); galaxy.exit();
+      setTimeout(()=>{ if(!galOpen){ galPage.classList.remove('vis'); galPage.style.transform = ''; galaxy.stop(); } }, 400);
+    }
+    galPage.setAttribute('aria-hidden', String(!open));
   }
   function openGalaxy(){ if(galOpen) return; history.pushState({ gal:true }, '', '#galaxia'); setGalaxy(true); }
-  function closeGalaxy(){ if(!galOpen) return; if(history.state && history.state.gal) history.back(); else setGalaxy(false); }
-  tnBtns.forEach(b=>b.addEventListener('click', ()=>{ if(b.dataset.page === 'galaxia') openGalaxy(); else closeGalaxy(); }));
-  window.addEventListener('scroll', ()=>{ if(!galOpen) topnav.classList.toggle('solid', window.scrollY > 8); }, { passive:true });
-  window.addEventListener('resize', ()=>tnMove(galOpen ? 1 : 0));
-  setTimeout(()=>tnMove(0), 0);
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>tnMove(galOpen ? 1 : 0));
+  function closeGalaxy(side){ if(!galOpen) return; outSide = side || 1; if(history.state && history.state.gal) history.back(); else setGalaxy(false, outSide); }
+  window.addEventListener('scroll', ()=>navUpdate(curP), { passive:true });
+  navUpdate(0, 1);
 
   function overlayOpen(){
     if(typeof sheetIsOpen !== 'undefined' && sheetIsOpen) return true;
@@ -3399,14 +3441,15 @@
     if(document.querySelector('.adm-view.open')) return true;
     return [...document.querySelectorAll('.edit-modal,.batch-modal,.dlg-back')].some(el=>getComputedStyle(el).display !== 'none');
   }
-  const gs = { x:0, y:0, mode:0, from:'', lastX:0, lastT:0, v:0, p:0 };
+  const gs = { x:0, y:0, mode:0, from:'', sgn:1, lastX:0, lastT:0, v:0, p:0, side:1 };
+  const clampN = v=>Math.max(0, Math.min(1, v));
   document.addEventListener('touchstart', e=>{
     gs.mode = 0;
     if(e.touches.length !== 1 || document.body.classList.contains('locked')) return;
     const t = e.touches[0], tg = e.target;
-    if(galOpen){ if(t.clientX > 24) return; gs.from = 'open'; }
+    if(galOpen){ if(galaxy.isInteractive()) return; gs.from = 'open'; }
     else {
-      if(overlayOpen() || (tg.closest && tg.closest('.tabs,input,textarea,select,.miniplayer,.cover-menu,.topnav'))) return;
+      if(overlayOpen() || (tg.closest && tg.closest('.tabs,input,textarea,select,.miniplayer,.cover-menu'))) return;
       gs.from = 'closed';
     }
     gs.x = t.clientX; gs.y = t.clientY; gs.lastX = gs.x; gs.lastT = e.timeStamp; gs.v = 0; gs.mode = 1;
@@ -3416,25 +3459,29 @@
     const t = e.touches[0], dx = t.clientX - gs.x, dy = t.clientY - gs.y;
     if(gs.mode === 1){
       if(Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-      const okDir = gs.from === 'closed' ? dx < 0 : dx > 0;
-      if(Math.abs(dx) > Math.abs(dy) * 1.4 && okDir){ gs.mode = 2; galPage.classList.add('drag', 'vis'); galaxy.start(); }
-      else { gs.mode = 0; return; }
+      if(Math.abs(dx) > Math.abs(dy) * 1.4){
+        gs.mode = 2; gs.sgn = dx < 0 ? -1 : 1; gs.side = gs.from === 'closed' ? -gs.sgn : gs.sgn;
+        galPage.classList.add('drag', 'vis'); topnav.classList.add('drag'); galaxy.start();
+      } else { gs.mode = 0; return; }
     }
     if(gs.mode === 2){
       if(e.cancelable) e.preventDefault();
       const W = window.innerWidth;
-      const p = gs.from === 'closed' ? clampN(-dx / W) : clampN(1 - dx / W);
-      gs.p = p; gs.v = (t.clientX - gs.lastX) / Math.max(1, e.timeStamp - gs.lastT); gs.lastX = t.clientX; gs.lastT = e.timeStamp;
-      galPage.style.transform = `translateX(${(1 - p) * 100}%)`; tnMove(p);
+      let tx;
+      if(gs.from === 'closed'){ const base = -gs.sgn * W; tx = base + dx; tx = base > 0 ? Math.max(0, Math.min(W, tx)) : Math.max(-W, Math.min(0, tx)); }
+      else { tx = Math.max(-W, Math.min(W, dx)); if(tx) gs.side = tx > 0 ? 1 : -1; }
+      gs.p = 1 - Math.abs(tx) / W;
+      gs.v = (t.clientX - gs.lastX) / Math.max(1, e.timeStamp - gs.lastT); gs.lastX = t.clientX; gs.lastT = e.timeStamp;
+      galPage.style.transform = `translateX(${tx}px)`; navUpdate(gs.p, gs.side);
     }
   }, { passive:false });
-  function clampN(v){ return Math.max(0, Math.min(1, v)); }
   function endSwipe(){
     if(gs.mode !== 2){ gs.mode = 0; return; }
     gs.mode = 0;
-    const openIt = gs.from === 'closed' ? (gs.p > .3 || gs.v < -.5) : !(gs.p < .7 || gs.v > .5);
+    const fast = Math.abs(gs.v) > .5;
+    const openIt = gs.from === 'closed' ? (gs.p > .35 || fast) : !(gs.p < .65 || fast);
     if(openIt){ if(!galOpen) openGalaxy(); else setGalaxy(true); }
-    else { if(galOpen) closeGalaxy(); else setGalaxy(false); }
+    else { if(galOpen) closeGalaxy(gs.side); else setGalaxy(false, gs.side); }
   }
   document.addEventListener('touchend', endSwipe, { passive:true });
   document.addEventListener('touchcancel', endSwipe, { passive:true });
