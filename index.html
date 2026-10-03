@@ -299,7 +299,14 @@
   .gal-page.open{transform:none;}
   .gal-page.drag{transition:none;}
   .gal-page canvas{width:100%;height:100%;display:block;touch-action:none;}
-  .gal-hint{position:absolute;left:0;right:0;bottom:calc(96px + env(safe-area-inset-bottom,0px));text-align:center;font-size:12px;color:rgba(255,255,255,.6);pointer-events:none;transition:opacity 1.2s;}
+  .gal-tools{position:absolute;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;display:flex;gap:6px;padding:6px;border-radius:999px;background:rgba(20,10,30,.55);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.14);touch-action:manipulation;-webkit-user-select:none;user-select:none;max-width:calc(100% - 16px);}
+  .gal-tools button{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:54px;height:50px;padding:0 10px;border-radius:999px;color:rgba(255,255,255,.78);font:600 10.5px/1 Poppins,system-ui,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .gal-tools button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+  .gal-tools button.on{background:rgba(255,255,255,.95);color:#2a0c24;}
+  .gal-tools button.go{flex-direction:row;gap:8px;padding:0 20px;font-size:13px;background:rgba(255,255,255,.95);color:#2a0c24;}
+  .gal-tools .sep{width:1px;margin:8px 2px;background:rgba(255,255,255,.18);}
+  .gal-tools[data-v=ver] .x,.gal-tools[data-v=exp] .v{display:none;}
+  .gal-hint{position:absolute;left:0;right:0;bottom:calc(168px + env(safe-area-inset-bottom,0px));text-align:center;font-size:12px;color:rgba(255,255,255,.6);pointer-events:none;transition:opacity 1.2s;}
 
   .p-back{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;opacity:0;visibility:hidden;transition:opacity .25s, visibility .25s;}
   .p-back.open{opacity:1;visibility:visible;}
@@ -808,7 +815,16 @@
     <span class="tn-title b" id="tnB">Galaxia</span>
   </div>
 </nav>
-<div class="gal-page" id="galBox" aria-hidden="true"><canvas id="galCanvas"></canvas><div class="gal-hint" id="galHint">Doble toque para explorar</div></div>
+<div class="gal-page" id="galBox" aria-hidden="true"><canvas id="galCanvas"></canvas><div class="gal-hint" id="galHint">Doble toque para explorar</div>
+  <div class="gal-tools" id="galTools" data-v="ver">
+    <button type="button" class="go v" data-a="enter"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>Explorar</button>
+    <button type="button" class="x on" data-t="orbit"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>Girar</button>
+    <button type="button" class="x" data-t="pan"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg>Mover</button>
+    <button type="button" class="x" data-t="roll"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" transform="rotate(20 12 12)"/><path d="M3 12a9 9 0 0 1 3-6.7M21 12a9 9 0 0 1-3 6.7"/></svg>Rodar</button>
+    <span class="sep x"></span>
+    <button type="button" class="x" data-a="reset"><svg viewBox="0 0 24 24"><path d="M3 12l9-8 9 8"/><path d="M5 10.5V20h5v-5h4v5h5v-9.5"/></svg>Inicio</button>
+    <button type="button" class="x" data-a="exit"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>Salir</button>
+  </div></div>
 
 <div class="wrap">
 
@@ -3416,11 +3432,34 @@
     //  · 1 dedo (o clic izquierdo): gira en cualquier dirección, incluso diagonal y por encima/debajo, sin límites
     //  · 2 dedos: pellizcar = acercar/alejar · arrastrar = mover la vista (arriba/abajo/lados) · girar los dedos = rodar la cámara
     //  · ratón: clic derecho o Shift + arrastrar = mover · Alt + arrastrar = rodar · rueda = zoom
-    const ptrs = new Map(); let pinch = null, tapT = 0, tapX = 0, tapY = 0;
+    const ptrs = new Map(); let pinch = null, tapT = 0, tapX = 0, tapY = 0, tool = 'orbit';
+    const tools = document.getElementById('galTools');
+    function syncUI(){
+      if(!tools) return;
+      tools.dataset.v = interactive ? 'exp' : 'ver';
+      tools.querySelectorAll('[data-t]').forEach(b=> b.classList.toggle('on', b.dataset.t === tool));
+    }
+    function setTool(t){ tool = t; syncUI(); showHint(t === 'orbit' ? 'Arrastra con un dedo para girar' : t === 'pan' ? 'Arrastra con un dedo para mover la vista' : 'Arrastra de lado para rodar la cámara'); }
+    if(tools) tools.addEventListener('click', e=>{
+      const b = e.target.closest('button'); if(!b) return;
+      if(b.dataset.t) setTool(b.dataset.t);
+      else if(b.dataset.a === 'enter') setMode(true);
+      else if(b.dataset.a === 'exit') setMode(false);
+      else if(b.dataset.a === 'reset'){ resetView(); showHint('Vista inicial'); }
+    });
+    // gira como un "turntable": de lado = alrededor del eje vertical del corazón; arriba/abajo = inclina. La cámara no se desnivela sola.
+    function orbit(dx, dy){
+      const up = M[4] >= 0 ? 1 : -1; // si estás boca abajo, el giro lateral se invierte para que siga sintiéndose natural
+      const a = -dx * .0065 * up, c = Math.cos(a), s_ = Math.sin(a), o = M;
+      // M = M · Ry(a)  (gira el mundo sobre su eje vertical)
+      M = [o[0]*c - o[2]*s_, o[1], o[0]*s_ + o[2]*c,  o[3]*c - o[5]*s_, o[4], o[3]*s_ + o[5]*c,  o[6]*c - o[8]*s_, o[7], o[6]*s_ + o[8]*c];
+      rot(0, dy * .0065);
+    }
     function setMode(on){
       interactive = on; ptrs.clear(); pinch = null;
-      if(on){ showHint('1 dedo: girar · 2 dedos: zoom, mover y rodar · doble toque: salir'); }
+      if(on){ tool = 'orbit'; showHint('1 dedo: girar · 2 dedos: acercar y mover · usa los botones para mover o rodar'); }
       else { resetView(); showHint('Doble toque para explorar'); }
+      syncUI();
     }
     function twoTouch(){
       const [a, b] = [...ptrs.values()];
@@ -3436,16 +3475,15 @@
       const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
       if(!interactive) return;
       if(ptrs.size === 1){
-        if(e.pointerType === 'mouse' && (p.btn === 2 || p.btn === 1 || e.shiftKey)) pan(dx, dy);
-        else if(e.pointerType === 'mouse' && e.altKey) rot(2, dx * .008);
-        else { rot(1, -dx * .007); rot(0, dy * .007); }
+        const mouse = e.pointerType === 'mouse';
+        if(tool === 'pan' || (mouse && (p.btn === 2 || p.btn === 1 || e.shiftKey))) pan(dx, dy);
+        else if(tool === 'roll' || (mouse && e.altKey)) rot(2, dx * .008);
+        else orbit(dx, dy);
       } else if(ptrs.size >= 2){
         const t = twoTouch();
         if(pinch){
           pan(t.cx - pinch.cx, t.cy - pinch.cy);
           tz = clamp(tz * t.d / pinch.d, ZMIN, ZMAX); zoom = tz;
-          let da = t.ang - pinch.ang; if(da > Math.PI) da -= 2 * Math.PI; else if(da < -Math.PI) da += 2 * Math.PI;
-          rot(2, da);
         }
         pinch = t;
       }
@@ -3476,14 +3514,14 @@
       start(){
         if(running) return;
         build(); buildSprites();
-        running = true; drawT = 0; showHint('Doble toque para explorar');
+        running = true; drawT = 0; syncUI(); showHint('Doble toque para explorar');
         if(!ro && window.ResizeObserver){ ro = new ResizeObserver(()=>resize()); ro.observe(box); }
         resize(); last = 0;
         if(!raf && !document.hidden) raf = requestAnimationFrame(frame);
       },
       stop(){ running = false; if(raf){ cancelAnimationFrame(raf); raf = 0; } },
       isInteractive(){ return interactive; },
-      exit(){ interactive = false; ptrs.clear(); pinch = null; resetView(); }
+      exit(){ interactive = false; ptrs.clear(); pinch = null; resetView(); syncUI(); }
     };
   })();
 
