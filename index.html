@@ -3167,7 +3167,7 @@
     let yaw = 0, vYaw = 0, pitch = PITCH0, vPitch = 0, spin = 0, phase = 0, clock = 0;
     let zoom = 1, tz = 1, resetting = false, spritesBuilt = false, sized = false;
     let skip = 1, frames = 0, acc = 0, built = false, interactive = false, hintTm = 0;
-    let idle = 0, focus = -1, wF = 0, camX = 0, camY = 0, camZ = 0, drawT = 0, lastWheel = 0;
+    let idle = 0, freeHint = false, focus = -1, wF = 0, camX = 0, camY = 0, camZ = 0, drawT = 0, lastWheel = 0;
     const gal = [], stars = [], trail = [], sprites = [];
 
     // Forma del corazón: las 3 galaxias están SOBRE su contorno (ali y axel arriba, nosotros en la punta de abajo)
@@ -3175,11 +3175,11 @@
     const hx = t => 16 * Math.pow(Math.sin(t), 3) * HS;
     const hy = t => -(13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t)) * HS + YOFF;
     const GN = [
-      { x: hx(-TL),    y: hy(-TL),    z: 0, tilt: -.95, dir:  1, glow:'255,170,215', sx:0, sy:0 }, // 0 = ali (arriba izquierda, rosa)
-      { x: hx(TL),     y: hy(TL),     z: 0, tilt: -1.05, dir: -1, glow:'150,200,255', sx:0, sy:0 }, // 1 = axel (arriba derecha, azul)
-      { x: hx(Math.PI), y: hy(Math.PI), z: 0, tilt: -1.0, dir:  1, glow:'255,215,150', sx:0, sy:0 }  // 2 = nosotros (abajo, dorado)
+      { x: hx(-TL),    y: hy(-TL),    z: 0, tilt: -.3, roll: -.3, dir:  1, glow:'255,170,215', sx:0, sy:0 }, // 0 = ali (arriba izquierda, rosa)
+      { x: hx(TL),     y: hy(TL),     z: 0, tilt: -.22, roll: .3, dir: -1, glow:'150,200,255', sx:0, sy:0 }, // 1 = axel (arriba derecha, azul)
+      { x: hx(Math.PI), y: hy(Math.PI), z: 0, tilt: -.4, roll: 0, dir:  1, glow:'255,215,150', sx:0, sy:0 }  // 2 = nosotros (abajo, dorado)
     ];
-    GN.forEach(G=>{ G.c = Math.cos(G.tilt); G.s = Math.sin(G.tilt); G.sr = 0; });
+    GN.forEach(G=>{ G.c = Math.cos(G.tilt); G.s = Math.sin(G.tilt); G.rc = Math.cos(G.roll); G.rs = Math.sin(G.roll); G.sr = 0; });
     const PALS = [
       ['rgba(255,244,214,.95)','rgba(255,170,210,.9)','rgba(255,120,185,.85)','rgba(235,110,200,.8)','rgba(190,120,255,.75)'],
       ['rgba(235,245,255,.95)','rgba(140,200,255,.9)','rgba(100,160,255,.85)','rgba(130,130,255,.8)','rgba(170,120,255,.75)'],
@@ -3195,7 +3195,8 @@
     // posición en el mundo de un punto (radio r, altura y, ángulo ang) del disco de la galaxia gi
     function place(gi, r, y, ang){
       const G = GN[gi], lx = Math.cos(ang) * r, lz = Math.sin(ang) * r;
-      gx = G.x + lx; gy = G.y + y * G.c - lz * G.s; gz = G.z + y * G.s + lz * G.c;
+      const y1 = y * G.c - lz * G.s, z1 = y * G.s + lz * G.c; // inclinación del disco
+      gx = G.x + lx * G.rc - y1 * G.rs; gy = G.y + lx * G.rs + y1 * G.rc; gz = G.z + z1; // y giro en pantalla
     }
 
     function build(){
@@ -3300,14 +3301,15 @@
       clock += dt; drawT += dt;
       const playing = (typeof isPlaying !== 'undefined') && isPlaying;
       phase += dt * (playing ? 7.4 : 4.6);
+      const free = sstep(.15, .55, wF); // 0 = vista del corazón (fija) · 1 = dentro de una galaxia (se puede girar libre)
       if(ptrs.size === 0){
-        yaw = clamp(yaw + vYaw * dt * 60, -1.25, 1.25); vYaw *= Math.exp(-dt * 3);
-        pitch += vPitch * dt * 60; vPitch *= Math.exp(-dt * 3);
-        idle += dt;
-        if(!interactive || idle > 1){ const k = Math.min(1, dt * (interactive ? 1.8 : 2.5)); yaw -= yaw * k; pitch += (PITCH0 - pitch) * k; }
-      } else idle = 0;
+        yaw += vYaw * dt * 60 * free; vYaw *= Math.exp(-dt * 3);
+        pitch += vPitch * dt * 60 * free; vPitch *= Math.exp(-dt * 3);
+      }
+      yaw -= Math.round(yaw / 6.28319) * 6.28319;
+      { const k = Math.min(1, dt * 3 * (1 - free)); yaw -= yaw * k; pitch += (PITCH0 - pitch) * k; }
       if(resetting){ pitch += (PITCH0 - pitch) * Math.min(1, dt * 6); if(Math.abs(pitch - PITCH0) < .004) resetting = false; }
-      pitch = clamp(pitch, PITCH0 - .8, PITCH0 + .7);
+      pitch = clamp(pitch, -1.45, 1.1);
       // el zoom avanza con "peso": tiene una velocidad máxima para que se note el acercamiento
       { const dl = Math.log(tz / zoom), lim = (resetting ? 2.4 : .85) * dt;
         zoom *= Math.exp(clamp(dl * Math.min(1, dt * 3.2), -lim, lim)); }
@@ -3315,9 +3317,10 @@
       const beat = 1 + .045 * Math.sin(phase) + (playing ? .05 * Math.pow(Math.max(0, Math.sin(phase * .5)), 8) : 0);
       // cámara: al acercarte, el centro de la vista viaja hasta la galaxia elegida (y regresa al alejarte)
       const r = zoom / Z0; wF = sstep(1.08, 2.2, r);
+      if(interactive && wF > .7 && !freeHint){ freeHint = true; showHint('Desliza para girar la galaxia'); } else if(wF < .1) freeHint = false;
       { const G0 = focus >= 0 ? GN[focus] : null, k = Math.min(1, dt * 4);
         camX += ((G0 ? G0.x * wF : 0) - camX) * k; camY += ((G0 ? G0.y * wF : 0) - camY) * k; camZ += ((G0 ? G0.z * wF : 0) - camZ) * k; }
-      const swayY = yaw + .25 * Math.sin(clock * .4), cy = Math.cos(swayY), sy = Math.sin(swayY), cp = Math.cos(pitch), sp = Math.sin(pitch);
+      const swayY = yaw + .25 * (1 - free) * Math.sin(clock * .4), cy = Math.cos(swayY), sy = Math.sin(swayY), cp = Math.cos(pitch), sp = Math.sin(pitch);
 
       ctx.clearRect(0, 0, W, H);
       ctx.globalCompositeOperation = 'lighter';
@@ -3436,8 +3439,10 @@
       if(!interactive) return;
       if(ptrs.size === 1){
         resetting = false;
-        yaw = clamp(yaw - dx * .008, -1.25, 1.25); pitch = clamp(pitch + dy * .006, PITCH0 - .8, PITCH0 + .7);
-        vYaw = clamp(-dx * .0016, -.06, .06); vPitch = clamp(dy * .0012, -.04, .04);
+        if(wF > .35){ // solo se gira dentro de una galaxia; el corazón se queda de frente
+          yaw -= dx * .008; pitch = clamp(pitch + dy * .006, -1.45, 1.1);
+          vYaw = clamp(-dx * .0016, -.06, .06); vPitch = clamp(dy * .0012, -.04, .04);
+        }
       } else if(ptrs.size >= 2){
         const [a,b] = [...ptrs.values()], d = Math.hypot(a.x-b.x, a.y-b.y);
         if(pinchD > 0) tz = clamp(tz * Math.pow(d / pinchD, .5), ZMIN, ZMAX);
