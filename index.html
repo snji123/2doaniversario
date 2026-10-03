@@ -3150,18 +3150,42 @@
   // Cambia aquí las frases que flotan alrededor del corazón
   // Imágenes de la galaxia: carpeta del repositorio y nombres de los archivos
   const GALAXY_IMG_DIR = 'galaxia/';
-  const GALAXY_IMAGES = []; // ej.: ['foto1.jpg', 'foto2.png']
+  const _n = (a, b, e)=> Array.from({ length: b - a + 1 }, (_, i)=> (a + i) + '.' + e);
+  // Tres galaxias (triángulo = corazón): cada una con su carpeta dentro de galaxia/
+  const GALAXY_SETS = [
+    { dir:'ali',      files:['1.jpeg','2a.gif','3.jpeg','4.gif','5.jpeg','6.gif','7.jpeg','8.gif','9.gif','10.gif','11.jpeg','12.gif','13.gif','14.gif'] },
+    { dir:'axel',     files:['1.jpeg', ..._n(3,21,'jpeg'), '22.jpg','23.jpeg','24.gif'] },
+    { dir:'nosotros', files:[..._n(1,27,'jpeg'), '28.gif','29.jpeg','30.jpeg'] }
+  ];
   const GALAXY_WORDS = ['Te amo','Eres mi sol','Amor de mi vida','Siempre juntos','Eres preciosa','Me encantas','Te adoro','My love','Eres mi todo'];
   const galaxy = (function(){
     const box = document.getElementById('galBox'), cv = document.getElementById('galCanvas'), hint = document.getElementById('galHint');
     const ctx = cv.getContext('2d');
-    const D = 520, F = 420, PITCH0 = -0.38, Z0 = .32, ZMIN = .2, ZMAX = 6;
+    const D = 520, F = 420, PITCH0 = -0.38, Z0 = .46, ZMIN = .25, ZMAX = 6;
     let W = 0, H = 0, dpr = 1, K = 1, running = false, raf = 0, last = 0, ro = null;
     let yaw = 0, vYaw = 0.0022, pitch = PITCH0, vPitch = 0, spin = 0, phase = 0, clock = 0;
     let zoom = Z0, tz = Z0, resetting = false, spritesBuilt = false;
     let skip = 1, frames = 0, acc = 0, built = false, interactive = false, hintTm = 0;
     const gal = [], stars = [], heart = [], sprites = [];
-    const PAL_G = ['rgba(255,244,214,.95)','rgba(255,160,205,.9)','rgba(240,110,190,.85)','rgba(160,130,255,.85)','rgba(110,200,255,.8)'];
+    // Las 3 galaxias: ali (izquierda, rosa), axel (derecha, azul) y nosotros (abajo, dorado/rosa) = triángulo de un corazón
+    const GR = 78, HS = 7.5; // radio de cada galaxia y escala del corazón
+    const GN = [
+      { x:-62, y:-46, z:0, tilt:-.95, dir: 1, glow:'255,170,215' },
+      { x: 62, y:-46, z:0, tilt:-1.05, dir:-1, glow:'150,200,255' },
+      { x:  0, y: 52, z:0, tilt:-1.0, dir: 1, glow:'255,215,150' }
+    ];
+    GN.forEach(G=>{ G.c = Math.cos(G.tilt); G.s = Math.sin(G.tilt); });
+    const PALS = [
+      ['rgba(255,244,214,.95)','rgba(255,170,210,.9)','rgba(255,120,185,.85)','rgba(235,110,200,.8)','rgba(190,120,255,.75)'],
+      ['rgba(235,245,255,.95)','rgba(140,200,255,.9)','rgba(100,160,255,.85)','rgba(130,130,255,.8)','rgba(170,120,255,.75)'],
+      ['rgba(255,244,214,.95)','rgba(255,205,140,.9)','rgba(255,150,170,.85)','rgba(240,110,190,.8)','rgba(160,130,255,.8)']
+    ];
+    let gx = 0, gy = 0, gz = 0;
+    // posición en el mundo de un punto (radio r, altura y, ángulo ang) del disco de la galaxia gi
+    function place(gi, r, y, ang){
+      const G = GN[gi], lx = Math.cos(ang) * r, lz = Math.sin(ang) * r;
+      gx = G.x + lx; gy = G.y + y * G.c - lz * G.s; gz = G.z + y * G.s + lz * G.c;
+    }
     const PAL_H = ['rgba(255,176,210,.95)','rgba(255,255,255,.95)','rgba(255,110,165,.9)'];
     const gauss = ()=> (Math.random()+Math.random()+Math.random()-1.5)/1.5;
     const clamp = (v,a,b)=> Math.max(a, Math.min(b, v));
@@ -3170,19 +3194,26 @@
 
     function build(){
       if(built) return; built = true;
-      const NG = weak ? 1000 : 1700, NH = weak ? 700 : 1100, NS = weak ? 160 : 280;
-      for(let i=0;i<NG;i++){
-        const arm = i % 3, r = Math.pow(Math.random(), .62) * 200 + 6;
-        const a = r * .034 + arm * 2.0944 + gauss() * (.55 * (1 - r/230) + .08);
-        const g = r < 40 ? 0 : r < 95 ? 1 + (Math.random()<.4?1:0) : r < 150 ? 2 + (Math.random()<.5?1:0) : 3 + (Math.random()<.5?1:0);
-        gal.push({ r, a, y: gauss() * (12 * (1 - r/230) + 2) + 40, s: Math.random()*1.4 + .6, g });
+      const NG = weak ? 450 : 750, NH = weak ? 700 : 1100, NS = weak ? 160 : 280, f = GR / 200;
+      for(let gi=0; gi<3; gi++){
+        const dir = GN[gi].dir;
+        for(let i=0;i<NG;i++){
+          const arm = i % 3, r0 = Math.pow(Math.random(), .62) * 200 + 6;
+          const a = r0 * .034 + arm * 2.0944 + gauss() * (.55 * (1 - r0/230) + .08);
+          const g = r0 < 40 ? 0 : r0 < 95 ? 1 + (Math.random()<.4?1:0) : r0 < 150 ? 2 + (Math.random()<.5?1:0) : 3 + (Math.random()<.5?1:0);
+          gal.push({ gi, r: r0 * f, a: a * dir, y: gauss() * (12 * (1 - r0/230) + 2) * f * 1.6, s: Math.random()*1.2 + .5, k: gi * 5 + g, col: PALS[gi][g] });
+        }
       }
-      gal.sort((p,q)=>p.g-q.g);
+      gal.sort((p,q)=>p.k-q.k);
       for(let i=0;i<NS;i++) stars.push({ x:(Math.random()-.5)*900, y:(Math.random()-.5)*700, z:(Math.random()-.5)*900, s:Math.random()*1.1+.4, a:Math.random()*.6+.25 });
       for(let i=0;i<NH;i++){
         const t = Math.random() * Math.PI * 2, k = 1 - Math.pow(Math.random(), 3) * .3;
         const x = 16 * Math.pow(Math.sin(t), 3), y = 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
-        heart.push({ x: x*5.4*k, y: -y*5.4*k, z: gauss()*12, s: Math.random()*1.5 + .8, g: i % 3, d: Math.random(), r: Math.sqrt(Math.random()) * 170, a: Math.random() * 6.2832, ys: 40 + gauss() * 10 });
+        const hx = x*HS*k, hy = -y*HS*k;
+        // cada punto del corazón sale de la galaxia más cercana a él
+        let gi = 0, best = 1e9;
+        GN.forEach((G, j)=>{ const d = (hx-G.x)*(hx-G.x) + (hy-G.y)*(hy-G.y); if(d < best){ best = d; gi = j; } });
+        heart.push({ x: hx, y: hy, z: gauss()*14, s: Math.random()*1.5 + .8, g: i % 3, d: Math.random(), gi, r: Math.sqrt(Math.random()) * GR, a: Math.random() * 6.2832, ys: gauss() * 8 });
       }
       heart.sort((p,q)=>p.g-q.g);
     }
@@ -3196,23 +3227,38 @@
         sp.bmp = c; sp.ok = true;
       }catch(e){ sp.bad = true; }
     }
+    // Las fotos se cargan poco a poco (6 a la vez) para no saturar el teléfono
+    const queue = []; let active = 0;
+    function pump(){
+      while(active < 6 && queue.length){
+        const job = queue.shift(); active++;
+        const img = new Image(); img.decoding = 'async';
+        const done = ()=>{ active--; pump(); };
+        img.onload = ()=>{ prepImg(job.sp, img); done(); };
+        img.onerror = ()=>{ job.sp.bad = true; done(); };
+        img.src = job.url;
+      }
+    }
     function buildSprites(){
       if(spritesBuilt) return; spritesBuilt = true;
-      sprites.length = 0;
-      GALAXY_IMAGES.forEach(name=>{
-        const img = new Image(), sp = { kind:'img', ok:false };
-        img.decoding = 'async';
-        img.onload = ()=>prepImg(sp, img); img.onerror = ()=>{ sp.bad = true; };
-        img.src = GALAXY_IMG_DIR + encodeURIComponent(name); sprites.push(sp);
+      sprites.length = 0; queue.length = 0;
+      const per = [[], [], []];
+      GALAXY_SETS.forEach((set, gi)=> set.files.forEach(name=>{
+        const sp = { kind:'img', ok:false, gi };
+        per[gi].push(sp); sprites.push(sp);
+        queue.push({ sp, url: GALAXY_IMG_DIR + set.dir + '/' + encodeURIComponent(name) });
+      }));
+      GALAXY_WORDS.forEach((w, i)=>{ const sp = { kind:'txt', text:w, gi:i % 3 }; per[sp.gi].push(sp); sprites.push(sp); });
+      per.forEach((arr, gi)=>{
+        for(let i=arr.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+        const G = GN[gi], n = arr.length, R = 36 + n * 2.2;
+        arr.forEach((sp, i)=>{
+          const a = i * 2.39996 + Math.random() * .3, r = 28 + R * Math.sqrt((i + .5) / n);
+          sp.x = G.x + Math.cos(a) * r; sp.z = G.z + Math.sin(a) * r; sp.y = G.y + (Math.random() - .5) * 110;
+          sp.ph = Math.random() * 6.28; sp.sz = sp.kind==='img' ? 34 + Math.random()*14 : 12 + Math.random()*4;
+        });
       });
-      GALAXY_WORDS.forEach(w=>sprites.push({ kind:'txt', text:w }));
-      for(let i=sprites.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [sprites[i], sprites[j]] = [sprites[j], sprites[i]]; }
-      const n = sprites.length;
-      sprites.forEach((sp, i)=>{
-        const a = i * 2.39996 + Math.random() * .3, r = 95 + 150 * Math.sqrt((i + .5) / n) + Math.random() * 20;
-        sp.x = Math.cos(a) * r; sp.z = Math.sin(a) * r; sp.y = (Math.random() - .5) * 230;
-        sp.ph = Math.random() * 6.28; sp.sz = sp.kind==='img' ? 40 + Math.random()*16 : 13 + Math.random()*4;
-      });
+      pump();
     }
 
     function resize(){
@@ -3245,7 +3291,8 @@
       const playing = (typeof isPlaying !== 'undefined') && isPlaying;
       phase += dt * (playing ? 7.4 : 4.6);
       if(ptrs.size === 0){
-        yaw += vYaw * dt * 60; vYaw += (.0022 - vYaw) * Math.min(1, dt * 1.6);
+        if(interactive){ yaw += vYaw * dt * 60; vYaw += (.0022 - vYaw) * Math.min(1, dt * 1.6); }
+        else { const w = yaw - Math.round(yaw / 6.28319) * 6.28319; yaw -= w * Math.min(1, dt * 1.8); vYaw = 0; }
         pitch += vPitch * dt * 60; vPitch *= Math.exp(-dt * 3);
       }
       if(resetting){ pitch += (PITCH0 - pitch) * Math.min(1, dt * 6); if(Math.abs(pitch - PITCH0) < .004) resetting = false; }
@@ -3255,7 +3302,7 @@
         zoom *= Math.exp(clamp(dl * Math.min(1, dt * 3.2), -lim, lim)); }
       spin += dt * .16;
       const beat = 1 + .045 * Math.sin(phase) + (playing ? .05 * Math.pow(Math.max(0, Math.sin(phase * .5)), 8) : 0);
-      const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+      const swayY = yaw + .3 * Math.sin(clock * .4), cy = Math.cos(swayY), sy = Math.sin(swayY), cp = Math.cos(pitch), sp = Math.sin(pitch);
 
       ctx.clearRect(0, 0, W, H);
       ctx.globalCompositeOperation = 'lighter';
@@ -3266,28 +3313,29 @@
         ctx.globalAlpha = s.a * (.7 + .3*Math.sin(clock*2 + i));
         const z = Math.max(1, s.s * 1.3 * Math.sqrt(pp)); ctx.fillRect(px, py, z, z);
       }
-      let lastG = -1;
+      let lastC = '';
       for(let i=0;i<gal.length;i+=skip){
         const p = gal[i];
-        if(p.g !== lastG){ ctx.fillStyle = PAL_G[p.g]; lastG = p.g; }
-        const ang = p.a + spin;
-        if(!proj(Math.cos(ang) * p.r, p.y, Math.sin(ang) * p.r, cy, sy, cp, sp)) continue;
-        ctx.globalAlpha = Math.min(1, .35 + pp*.5);
-        const z = Math.min(7, Math.max(1, p.s * 1.7 * Math.sqrt(pp))); ctx.fillRect(px - z/2, py - z/2, z, z);
+        if(p.col !== lastC){ ctx.fillStyle = p.col; lastC = p.col; }
+        place(p.gi, p.r, p.y, p.a + spin * GN[p.gi].dir);
+        if(!proj(gx, gy, gz, cy, sy, cp, sp)) continue;
+        ctx.globalAlpha = Math.min(.8, .3 + pp*.45);
+        const z = Math.min(6, Math.max(1, p.s * 1.5 * Math.sqrt(pp))); ctx.fillRect(px - z/2, py - z/2, z, z);
       }
-      if(proj(0, 40, 0, cy, sy, cp, sp)){
-        const R = 70 * pp, g = ctx.createRadialGradient(px, py, 0, px, py, R);
-        g.addColorStop(0, 'rgba(255,240,230,.55)'); g.addColorStop(.4, 'rgba(255,150,200,.18)'); g.addColorStop(1, 'rgba(255,150,200,0)');
+      for(const G of GN){
+        if(!proj(G.x, G.y, G.z, cy, sy, cp, sp)) continue;
+        const R = 34 * pp, g = ctx.createRadialGradient(px, py, 0, px, py, R);
+        g.addColorStop(0, 'rgba(255,245,235,.6)'); g.addColorStop(.35, `rgba(${G.glow},.22)`); g.addColorStop(1, `rgba(${G.glow},0)`);
         ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(px - R, py - R, R*2, R*2);
       }
-      // corazón: de lejos son puntitos sueltos en la galaxia; al acercarte se juntan y forman el corazón
-      const fh = sstep(.7, 3.4, zoom);
-      if(proj(0, -100, 0, cy, sy, cp, sp)){
+      // corazón: de lejos son puntitos sueltos en las 3 galaxias; al acercarte se juntan y forman el corazón
+      const fh = sstep(.55, 1.6, zoom);
+      if(proj(0, 0, 0, cy, sy, cp, sp)){
         const ax = px, ay = py, ap = pp;
-        const yh = Math.sin(clock * .55) * .5, chy = Math.cos(yh), shy = Math.sin(yh);
+        const yh = Math.sin(clock * .55) * .4, chy = Math.cos(yh), shy = Math.sin(yh);
         if(fh > .02){
-          const R = 120 * ap, g = ctx.createRadialGradient(ax, ay, 0, ax, ay, R);
-          g.addColorStop(0, 'rgba(255,90,150,.28)'); g.addColorStop(1, 'rgba(255,90,150,0)');
+          const R = 170 * ap, g = ctx.createRadialGradient(ax, ay, 0, ax, ay, R);
+          g.addColorStop(0, 'rgba(255,90,150,.26)'); g.addColorStop(1, 'rgba(255,90,150,0)');
           ctx.globalAlpha = fh; ctx.fillStyle = g; ctx.fillRect(ax - R, ay - R, R*2, R*2);
         }
         let lastH = -1;
@@ -3298,8 +3346,8 @@
           const lx = p.x * beat, ly = p.y * beat, rx = lx * chy + p.z * shy;
           let X = ax + rx * ap, Y = ay + ly * ap;
           if(e < 1){
-            const an = p.a + spin;
-            if(!proj(Math.cos(an) * p.r, p.ys, Math.sin(an) * p.r, cy, sy, cp, sp)) continue;
+            place(p.gi, p.r, p.ys, p.a + spin * GN[p.gi].dir);
+            if(!proj(gx, gy, gz, cy, sy, cp, sp)) continue;
             X = px + (X - px) * e; Y = py + (Y - py) * e;
           }
           ctx.globalAlpha = .55 + .35 * e;
@@ -3403,7 +3451,7 @@
       },
       stop(){ running = false; if(raf){ cancelAnimationFrame(raf); raf = 0; } },
       isInteractive(){ return interactive; },
-      exit(){ interactive = false; ptrs.clear(); pinchD = 0; tz = zoom = Z0; pitch = PITCH0; resetting = false; vPitch = 0; vYaw = .0022; }
+      exit(){ interactive = false; ptrs.clear(); pinchD = 0; tz = zoom = Z0; pitch = PITCH0; resetting = false; vPitch = 0; vYaw = 0; yaw = 0; }
     };
   })();
 
