@@ -3164,10 +3164,10 @@
     const D = 520, F = 420, PITCH0 = -0.38;
     let Z0 = 1, ZMIN = .7, ZMAX = 5; // se calculan en resize() para que el corazón completo quepa en pantalla
     let W = 0, H = 0, dpr = 1, K = 1, running = false, raf = 0, last = 0, ro = null;
-    let yaw = 0, vYaw = 0.0022, pitch = PITCH0, vPitch = 0, spin = 0, phase = 0, clock = 0;
+    let yaw = 0, vYaw = 0, pitch = PITCH0, vPitch = 0, spin = 0, phase = 0, clock = 0;
     let zoom = 1, tz = 1, resetting = false, spritesBuilt = false, sized = false;
     let skip = 1, frames = 0, acc = 0, built = false, interactive = false, hintTm = 0;
-    let focus = -1, wF = 0, camX = 0, camY = 0, camZ = 0, drawT = 0, lastWheel = 0;
+    let idle = 0, focus = -1, wF = 0, camX = 0, camY = 0, camZ = 0, drawT = 0, lastWheel = 0;
     const gal = [], stars = [], trail = [], sprites = [];
 
     // Forma del corazón: las 3 galaxias están SOBRE su contorno (ali y axel arriba, nosotros en la punta de abajo)
@@ -3273,7 +3273,7 @@
       // zoom inicial: que quepa todo el corazón (3 galaxias) en pantalla
       const fit = Math.min(.9 * (W/2) / (190 * F/D * K), .9 * (H/2) / (215 * F/D * K));
       const first = !sized || tz === Z0;
-      Z0 = fit; ZMIN = fit * .7; ZMAX = fit * 5;
+      Z0 = fit; ZMIN = fit * .7; ZMAX = fit * 6;
       if(first){ zoom = tz = Z0; }
       sized = true;
     }
@@ -3301,12 +3301,13 @@
       const playing = (typeof isPlaying !== 'undefined') && isPlaying;
       phase += dt * (playing ? 7.4 : 4.6);
       if(ptrs.size === 0){
-        if(interactive){ yaw += vYaw * dt * 60; vYaw += (.0022 - vYaw) * Math.min(1, dt * 1.6); }
-        else { const w = yaw - Math.round(yaw / 6.28319) * 6.28319; yaw -= w * Math.min(1, dt * 1.8); vYaw = 0; }
+        yaw = clamp(yaw + vYaw * dt * 60, -1.25, 1.25); vYaw *= Math.exp(-dt * 3);
         pitch += vPitch * dt * 60; vPitch *= Math.exp(-dt * 3);
-      }
+        idle += dt;
+        if(!interactive || idle > 1){ const k = Math.min(1, dt * (interactive ? 1.8 : 2.5)); yaw -= yaw * k; pitch += (PITCH0 - pitch) * k; }
+      } else idle = 0;
       if(resetting){ pitch += (PITCH0 - pitch) * Math.min(1, dt * 6); if(Math.abs(pitch - PITCH0) < .004) resetting = false; }
-      pitch = clamp(pitch, -1.5, .75);
+      pitch = clamp(pitch, PITCH0 - .8, PITCH0 + .7);
       // el zoom avanza con "peso": tiene una velocidad máxima para que se note el acercamiento
       { const dl = Math.log(tz / zoom), lim = (resetting ? 2.4 : .85) * dt;
         zoom *= Math.exp(clamp(dl * Math.min(1, dt * 3.2), -lim, lim)); }
@@ -3359,7 +3360,7 @@
       }
       ctx.globalCompositeOperation = 'source-over';
       // imágenes y frases: casi invisibles de lejos; al acercarte a una galaxia, las suyas crecen y se vuelven nítidas
-      const dsZ = sstep(1.1, 4.2, r), cap = Math.min(W, H) * .42;
+      const dsZ = sstep(1.3, 5, r), cap = Math.min(W, H) * .42;
       const list = [];
       for(const sp_ of sprites){
         if(sp_.bad || (sp_.kind==='img' && !sp_.ok)) continue;
@@ -3373,13 +3374,13 @@
         const s = it.s, al = Math.max(.25, Math.min(1, 1 - (it.z + 200) / 620));
         const ds = dsZ * (s.gi === focus ? 1 : 1 - wF * .9);
         if(s.kind === 'txt'){
-          const fpx = Math.min(64, s.sz * it.p * (.1 + .9 * ds)); if(fpx < 3) continue;
+          const fpx = Math.min(64, s.sz * it.p * (.08 + .6 * ds)); if(fpx < 3) continue;
           ctx.globalAlpha = al * clamp((fpx - 3) / 8, 0, 1); ctx.font = `600 ${fpx}px Poppins, system-ui, sans-serif`;
           ctx.shadowColor = 'rgba(255,90,170,.9)'; ctx.shadowBlur = fpx > 10 ? 8 : 0;
           ctx.fillStyle = '#fff'; ctx.fillText(s.text, it.x, it.y); ctx.shadowBlur = 0;
         } else {
-          const z = Math.min(cap, s.sz * it.p * (.15 + .85 * ds)); if(z < 1.5) continue;
-          const al2 = al * (.35 + .65 * ds), rr = Math.max(2, z * .16);
+          const z = Math.min(cap, s.sz * it.p * (.08 + .55 * ds)); if(z < 1.5) continue;
+          const al2 = al * (.3 + .7 * ds), rr = Math.max(2, z * .16);
           if(z < 7){ ctx.globalAlpha = al2; ctx.drawImage(s.bmp, it.x - z/2, it.y - z/2, z, z); continue; }
           ctx.save(); ctx.globalAlpha = al2; ctx.beginPath();
           if(ctx.roundRect) ctx.roundRect(it.x - z/2, it.y - z/2, z, z, rr); else ctx.rect(it.x - z/2, it.y - z/2, z, z);
@@ -3422,7 +3423,7 @@
     function setMode(on){
       interactive = on; ptrs.clear(); pinchD = 0;
       if(on){ showHint('Toca o pellizca una galaxia para acercarte · doble toque para salir'); }
-      else { tz = Z0; resetting = true; vPitch = 0; vYaw = .0022; showHint('Doble toque para explorar'); }
+      else { tz = Z0; resetting = true; vPitch = 0; vYaw = 0; showHint('Doble toque para explorar'); }
     }
     function onDown(e){
       ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY, x0:e.clientX, y0:e.clientY, t:performance.now() });
@@ -3435,8 +3436,8 @@
       if(!interactive) return;
       if(ptrs.size === 1){
         resetting = false;
-        yaw += dx * .008; pitch = clamp(pitch - dy * .006, -1.5, .75);
-        vYaw = clamp(dx * .0016, -.06, .06); vPitch = clamp(-dy * .0012, -.04, .04);
+        yaw = clamp(yaw - dx * .008, -1.25, 1.25); pitch = clamp(pitch + dy * .006, PITCH0 - .8, PITCH0 + .7);
+        vYaw = clamp(-dx * .0016, -.06, .06); vPitch = clamp(dy * .0012, -.04, .04);
       } else if(ptrs.size >= 2){
         const [a,b] = [...ptrs.values()], d = Math.hypot(a.x-b.x, a.y-b.y);
         if(pinchD > 0) tz = clamp(tz * Math.pow(d / pinchD, .5), ZMIN, ZMAX);
