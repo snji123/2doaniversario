@@ -299,14 +299,7 @@
   .gal-page.open{transform:none;}
   .gal-page.drag{transition:none;}
   .gal-page canvas{width:100%;height:100%;display:block;touch-action:none;}
-  .gal-tools{position:absolute;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;display:flex;gap:6px;padding:6px;border-radius:999px;background:rgba(20,10,30,.55);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.14);touch-action:manipulation;-webkit-user-select:none;user-select:none;max-width:calc(100% - 16px);}
-  .gal-tools button{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:54px;height:50px;padding:0 10px;border-radius:999px;color:rgba(255,255,255,.78);font:600 10.5px/1 Poppins,system-ui,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;}
-  .gal-tools button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
-  .gal-tools button.on{background:rgba(255,255,255,.95);color:#2a0c24;}
-  .gal-tools button.go{flex-direction:row;gap:8px;padding:0 20px;font-size:13px;background:rgba(255,255,255,.95);color:#2a0c24;}
-  .gal-tools .sep{width:1px;margin:8px 2px;background:rgba(255,255,255,.18);}
-  .gal-tools[data-v=ver] .x,.gal-tools[data-v=exp] .v{display:none;}
-  .gal-hint{position:absolute;left:0;right:0;bottom:calc(168px + env(safe-area-inset-bottom,0px));text-align:center;font-size:12px;color:rgba(255,255,255,.6);pointer-events:none;transition:opacity 1.2s;}
+  .gal-hint{position:absolute;left:0;right:0;bottom:calc(96px + env(safe-area-inset-bottom,0px));text-align:center;font-size:12px;color:rgba(255,255,255,.6);pointer-events:none;transition:opacity 1.2s;}
 
   .p-back{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;opacity:0;visibility:hidden;transition:opacity .25s, visibility .25s;}
   .p-back.open{opacity:1;visibility:visible;}
@@ -815,16 +808,7 @@
     <span class="tn-title b" id="tnB">Galaxia</span>
   </div>
 </nav>
-<div class="gal-page" id="galBox" aria-hidden="true"><canvas id="galCanvas"></canvas><div class="gal-hint" id="galHint">Doble toque para explorar</div>
-  <div class="gal-tools" id="galTools" data-v="ver">
-    <button type="button" class="go v" data-a="enter"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>Explorar</button>
-    <button type="button" class="x on" data-t="orbit"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>Girar</button>
-    <button type="button" class="x" data-t="pan"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg>Mover</button>
-    <button type="button" class="x" data-t="roll"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" transform="rotate(20 12 12)"/><path d="M3 12a9 9 0 0 1 3-6.7M21 12a9 9 0 0 1-3 6.7"/></svg>Rodar</button>
-    <span class="sep x"></span>
-    <button type="button" class="x" data-a="reset"><svg viewBox="0 0 24 24"><path d="M3 12l9-8 9 8"/><path d="M5 10.5V20h5v-5h4v5h5v-9.5"/></svg>Inicio</button>
-    <button type="button" class="x" data-a="exit"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>Salir</button>
-  </div></div>
+<div class="gal-page" id="galBox" aria-hidden="true"><canvas id="galCanvas"></canvas><div class="gal-hint" id="galHint">Toca una galaxia para explorarla</div></div>
 
 <div class="wrap">
 
@@ -3298,7 +3282,8 @@
     }
 
     // helpers de la cámara libre
-    function resetView(){ M = [1,0,0, 0,Math.cos(PITCH0),-Math.sin(PITCH0), 0,Math.sin(PITCH0),Math.cos(PITCH0)]; camX = camY = camZ = 0; tz = zoom = Z0; }
+    const M0 = M.slice();
+    function resetView(){ M = M0.slice(); camX = camY = camZ = 0; tz = zoom = Z0; }
     // gira la cámara 'a' radianes sobre un eje de la PANTALLA (0 = horizontal, 1 = vertical, 2 = el que sale de la pantalla / rodar)
     function rot(ax, a){
       const c = Math.cos(a), s_ = Math.sin(a), o = M;
@@ -3316,7 +3301,8 @@
     function pan(dx, dy){
       const k = 1 / (F / D * K * zoom);
       camX -= (M[0]*dx + M[3]*dy) * k; camY -= (M[1]*dx + M[4]*dy) * k; camZ -= (M[2]*dx + M[5]*dy) * k;
-      const L = Math.hypot(camX, camY, camZ), LM = 650; if(L > LM){ const f = LM / L; camX *= f; camY *= f; camZ *= f; }
+      const C = focused >= 0 ? GN[focused] : { x:0, y:0, z:0 }, ox = camX - C.x, oy = camY - C.y, oz = camZ - C.z;
+      const L = Math.hypot(ox, oy, oz), LM = 140; if(L > LM){ const f = LM / L; camX = C.x + ox * f; camY = C.y + oy * f; camZ = C.z + oz * f; }
     }
 
     // proyección: deja el resultado en px, py, pp, pz (la cámara mira al punto cam con la rotación M)
@@ -3341,7 +3327,7 @@
       const playing = (typeof isPlaying !== 'undefined') && isPlaying;
       phase += dt * (playing ? 7.4 : 4.6);
       // La cámara NO se mueve sola: solo cambia con tus dedos (sin inercia, sin balanceo, sin volver al centro)
-      zoom = tz;
+      stepAnim(); zoom = tz;
       spin += dt * .16;
       const beat = 1 + .045 * Math.sin(phase) + (playing ? .05 * Math.pow(Math.max(0, Math.sin(phase * .5)), 8) : 0);
       const r = zoom / Z0;
@@ -3423,47 +3409,77 @@
       ctx.globalAlpha = 1;
     }
 
+    // ---------- Elegir galaxia y explorarla ----------
+    // Vista general: la cámara está quieta y deslizar cambia de página.
+    // Toca una galaxia -> la cámara vuela hasta ella y ahí tienes libertad total (girar, mover, acercar).
+    // Toca otra galaxia para ir a ella. Doble toque en cualquier parte: vuelves a la vista general.
+    let focused = -1, anim = null;
+    const ptrs = new Map(); let pinch = null, tapT = 0, tapX = 0, tapY = 0;
+
+    function m2q(m){
+      const t = m[0] + m[4] + m[8]; let x, y, z, w, q;
+      if(t > 0){ q = Math.sqrt(t + 1) * 2; w = q / 4; x = (m[7] - m[5]) / q; y = (m[2] - m[6]) / q; z = (m[3] - m[1]) / q; }
+      else if(m[0] > m[4] && m[0] > m[8]){ q = Math.sqrt(1 + m[0] - m[4] - m[8]) * 2; w = (m[7] - m[5]) / q; x = q / 4; y = (m[1] + m[3]) / q; z = (m[2] + m[6]) / q; }
+      else if(m[4] > m[8]){ q = Math.sqrt(1 + m[4] - m[0] - m[8]) * 2; w = (m[2] - m[6]) / q; x = (m[1] + m[3]) / q; y = q / 4; z = (m[5] + m[7]) / q; }
+      else { q = Math.sqrt(1 + m[8] - m[0] - m[4]) * 2; w = (m[3] - m[1]) / q; x = (m[2] + m[6]) / q; y = (m[5] + m[7]) / q; z = q / 4; }
+      return [w, x, y, z];
+    }
+    function q2m(q){
+      const w = q[0], x = q[1], y = q[2], z = q[3];
+      return [1 - 2*(y*y + z*z), 2*(x*y - z*w), 2*(x*z + y*w),  2*(x*y + z*w), 1 - 2*(x*x + z*z), 2*(y*z - x*w),  2*(x*z - y*w), 2*(y*z + x*w), 1 - 2*(x*x + y*y)];
+    }
+    function slerp(a, b, u){
+      let d = a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3]; const sg = d < 0 ? -1 : 1; d *= sg;
+      let k0, k1;
+      if(d > .9995){ k0 = 1 - u; k1 = u * sg; }
+      else { const th = Math.acos(d), sn = Math.sin(th); k0 = Math.sin((1 - u) * th) / sn; k1 = Math.sin(u * th) / sn * sg; }
+      const r = [a[0]*k0 + b[0]*k1, a[1]*k0 + b[1]*k1, a[2]*k0 + b[2]*k1, a[3]*k0 + b[3]*k1], l = Math.hypot(r[0], r[1], r[2], r[3]) || 1;
+      return [r[0]/l, r[1]/l, r[2]/l, r[3]/l];
+    }
+    // vuelo suave de la cámara (solo se lanza cuando TÚ tocas)
+    function flyTo(to, dur, onEnd){
+      anim = { t0: performance.now(), dur, q0: m2q(M), q1: to.q || m2q(M), c0: [camX, camY, camZ], c1: [to.x, to.y, to.z], z0: tz, z1: to.zoom, onEnd };
+    }
+    function stepAnim(){
+      if(!anim) return;
+      const u = Math.min(1, (performance.now() - anim.t0) / anim.dur), e = u < .5 ? 4*u*u*u : 1 - Math.pow(-2*u + 2, 3) / 2;
+      M = q2m(slerp(anim.q0, anim.q1, e));
+      camX = anim.c0[0] + (anim.c1[0] - anim.c0[0]) * e; camY = anim.c0[1] + (anim.c1[1] - anim.c0[1]) * e; camZ = anim.c0[2] + (anim.c1[2] - anim.c0[2]) * e;
+      tz = zoom = anim.z0 * Math.pow(anim.z1 / anim.z0, e);
+      if(u >= 1){ const f = anim.onEnd; anim = null; if(f) f(); }
+    }
     function showHint(t){
       if(!hint) return; hint.textContent = t; hint.style.opacity = '1';
       clearTimeout(hintTm); hintTm = setTimeout(()=>{ hint.style.opacity = '0'; }, 3800);
     }
-    // Modo ver (por defecto): la galaxia solo se mira y los deslizamientos cambian de página.
-    // Doble toque: modo explorar con cámara totalmente libre. Otro doble toque: vuelve a la vista inicial.
-    //  · 1 dedo (o clic izquierdo): gira en cualquier dirección, incluso diagonal y por encima/debajo, sin límites
-    //  · 2 dedos: pellizcar = acercar/alejar · arrastrar = mover la vista (arriba/abajo/lados) · girar los dedos = rodar la cámara
-    //  · ratón: clic derecho o Shift + arrastrar = mover · Alt + arrastrar = rodar · rueda = zoom
-    const ptrs = new Map(); let pinch = null, tapT = 0, tapX = 0, tapY = 0, tool = 'orbit';
-    const tools = document.getElementById('galTools');
-    function syncUI(){
-      if(!tools) return;
-      tools.dataset.v = interactive ? 'exp' : 'ver';
-      tools.querySelectorAll('[data-t]').forEach(b=> b.classList.toggle('on', b.dataset.t === tool));
+    // galaxia bajo el dedo (null si tocaste espacio vacío)
+    function hit(cx, cy){
+      const r = cv.getBoundingClientRect(), x = cx - r.left, y = cy - r.top; let best = -1, bd = 1;
+      GN.forEach((G, i)=>{ if(!G.sr) return; const d = Math.hypot(x - G.sx, y - G.sy) / (G.sr * 1.15); if(d < bd){ bd = d; best = i; } });
+      return best;
     }
-    function setTool(t){ tool = t; syncUI(); showHint(t === 'orbit' ? 'Arrastra con un dedo para girar' : t === 'pan' ? 'Arrastra con un dedo para mover la vista' : 'Arrastra de lado para rodar la cámara'); }
-    if(tools) tools.addEventListener('click', e=>{
-      const b = e.target.closest('button'); if(!b) return;
-      if(b.dataset.t) setTool(b.dataset.t);
-      else if(b.dataset.a === 'enter') setMode(true);
-      else if(b.dataset.a === 'exit') setMode(false);
-      else if(b.dataset.a === 'reset'){ resetView(); showHint('Vista inicial'); }
-    });
-    // gira como un "turntable": de lado = alrededor del eje vertical del corazón; arriba/abajo = inclina. La cámara no se desnivela sola.
+    function focusGalaxy(i){
+      const G = GN[i]; if(!G) return;
+      const z = clamp(Math.min(W, H) * .40 / (GR * F / D * K), ZMIN, ZMAX);
+      focused = i; interactive = true; ptrs.clear(); pinch = null;
+      flyTo({ x: G.x, y: G.y, z: G.z, zoom: z }, 850);
+      showHint('1 dedo: girar · 2 dedos: acercar y mover · doble toque: volver');
+    }
+    function leave(){
+      focused = -1; ptrs.clear(); pinch = null;
+      flyTo({ x: 0, y: 0, z: 0, zoom: Z0, q: m2q(M0) }, 850, ()=>{ interactive = false; showHint('Toca una galaxia para explorarla'); });
+    }
+
+    // gira como un "turntable": de lado = alrededor del eje vertical; arriba/abajo = inclina. La cámara no se desnivela sola.
     function orbit(dx, dy){
-      const up = M[4] >= 0 ? 1 : -1; // si estás boca abajo, el giro lateral se invierte para que siga sintiéndose natural
+      const up = M[4] >= 0 ? 1 : -1; // boca abajo, el giro lateral se invierte para que siga natural
       const a = -dx * .0065 * up, c = Math.cos(a), s_ = Math.sin(a), o = M;
-      // M = M · Ry(a)  (gira el mundo sobre su eje vertical)
       M = [o[0]*c - o[2]*s_, o[1], o[0]*s_ + o[2]*c,  o[3]*c - o[5]*s_, o[4], o[3]*s_ + o[5]*c,  o[6]*c - o[8]*s_, o[7], o[6]*s_ + o[8]*c];
       rot(0, dy * .0065);
     }
-    function setMode(on){
-      interactive = on; ptrs.clear(); pinch = null;
-      if(on){ tool = 'orbit'; showHint('1 dedo: girar · 2 dedos: acercar y mover · usa los botones para mover o rodar'); }
-      else { resetView(); showHint('Doble toque para explorar'); }
-      syncUI();
-    }
     function twoTouch(){
       const [a, b] = [...ptrs.values()];
-      return { d: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), ang: Math.atan2(b.y - a.y, b.x - a.x), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
+      return { d: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
     }
     function onDown(e){
       ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY, x0:e.clientX, y0:e.clientY, t:performance.now(), btn:e.button });
@@ -3473,11 +3489,11 @@
     function onMove(e){
       const p = ptrs.get(e.pointerId); if(!p) return;
       const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
-      if(!interactive) return;
+      if(!interactive || anim) return;
       if(ptrs.size === 1){
         const mouse = e.pointerType === 'mouse';
-        if(tool === 'pan' || (mouse && (p.btn === 2 || p.btn === 1 || e.shiftKey))) pan(dx, dy);
-        else if(tool === 'roll' || (mouse && e.altKey)) rot(2, dx * .008);
+        if(mouse && (p.btn === 2 || p.btn === 1 || e.shiftKey)) pan(dx, dy);
+        else if(mouse && e.altKey) rot(2, dx * .008);
         else orbit(dx, dy);
       } else if(ptrs.size >= 2){
         const t = twoTouch();
@@ -3491,18 +3507,21 @@
     function onUp(e){
       const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId);
       pinch = (interactive && ptrs.size === 2) ? twoTouch() : null;
-      if(!p || e.type === 'pointercancel' || ptrs.size) return;
+      if(!p || e.type === 'pointercancel' || ptrs.size || anim) return;
       const n = performance.now();
-      if(Math.hypot(e.clientX - p.x0, e.clientY - p.y0) < 12 && n - p.t < 260){
-        if(n - tapT < 340 && Math.hypot(e.clientX - tapX, e.clientY - tapY) < 60){ tapT = 0; setMode(!interactive); }
-        else { tapT = n; tapX = e.clientX; tapY = e.clientY; }
-      }
+      if(Math.hypot(e.clientX - p.x0, e.clientY - p.y0) >= 12 || n - p.t >= 260) return; // fue un arrastre, no un toque
+      const dbl = n - tapT < 340 && Math.hypot(e.clientX - tapX, e.clientY - tapY) < 60;
+      if(interactive && dbl){ tapT = 0; leave(); return; }
+      tapT = n; tapX = e.clientX; tapY = e.clientY;
+      const i = hit(e.clientX, e.clientY);
+      if(i >= 0 && i !== focused) focusGalaxy(i);
+      else if(i < 0 && !interactive) showHint('Toca una galaxia para explorarla');
     }
     cv.addEventListener('pointerdown', onDown); cv.addEventListener('pointermove', onMove);
     cv.addEventListener('pointerup', onUp); cv.addEventListener('pointercancel', onUp);
     cv.addEventListener('contextmenu', e=>{ if(interactive) e.preventDefault(); });
     cv.addEventListener('wheel', e=>{
-      if(!interactive) return; e.preventDefault();
+      if(!interactive || anim) return; e.preventDefault();
       tz = clamp(tz * Math.exp(-e.deltaY * .001), ZMIN, ZMAX); zoom = tz;
     }, { passive:false });
 
@@ -3514,14 +3533,14 @@
       start(){
         if(running) return;
         build(); buildSprites();
-        running = true; drawT = 0; syncUI(); showHint('Doble toque para explorar');
+        running = true; drawT = 0; showHint('Toca una galaxia para explorarla');
         if(!ro && window.ResizeObserver){ ro = new ResizeObserver(()=>resize()); ro.observe(box); }
         resize(); last = 0;
         if(!raf && !document.hidden) raf = requestAnimationFrame(frame);
       },
       stop(){ running = false; if(raf){ cancelAnimationFrame(raf); raf = 0; } },
       isInteractive(){ return interactive; },
-      exit(){ interactive = false; ptrs.clear(); pinch = null; resetView(); syncUI(); }
+      exit(){ interactive = false; focused = -1; anim = null; ptrs.clear(); pinch = null; resetView(); }
     };
   })();
 
