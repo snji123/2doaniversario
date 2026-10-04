@@ -293,7 +293,7 @@
   .tn-title.b{opacity:0;}
   .topnav.drag .tn-title{transition:none;}
   .gal-page{position:fixed;inset:0;z-index:12;overflow:hidden;touch-action:none;transform:translateX(100%);visibility:hidden;
-    background:#010103;
+    background:radial-gradient(70% 50% at 50% 42%,rgba(180,40,120,.30),transparent 70%),radial-gradient(90% 60% at 50% 90%,rgba(90,60,200,.26),transparent 70%),#07030d;
     transition:transform .6s cubic-bezier(.25,.8,.25,1), visibility 0s linear .6s;}
   .gal-page.open,.gal-page.vis{visibility:visible;transition-delay:0s,0s;}
   .gal-page.open{transform:none;}
@@ -3209,7 +3209,7 @@
   const galaxy = (function(){
     const box = document.getElementById('galBox'), cv = document.getElementById('galCanvas'), hint = document.getElementById('galHint');
     const ctx = cv.getContext('2d');
-    const D = 520, F = 420, PITCH0 = -0.38;
+    const D = 520, F = 420, PITCH0 = -0.12;
     // Cámara LIBRE: M = rotación mundo→cámara (3x3, por filas). Gira en los 3 ejes sin límites; (camX,camY,camZ) = punto al que mira (se puede mover)
     let M = [1,0,0, 0,Math.cos(PITCH0),-Math.sin(PITCH0), 0,Math.sin(PITCH0),Math.cos(PITCH0)];
     let Z0 = 1, ZMIN = .7, ZMAX = 5; // se calculan en resize() para que el corazón completo quepa en pantalla
@@ -3226,20 +3226,20 @@
     const hx = t => 16 * Math.pow(Math.sin(t), 3) * HS;
     const hy = t => -(13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t)) * HS + YOFF;
     const GN = [
-      { x: hx(-TL),    y: hy(-TL),    z: 0, tilt: -.3, roll: -.3, dir:  1, glow:'100,160,255', core:'225,240,255', sx:0, sy:0 }, // 0 = ali (arriba izquierda, azul)
-      { x: hx(TL),     y: hy(TL),     z: 0, tilt: -.22, roll: .3, dir: -1, glow:'90,225,225', core:'225,255,248', sx:0, sy:0 }, // 1 = axel (arriba derecha, azul-verde)
-      { x: hx(Math.PI), y: hy(Math.PI), z: 0, tilt: -.4, roll: 0, dir:  1, glow:'255,205,110', core:'255,243,210', sx:0, sy:0 }  // 2 = nosotros (abajo, dorado)
+      { x: hx(-TL),    y: hy(-TL),    z: 0, tilt: .815, roll: 0, dir:  1, glow:'255,170,215', core:'255,245,235', sx:0, sy:0 }, // 0 = ali (arriba izquierda, rosa)
+      { x: hx(TL),     y: hy(TL),     z: 0, tilt: .815, roll: 0, dir: -1, glow:'150,200,255', core:'255,245,235', sx:0, sy:0 }, // 1 = axel (arriba derecha, azul)
+      { x: hx(Math.PI), y: hy(Math.PI), z: 0, tilt: .24, roll: 0, dir:  1, glow:'255,215,150', core:'255,245,235', sx:0, sy:0 }  // 2 = nosotros (abajo, dorado)
     ];
     GN.forEach(G=>{ G.c = Math.cos(G.tilt); G.s = Math.sin(G.tilt); G.rc = Math.cos(G.roll); G.rs = Math.sin(G.roll); G.sr = 0; });
     const PALS = [
-      // ali (ella): azul puro
-      ['rgba(235,245,255,.95)','rgba(140,200,255,.9)','rgba(85,150,255,.85)','rgba(60,120,255,.8)','rgba(120,175,255,.75)'],
-      // axel (él): el color que tenía "nosotros" (fusión turquesa, cian, azul y verde)
-      ['rgba(240,255,250,.95)','rgba(120,235,220,.9)','rgba(80,200,240,.85)','rgba(90,160,255,.8)','rgba(70,230,170,.8)'],
+      // ali (ella): rosa
+      ['rgba(255,244,214,.95)','rgba(255,170,210,.9)','rgba(255,120,185,.85)','rgba(235,110,200,.8)','rgba(190,120,255,.75)'],
+      // axel (él): azul
+      ['rgba(235,245,255,.95)','rgba(140,200,255,.9)','rgba(100,160,255,.85)','rgba(130,130,255,.8)','rgba(170,120,255,.75)'],
       // nosotros: dorado
-      ['rgba(255,249,228,.95)','rgba(255,228,150,.9)','rgba(255,203,92,.85)','rgba(255,178,62,.8)','rgba(255,218,125,.75)']
+      ['rgba(255,244,214,.95)','rgba(255,205,140,.9)','rgba(255,150,170,.85)','rgba(240,110,190,.8)','rgba(160,130,255,.8)']
     ];
-    const PAL_H = ['rgba(135,190,255,.95)','rgba(255,228,150,.95)','rgba(100,228,225,.9)'];
+    const PAL_H = ['rgba(255,255,255,.95)','rgba(255,255,255,.95)','rgba(255,255,255,.9)']; // polvo del corazón: blanco
     const gauss = ()=> (Math.random()+Math.random()+Math.random()-1.5)/1.5;
     const clamp = (v,a,b)=> Math.max(a, Math.min(b, v));
     const sstep = (a,b,x)=>{ const t = clamp((x-a)/(b-a), 0, 1); return t*t*(3-2*t); };
@@ -3518,7 +3518,7 @@
         ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(px - R, py - R, R*2, R*2);
       }
       // corazón de piedritas: se va dibujando al abrir la galaxia (nosotros → ali → axel → nosotros) y luego brilla con ondas de luz
-      { const prog = clamp(drawT / 4.5, 0, 1), pe = prog * prog * (3 - 2 * prog), pul = .85 + (beat - 1) * 2;
+      { const cyc = drawT % 30, prog = clamp(cyc / 4.5, 0, 1), pe = prog * prog * (3 - 2 * prog), pul = (.85 + (beat - 1) * 2) * clamp((30 - cyc) / .8, 0, 1); // la animación del corazón se repite cada 30 s
         let lastH = -1;
         for(let i=0;i<trail.length;i+=skip){
           const p = trail[i];
@@ -3611,12 +3611,24 @@
       GN.forEach((G, i)=>{ if(!G.sr) return; const d = Math.hypot(x - G.sx, y - G.sy) / (G.sr * 1.15); if(d < bd){ bd = d; best = i; } });
       return best;
     }
+    // orientación de cámara "por defecto" al elegir una galaxia: el disco se ve nivelado, desde arriba, con la elipse a 'ratio' (0 = de canto, 1 = de frente)
+    function viewFor(G, ratio){
+      const u = [G.rc, G.rs, 0], v = [G.s * G.rs, -G.s * G.rc, G.c];
+      let n = [u[1]*v[2] - u[2]*v[1], u[2]*v[0] - u[0]*v[2], u[0]*v[1] - u[1]*v[0]]; if(n[1] > 0) n = n.map(q=>-q);
+      const a = ratio, b = Math.sqrt(1 - a * a);
+      for(const sg of [1, -1]){
+        const f = [-a*n[0] + sg*b*v[0], -a*n[1] + sg*b*v[1], -a*n[2] + sg*b*v[2]];
+        const r1 = [f[1]*u[2] - f[2]*u[1], f[2]*u[0] - f[0]*u[2], f[0]*u[1] - f[1]*u[0]];
+        if(r1[1] > 0) return [u[0], u[1], u[2], r1[0], r1[1], r1[2], f[0], f[1], f[2]];
+      }
+      return M0.slice();
+    }
     function focusGalaxy(i){
       const G = GN[i]; if(!G) return;
       const z = clamp(Math.min(W, H) * .40 / (GR * F / D * K), ZMIN, ZMAX);
       focused = i; interactive = true; ptrs.clear(); pinch = null;
       zLo = z; zHi = z * 6; // aquí queda fijo el zoom mínimo; el máximo deja ver las fotos dentro de los cuadritos
-      flyTo({ x: G.x, y: G.y, z: G.z, zoom: z }, 850);
+      flyTo({ x: G.x, y: G.y, z: G.z, zoom: z, q: m2q(viewFor(G, .42)) }, 850);
       showHint('Acércate para ver las fotos entre las estrellas · doble toque: volver');
     }
     function leave(){
