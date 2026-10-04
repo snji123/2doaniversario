@@ -293,7 +293,7 @@
   .tn-title.b{opacity:0;}
   .topnav.drag .tn-title{transition:none;}
   .gal-page{position:fixed;inset:0;z-index:12;overflow:hidden;touch-action:none;transform:translateX(100%);visibility:hidden;
-    background:radial-gradient(70% 50% at 50% 42%,rgba(180,40,120,.30),transparent 70%),radial-gradient(90% 60% at 50% 90%,rgba(90,60,200,.26),transparent 70%),#07030d;
+    background:radial-gradient(75% 28% at 22% 16%,rgba(30,210,150,.15),transparent 70%),radial-gradient(70% 32% at 80% 28%,rgba(60,120,255,.16),transparent 70%),radial-gradient(70% 45% at 50% 46%,rgba(40,80,150,.20),transparent 72%),radial-gradient(90% 40% at 50% 96%,rgba(20,150,140,.18),transparent 70%),#02040a;
     transition:transform .6s cubic-bezier(.25,.8,.25,1), visibility 0s linear .6s;}
   .gal-page.open,.gal-page.vis{visibility:visible;transition-delay:0s,0s;}
   .gal-page.open{transform:none;}
@@ -301,6 +301,35 @@
   .gal-page canvas{width:100%;height:100%;display:block;touch-action:none;}
   .gal-hint{position:absolute;left:0;right:0;bottom:calc(96px + env(safe-area-inset-bottom,0px));text-align:center;font-size:12px;color:rgba(255,255,255,.6);pointer-events:none;transition:opacity 1.2s;}
 
+  /* botón + discreto de la galaxia, agregar foto/frase y visor de fotos */
+  .gal-add{position:absolute;z-index:4;top:calc(env(safe-area-inset-top,0px) + 4px);right:14px;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:rgba(255,255,255,.88);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;transition:transform .2s,background .2s;}
+  .gal-add:active{transform:scale(.88);background:rgba(255,255,255,.18);}
+  .gal-add svg{width:18px;height:18px;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;fill:none;}
+  .gal-add-modal{position:fixed;inset:0;z-index:85;background:rgba(0,0,0,.62);display:none;align-items:flex-end;justify-content:center;}
+  .gal-add-modal.show{display:flex;}
+  .gal-add-card{width:100%;max-width:480px;max-height:90vh;overflow-y:auto;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;animation:galUp .35s cubic-bezier(.22,1,.36,1);}
+  @keyframes galUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+  .gal-add-card h3{margin:0 0 2px;font-size:18px;}
+  .gal-add-card label{font-size:12px;color:var(--text-dim);margin-top:2px;}
+  .gal-add-card input[type=text]{width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--divider);color:var(--text);border-radius:10px;padding:11px 14px;font-family:var(--font);font-size:14px;}
+  .gal-seg{display:flex;background:var(--surface);border-radius:999px;padding:3px;gap:3px;}
+  .gal-seg button{flex:1;border:none;background:none;color:var(--text-dim);padding:9px 0;border-radius:999px;font:600 13px var(--font);cursor:pointer;}
+  .gal-seg button.on{background:var(--surface-2);color:#fff;}
+  .gal-chips{display:flex;gap:8px;}
+  .gal-chips button{flex:1;border:1.5px solid var(--divider);background:var(--surface);color:var(--text);padding:11px 0;border-radius:12px;font:600 13px var(--font);cursor:pointer;transition:border-color .2s,background .2s;}
+  .gal-chips button[data-g="0"].on{border-color:#7fb6ff;background:rgba(110,170,255,.16);}
+  .gal-chips button[data-g="1"].on{border-color:#5cf0a0;background:rgba(80,240,160,.15);}
+  .gal-chips button[data-g="2"].on{border-color:#5fe3e0;background:rgba(90,225,225,.15);}
+  .gal-prev{width:100%;max-height:200px;object-fit:cover;border-radius:12px;display:none;}
+  .gal-prog{height:4px;border-radius:2px;background:var(--surface-2);overflow:hidden;display:none;}
+  .gal-prog i{display:block;height:100%;width:0;background:var(--green);transition:width .2s;}
+  .gal-add-card .save-btn:disabled{opacity:.4;}
+  .gal-viewer{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:rgba(2,6,12,0);-webkit-backdrop-filter:blur(0);backdrop-filter:blur(0);transition:background .4s ease,backdrop-filter .4s ease,-webkit-backdrop-filter .4s ease;touch-action:none;}
+  .gal-viewer.show{display:block;}
+  .gal-viewer.in{background:rgba(2,6,12,.9);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
+  .gal-viewer img{position:absolute;left:50%;top:50%;max-width:92vw;max-height:84vh;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.14);will-change:transform,opacity;transition:transform .55s cubic-bezier(.22,1,.36,1),opacity .35s ease;user-select:none;-webkit-user-drag:none;}
+  .gv-x{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:14px;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.1);color:#fff;font-size:17px;line-height:1;cursor:pointer;opacity:0;transition:opacity .3s .2s;padding:0;}
+  .gal-viewer.in .gv-x{opacity:1;}
   .p-back{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;opacity:0;visibility:hidden;transition:opacity .25s, visibility .25s;}
   .p-back.open{opacity:1;visibility:visible;}
   .psheet{
@@ -808,7 +837,26 @@
     <span class="tn-title b" id="tnB">Galaxia</span>
   </div>
 </nav>
-<div class="gal-page" id="galBox" aria-hidden="true"><canvas id="galCanvas"></canvas><div class="gal-hint" id="galHint">Toca una galaxia para explorarla</div></div>
+<div class="gal-page" id="galBox" aria-hidden="true"><canvas id="galCanvas"></canvas><div class="gal-hint" id="galHint">Toca una galaxia para explorarla</div>
+  <button type="button" class="gal-add" id="galAdd" aria-label="Agregar foto o frase a la galaxia"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
+
+<div class="gal-add-modal" id="galAddModal">
+  <div class="gal-add-card">
+    <h3>Agregar a la galaxia</h3>
+    <div class="gal-seg" id="gaKind"><button type="button" data-k="img" class="on">Foto</button><button type="button" data-k="txt">Frase</button></div>
+    <label>¿En qué galaxia?</label>
+    <div class="gal-chips" id="gaCat"><button type="button" data-g="0">Ali</button><button type="button" data-g="1">Axel</button><button type="button" data-g="2">Nosotros</button></div>
+    <div id="gaImgBox">
+      <div class="file-row"><button type="button" class="pick-btn" id="gaPick">Elegir foto</button><span class="pick-name" id="gaName">Ninguna seleccionada</span></div>
+      <img class="gal-prev" id="gaPrev" alt="">
+      <input type="file" id="gaFile" accept="image/*" hidden>
+    </div>
+    <div id="gaTxtBox" style="display:none;"><input type="text" id="gaText" maxlength="30" placeholder="Escribe tu frase (ej. Te amo)" autocomplete="off"></div>
+    <div class="gal-prog" id="gaProg"><i id="gaProgFill"></i></div>
+    <div class="edit-actions"><button type="button" class="cancel-btn" id="gaCancel">Cancelar</button><button type="button" class="save-btn" id="gaSave" disabled>Agregar</button></div>
+  </div>
+</div>
+<div class="gal-viewer" id="galViewer"><button type="button" class="gv-x" id="gvX" aria-label="Cerrar">✕</button><img id="gvImg" alt="" draggable="false"></div>
 
 <div class="wrap">
 
@@ -3178,17 +3226,20 @@
     const hx = t => 16 * Math.pow(Math.sin(t), 3) * HS;
     const hy = t => -(13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t)) * HS + YOFF;
     const GN = [
-      { x: hx(-TL),    y: hy(-TL),    z: 0, tilt: -.3, roll: -.3, dir:  1, glow:'255,170,215', sx:0, sy:0 }, // 0 = ali (arriba izquierda, rosa)
-      { x: hx(TL),     y: hy(TL),     z: 0, tilt: -.22, roll: .3, dir: -1, glow:'150,200,255', sx:0, sy:0 }, // 1 = axel (arriba derecha, azul)
-      { x: hx(Math.PI), y: hy(Math.PI), z: 0, tilt: -.4, roll: 0, dir:  1, glow:'255,215,150', sx:0, sy:0 }  // 2 = nosotros (abajo, dorado)
+      { x: hx(-TL),    y: hy(-TL),    z: 0, tilt: -.3, roll: -.3, dir:  1, glow:'120,175,255', sx:0, sy:0 }, // 0 = ali (arriba izquierda, azul con toque rosa)
+      { x: hx(TL),     y: hy(TL),     z: 0, tilt: -.22, roll: .3, dir: -1, glow:'100,250,165', sx:0, sy:0 }, // 1 = axel (arriba derecha, verde)
+      { x: hx(Math.PI), y: hy(Math.PI), z: 0, tilt: -.4, roll: 0, dir:  1, glow:'90,225,225', sx:0, sy:0 }  // 2 = nosotros (abajo, mezcla azul-verde)
     ];
     GN.forEach(G=>{ G.c = Math.cos(G.tilt); G.s = Math.sin(G.tilt); G.rc = Math.cos(G.roll); G.rs = Math.sin(G.roll); G.sr = 0; });
     const PALS = [
-      ['rgba(255,244,214,.95)','rgba(255,170,210,.9)','rgba(255,120,185,.85)','rgba(235,110,200,.8)','rgba(190,120,255,.75)'],
-      ['rgba(235,245,255,.95)','rgba(140,200,255,.9)','rgba(100,160,255,.85)','rgba(130,130,255,.8)','rgba(170,120,255,.75)'],
-      ['rgba(255,244,214,.95)','rgba(255,205,140,.9)','rgba(255,150,170,.85)','rgba(240,110,190,.8)','rgba(160,130,255,.8)']
+      // ali: azul (con un toque de rosa hacia las puntas de los brazos)
+      ['rgba(235,245,255,.95)','rgba(130,195,255,.9)','rgba(90,150,255,.85)','rgba(170,140,255,.8)','rgba(255,150,215,.75)'],
+      // axel: verde (con un toque turquesa en las puntas)
+      ['rgba(235,255,242,.95)','rgba(150,255,190,.9)','rgba(70,230,150,.85)','rgba(40,205,165,.8)','rgba(70,195,230,.75)'],
+      // nosotros: fusión azul + verde (turquesa, cian, azul y verde)
+      ['rgba(240,255,250,.95)','rgba(120,235,220,.9)','rgba(80,200,240,.85)','rgba(90,160,255,.8)','rgba(70,230,170,.8)']
     ];
-    const PAL_H = ['rgba(255,176,210,.95)','rgba(255,255,255,.95)','rgba(255,110,165,.9)'];
+    const PAL_H = ['rgba(150,215,255,.95)','rgba(255,255,255,.95)','rgba(110,240,190,.9)'];
     const gauss = ()=> (Math.random()+Math.random()+Math.random()-1.5)/1.5;
     const clamp = (v,a,b)=> Math.max(a, Math.min(b, v));
     const sstep = (a,b,x)=>{ const t = clamp((x-a)/(b-a), 0, 1); return t*t*(3-2*t); };
@@ -3271,6 +3322,42 @@
         img.src = job.url;
       }
     }
+    // ----- anclas: dónde vive cada foto/frase (un puntito de los brazos de su galaxia) -----
+    const usedByG = [[], [], []], candG = [], photoHits = [], customIds = new Map();
+    let pendingCustom = null;
+    function anchor(sp){
+      const gi = sp.gi, used = usedByG[gi], rad = sp.kind === 'txt' ? 9 : 2.6;
+      if(!candG[gi]){ candG[gi] = []; gal.forEach((p, i)=>{ if(p.gi === gi && p.r > 4) candG[gi].push(i); }); }
+      const cand = candG[gi]; if(!cand.length) return;
+      const at = ci=>{ const p = gal[ci]; return { x: p.r * Math.cos(p.a), z: p.r * Math.sin(p.a), rad }; };
+      let pick = -1, rec = null;
+      for(let t=0; t<80; t++){
+        const ci = cand[Math.floor(Math.random() * cand.length)], r_ = at(ci);
+        if(used.every(u=>Math.hypot(u.x - r_.x, u.z - r_.z) > u.rad + rad)){ pick = ci; rec = r_; break; }
+      }
+      if(pick < 0){ pick = cand[Math.floor(Math.random() * cand.length)]; rec = at(pick); }
+      used.push(rec); sp.anchor = rec; sp.pi = pick; sp.wsz = 3.4 + Math.random() * .8; // tamaño en unidades del mundo (muy pequeña)
+    }
+    // fotos y frases agregadas desde el botón + (llegan de Firestore)
+    function applyCustom(){
+      if(!spritesBuilt || !pendingCustom) return;
+      const items = pendingCustom, ids = new Set(items.map(i=>i.id));
+      for(const [id, sp] of [...customIds]){
+        if(ids.has(id)) continue;
+        const k = sprites.indexOf(sp); if(k >= 0) sprites.splice(k, 1);
+        const u = usedByG[sp.gi], j = u.indexOf(sp.anchor); if(j >= 0) u.splice(j, 1);
+        customIds.delete(id);
+      }
+      for(const it of items){
+        if(customIds.has(it.id)) continue;
+        const gi = clamp(+it.gi || 0, 0, 2);
+        const sp = it.kind === 'img' ? { kind:'img', ok:false, gi, url:it.url } : { kind:'txt', text:String(it.text || ''), gi };
+        anchor(sp); if(sp.pi == null) continue;
+        sprites.push(sp); customIds.set(it.id, sp);
+        if(sp.kind === 'img'){ queue.push({ sp, url: it.url }); }
+      }
+      pump();
+    }
     function buildSprites(){
       if(spritesBuilt) return; spritesBuilt = true;
       sprites.length = 0; queue.length = 0;
@@ -3278,7 +3365,8 @@
       GALAXY_SETS.forEach((set, gi)=> set.files.forEach(name=>{
         const sp = { kind:'img', ok:false, gi };
         per[gi].push(sp); sprites.push(sp);
-        queue.push({ sp, url: GALAXY_IMG_DIR + set.dir + '/' + encodeURIComponent(name) });
+        sp.url = GALAXY_IMG_DIR + set.dir + '/' + encodeURIComponent(name);
+        queue.push({ sp, url: sp.url });
       }));
       GALAXY_WORDS.forEach((w, i)=>{ const sp = { kind:'txt', text:w, gi:i % 3 }; per[sp.gi].push(sp); sprites.push(sp); });
       per.forEach(arr=>{
@@ -3291,23 +3379,12 @@
           sp.ph = Math.random() * 6.28; sp.sz = sp.kind==='img' ? 38 + Math.random()*14 : 12 + Math.random()*4;
         });
       });
-      // Fotos MINÚSCULAS dentro de los cuadritos de los brazos: cada una se pega a una partícula de su galaxia (y gira con ella)
+      // Fotos y frases MINÚSCULAS dentro de los cuadritos de los brazos: cada una se pega a una partícula de su galaxia (y gira con ella)
+      usedByG.forEach(u=>u.length = 0); candG.length = 0;
       for(let gi=0; gi<3; gi++){
-        const imgs = sprites.filter(q=>q.gi===gi).sort((a,b)=>(a.kind==='txt'?0:1)-(b.kind==='txt'?0:1)), cand = []; // primero las frases (necesitan más espacio)
-        gal.forEach((p, i)=>{ if(p.gi===gi && p.r > 4) cand.push(i); });
-        for(let i=cand.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [cand[i], cand[j]] = [cand[j], cand[i]]; }
-        const used = [];
-        imgs.forEach(q=>{
-          let pick = -1;
-          for(const ci of cand){
-            const p = gal[ci], x = p.r * Math.cos(p.a), z = p.r * Math.sin(p.a);
-            const rad = q.kind === 'txt' ? 9 : 2.6;
-            if(used.every(u=>Math.hypot(u.x - x, u.z - z) > u.rad + rad)){ pick = ci; used.push({ x, z, rad }); break; }
-          }
-          if(pick < 0) pick = cand[Math.floor(Math.random() * cand.length)];
-          q.pi = pick; q.wsz = 3.4 + Math.random() * .8; // tamaño en unidades del mundo (muy pequeña)
-        });
+        sprites.filter(q=>q.gi===gi).sort((x,y)=>(x.kind==='txt'?0:1)-(y.kind==='txt'?0:1)).forEach(anchor); // primero las frases (necesitan más espacio)
       }
+      applyCustom();
       pump();
     }
 
@@ -3436,7 +3513,7 @@
         if(!proj(G.x, G.y, G.z)) continue;
         G.sx = px; G.sy = py; G.sr = GR * pp;
         const R = GR * .45 * pp, g = ctx.createRadialGradient(px, py, 0, px, py, R);
-        g.addColorStop(0, 'rgba(255,245,235,.6)'); g.addColorStop(.35, `rgba(${G.glow},.22)`); g.addColorStop(1, `rgba(${G.glow},0)`);
+        g.addColorStop(0, 'rgba(232,250,255,.6)'); g.addColorStop(.35, `rgba(${G.glow},.22)`); g.addColorStop(1, `rgba(${G.glow},0)`);
         if(px + R < 0 || px - R > W || py + R < 0 || py - R > H) continue;
         ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(px - R, py - R, R*2, R*2);
       }
@@ -3457,7 +3534,7 @@
       ctx.globalCompositeOperation = 'source-over';
       // imágenes y frases: casi invisibles de lejos; al acercarte a una galaxia, las suyas crecen y se vuelven nítidas
       const dsZ = sstep(1.3, 5, r), cap = Math.min(W, H) * .42;
-      const list = [];
+      const list = []; photoHits.length = 0;
       for(const sp_ of sprites){
         if(sp_.bad || (sp_.kind==='img' && !sp_.ok)) continue;
         if(sp_.pi != null){ const q = gal[sp_.pi]; place(q.gi, q.r, q.y, q.a + spin * GN[q.gi].dir); }
@@ -3478,6 +3555,7 @@
           const z = Math.min(cap, (s.wsz || 3.6) * it.p); if(z < 3) continue;
           ctx.globalAlpha = (.88 + .12 * al) * clamp((z - 3) / 4, 0, 1);
           ctx.drawImage(z * dpr <= 90 ? s.bmp2 : s.bmp, it.x - z/2, it.y - z/2, z, z);
+          if(z >= 6) photoHits.push({ s, x: it.x, y: it.y, z });
         }
       }
       ctx.globalAlpha = 1;
@@ -3586,6 +3664,15 @@
       if(!p || e.type === 'pointercancel' || ptrs.size || anim) return;
       const n = performance.now();
       if(Math.hypot(e.clientX - p.x0, e.clientY - p.y0) >= 12 || n - p.t >= 260) return; // fue un arrastre, no un toque
+      if(interactive){ // ¿tocaste una foto? -> se abre en grande
+        const r_ = cv.getBoundingClientRect(), tx = e.clientX - r_.left, ty = e.clientY - r_.top;
+        for(let i=photoHits.length-1;i>=0;i--){
+          const h = photoHits[i];
+          if(Math.hypot(tx - h.x, ty - h.y) <= Math.max(h.z / 2 + 4, 14) && h.s.url){
+            tapT = 0; if(typeof openGalViewer === 'function') openGalViewer(h.s.url, h.x + r_.left, h.y + r_.top, h.z); return;
+          }
+        }
+      }
       const dbl = n - tapT < 340 && Math.hypot(e.clientX - tapX, e.clientY - tapY) < 60;
       if(interactive && dbl){ tapT = 0; leave(); return; }
       tapT = n; tapX = e.clientX; tapY = e.clientY;
@@ -3616,6 +3703,8 @@
       },
       stop(){ running = false; if(raf){ cancelAnimationFrame(raf); raf = 0; } },
       isInteractive(){ return interactive; },
+      focusedIndex(){ return focused; },
+      setCustom(items){ pendingCustom = items; applyCustom(); },
       exit(){ interactive = false; focused = -1; anim = null; ptrs.clear(); pinch = null; resetView(); }
     };
   })();
@@ -3660,11 +3749,124 @@
   }
   const gs = { x:0, y:0, mode:0, from:'', sgn:1, lastX:0, lastT:0, v:0, p:0, side:1 };
   const clampN = v=>Math.max(0, Math.min(1, v));
+  // ===== Galaxia: agregar fotos y frases (botón +) y visor de fotos =====
+  function initGalaxyDb(){
+    const { db, collection, onSnapshot } = window.fb;
+    onSnapshot(collection(db, 'galaxy'), snap=>{
+      const items = snap.docs.map(d=>({ id:d.id, ...d.data() })).filter(x=>x && (x.kind === 'img' ? x.url : x.text));
+      galaxy.setCustom(items);
+    }, err=>{ console.warn('galaxy', err); toast('Galaxia', 'No se pudieron leer las fotos agregadas. Revisa las reglas de Firestore para la colección «galaxy».', 'warn'); });
+  }
+  if(window.fb) initGalaxyDb(); else window.addEventListener('firebase-ready', initGalaxyDb);
+
+  (function(){
+    const $ = id=>document.getElementById(id);
+    const modal = $('galAddModal'), kindBox = $('gaKind'), catBox = $('gaCat'), imgBox = $('gaImgBox'), txtBox = $('gaTxtBox');
+    const fileIn = $('gaFile'), prev = $('gaPrev'), nameEl = $('gaName'), textIn = $('gaText'), saveBtn = $('gaSave'), prog = $('gaProg'), fill = $('gaProgFill');
+    const st = { kind:'img', gi:-1, file:null, busy:false };
+    const NAMES = ['Ali', 'Axel', 'Nosotros'];
+    function validate(){
+      const ok = st.gi >= 0 && (st.kind === 'img' ? !!st.file : textIn.value.trim().length > 0);
+      saveBtn.disabled = !ok || st.busy;
+    }
+    function setKind(k){
+      st.kind = k;
+      kindBox.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.k === k));
+      imgBox.style.display = k === 'img' ? '' : 'none'; txtBox.style.display = k === 'txt' ? '' : 'none';
+      validate();
+    }
+    function setCat(g){ st.gi = g; catBox.querySelectorAll('button').forEach(b=>b.classList.toggle('on', +b.dataset.g === g)); validate(); }
+    function resetForm(){
+      st.file = null; st.busy = false; fileIn.value = ''; textIn.value = ''; prev.style.display = 'none'; prev.removeAttribute('src');
+      nameEl.textContent = 'Ninguna seleccionada'; prog.style.display = 'none'; fill.style.width = '0';
+      saveBtn.textContent = 'Agregar'; setKind('img');
+    }
+    function open(){ resetForm(); setCat(galaxy.focusedIndex()); modal.classList.add('show'); }
+    function close(){ if(st.busy) return; modal.classList.remove('show'); }
+    $('galAdd').addEventListener('click', open);
+    $('gaCancel').addEventListener('click', close);
+    modal.addEventListener('click', e=>{ if(e.target === modal) close(); });
+    kindBox.addEventListener('click', e=>{ const b = e.target.closest('button'); if(b && !st.busy) setKind(b.dataset.k); });
+    catBox.addEventListener('click', e=>{ const b = e.target.closest('button'); if(b && !st.busy) setCat(+b.dataset.g); });
+    $('gaPick').addEventListener('click', ()=>fileIn.click());
+    fileIn.addEventListener('change', ()=>{
+      const f = fileIn.files && fileIn.files[0]; st.file = f || null;
+      if(f){ nameEl.textContent = f.name; prev.src = URL.createObjectURL(f); prev.style.display = 'block'; }
+      validate();
+    });
+    textIn.addEventListener('input', validate);
+    saveBtn.addEventListener('click', async ()=>{
+      if(saveBtn.disabled) return;
+      st.busy = true; saveBtn.disabled = true; saveBtn.textContent = 'Subiendo…';
+      try{
+        const data = { kind: st.kind, gi: st.gi, ts: Date.now(), by: (typeof myRole !== 'undefined' && myRole) || null };
+        if(st.kind === 'img'){
+          prog.style.display = 'block';
+          data.url = await cloudinaryUpload(st.file, 'image', p=>{ fill.style.width = (p * 100) + '%'; });
+        } else data.text = textIn.value.trim();
+        const { db, collection, addDoc } = window.fb;
+        await addDoc(collection(db, 'galaxy'), data);
+        st.busy = false; modal.classList.remove('show');
+        toast(st.kind === 'img' ? 'Foto agregada' : 'Frase agregada', 'Ya está en la galaxia de ' + NAMES[st.gi] + ' ✨', 'ok');
+      }catch(err){
+        console.warn('galaxy add', err); st.busy = false; saveBtn.textContent = 'Agregar'; prog.style.display = 'none'; validate();
+        toast('No se pudo agregar', String((err && err.message) || err || 'Intenta de nuevo'), 'err');
+      }
+    });
+  })();
+
+  // Visor: la foto crece desde su lugar en la galaxia hasta casi pantalla completa. Se cierra con la ✕, tocando el fondo o deslizando.
+  (function(){
+    const v = document.getElementById('galViewer'), im = document.getElementById('gvImg'), xb = document.getElementById('gvX');
+    let vOpen = false, closing = 0, origin = { x:0, y:0, z:20 }, drag = null;
+    const tf = (dx, dy, sc)=>`translate(-50%,-50%) translate(${dx}px,${dy}px) scale(${sc})`;
+    window.openGalViewer = function(url, ox, oy, oz){
+      if(vOpen) return; vOpen = true; clearTimeout(closing); origin = { x:ox, y:oy, z:oz };
+      im.style.transition = 'none'; im.style.opacity = '0'; im.style.transform = tf(0, 0, 1);
+      v.style.background = ''; v.classList.add('show');
+      const go = ()=>{
+        if(!vOpen) return;
+        const r = im.getBoundingClientRect(), s0 = Math.max(.03, oz / Math.max(r.width, r.height, 1));
+        im.style.transform = tf(ox - innerWidth / 2, oy - innerHeight / 2, s0);
+        void im.offsetWidth; im.style.transition = '';
+        requestAnimationFrame(()=>{ v.classList.add('in'); im.style.opacity = '1'; im.style.transform = tf(0, 0, 1); });
+      };
+      im.onload = go; im.src = url;
+      if(im.complete && im.naturalWidth) go();
+    };
+    function closeViewer(dx, dy){
+      if(!vOpen) return; vOpen = false;
+      im.style.transition = 'transform .45s cubic-bezier(.4,0,.2,1),opacity .32s ease';
+      v.style.background = ''; v.classList.remove('in');
+      im.style.opacity = '0';
+      im.style.transform = (dx || dy) ? tf((dx || 0) * 3, (dy || 0) * 3, .8) : tf(origin.x - innerWidth / 2, origin.y - innerHeight / 2, Math.max(.03, origin.z / Math.max(im.getBoundingClientRect().width, 1)));
+      closing = setTimeout(()=>{ v.classList.remove('show'); im.onload = null; im.removeAttribute('src'); }, 460);
+    }
+    xb.addEventListener('click', e=>{ e.stopPropagation(); closeViewer(); });
+    document.addEventListener('keydown', e=>{ if(e.key === 'Escape') closeViewer(); });
+    v.addEventListener('pointerdown', e=>{ if(!vOpen || e.target === xb) return; drag = { x:e.clientX, y:e.clientY, dx:0, dy:0, moved:false }; try{ v.setPointerCapture(e.pointerId); }catch(_){} });
+    v.addEventListener('pointermove', e=>{
+      if(!drag) return;
+      drag.dx = e.clientX - drag.x; drag.dy = e.clientY - drag.y;
+      const d = Math.hypot(drag.dx, drag.dy); if(d > 8) drag.moved = true;
+      if(!drag.moved) return;
+      im.style.transition = 'none'; im.style.transform = tf(drag.dx, drag.dy, 1 - Math.min(d, 400) / 1600);
+      v.style.background = `rgba(2,6,12,${.9 * (1 - Math.min(d, 260) / 420)})`;
+    });
+    function endDrag(){
+      if(!drag) return; const d = drag; drag = null;
+      const dist = Math.hypot(d.dx, d.dy);
+      if(!d.moved || dist > 90){ closeViewer(d.moved ? d.dx : 0, d.moved ? d.dy : 0); return; }
+      im.style.transition = ''; im.style.transform = tf(0, 0, 1); v.style.background = '';
+    }
+    v.addEventListener('pointerup', endDrag); v.addEventListener('pointercancel', endDrag);
+  })();
+
   document.addEventListener('touchstart', e=>{
     gs.mode = 0;
     if(e.touches.length !== 1 || document.body.classList.contains('locked')) return;
     const t = e.touches[0], tg = e.target;
-    if(galOpen){ if(galaxy.isInteractive()) return; gs.from = 'open'; }
+    if(galOpen){ if(galaxy.isInteractive() || (tg.closest && tg.closest('.gal-add,.gal-add-modal,.gal-viewer'))) return; gs.from = 'open'; }
     else {
       if(overlayOpen() || (tg.closest && tg.closest('.tabs,input,textarea,select,.miniplayer,.cover-menu'))) return;
       gs.from = 'closed';
