@@ -3204,7 +3204,7 @@
 
     function build(){
       if(built) return; built = true;
-      const NG = weak ? 220 : 320, NT = weak ? 650 : 1000, NS = weak ? 160 : 280, f = GR / 200;
+      const NG = weak ? 220 : 320, NT = weak ? 420 : 640, NS = weak ? 110 : 180, f = GR / 200;
       for(let gi=0; gi<3; gi++){
         const dir = GN[gi].dir;
         for(let i=0;i<NG;i++){
@@ -3293,7 +3293,7 @@
       });
       // Fotos MINÚSCULAS dentro de los cuadritos de los brazos: cada una se pega a una partícula de su galaxia (y gira con ella)
       for(let gi=0; gi<3; gi++){
-        const imgs = sprites.filter(q=>q.kind==='img' && q.gi===gi), cand = [];
+        const imgs = sprites.filter(q=>q.gi===gi).sort((a,b)=>(a.kind==='txt'?0:1)-(b.kind==='txt'?0:1)), cand = []; // primero las frases (necesitan más espacio)
         gal.forEach((p, i)=>{ if(p.gi===gi && p.r > 4) cand.push(i); });
         for(let i=cand.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [cand[i], cand[j]] = [cand[j], cand[i]]; }
         const used = [];
@@ -3301,7 +3301,8 @@
           let pick = -1;
           for(const ci of cand){
             const p = gal[ci], x = p.r * Math.cos(p.a), z = p.r * Math.sin(p.a);
-            if(used.every(u=>Math.hypot(u.x - x, u.z - z) > 5.2)){ pick = ci; used.push({ x, z }); break; }
+            const rad = q.kind === 'txt' ? 9 : 2.6;
+            if(used.every(u=>Math.hypot(u.x - x, u.z - z) > u.rad + rad)){ pick = ci; used.push({ x, z, rad }); break; }
           }
           if(pick < 0) pick = cand[Math.floor(Math.random() * cand.length)];
           q.pi = pick; q.wsz = 3.4 + Math.random() * .8; // tamaño en unidades del mundo (muy pequeña)
@@ -3450,7 +3451,7 @@
           const wave = .5 + .5 * Math.sin(6.2832 * (p.u * 2 - clock * .12));
           const head = pe < 1 ? clamp(1 - (pe - p.u) * 14, 0, 1) : 0;
           ctx.globalAlpha = clamp((.3 + .55 * wave * wave + head) * pul * (.6 + .4 * Math.sin(clock * 2 + p.ph)), 0, 1);
-          const z = clamp(p.s * 1.9 * Math.sqrt(pp) * (1 + head), 1.8, 9); ctx.drawImage(spr, px - z/2, py - z/2, z, z);
+          const z = clamp(p.s * 2.4 * Math.sqrt(pp) * (1 + head), 2.2, 10); ctx.drawImage(spr, px - z/2, py - z/2, z, z);
         }
       }
       ctx.globalCompositeOperation = 'source-over';
@@ -3459,7 +3460,7 @@
       const list = [];
       for(const sp_ of sprites){
         if(sp_.bad || (sp_.kind==='img' && !sp_.ok)) continue;
-        if(sp_.kind === 'img' && sp_.pi != null){ const q = gal[sp_.pi]; place(q.gi, q.r, q.y, q.a + spin * GN[q.gi].dir); }
+        if(sp_.pi != null){ const q = gal[sp_.pi]; place(q.gi, q.r, q.y, q.a + spin * GN[q.gi].dir); }
         else place(sp_.gi, sp_.rr, sp_.y + Math.sin(clock * .9 + sp_.ph) * 4, sp_.a0 + clock * sp_.w * GN[sp_.gi].dir);
         if(!proj(gx, gy, gz)) continue;
         list.push({ s: sp_, x: px, y: py, p: pp, z: pz });
