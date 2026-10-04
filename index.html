@@ -3170,7 +3170,7 @@
     let zoom = 1, tz = 1, spritesBuilt = false, sized = false;
     let skip = 1, frames = 0, acc = 0, built = false, interactive = false, hintTm = 0;
     let camX = 0, camY = 0, camZ = 0, drawT = 0;
-    const gal = [], stars = [], trail = [], sprites = [];
+    const gal = [], dust = [], stars = [], trail = [], sprites = [];
 
     // Forma del corazón: las 3 galaxias están SOBRE su contorno (ali y axel arriba, nosotros en la punta de abajo)
     const GR = 50, HS = 11, YOFF = -32, TL = 1.1; // radio de galaxia, escala del corazón, ajuste vertical, punto del contorno donde van ali/axel
@@ -3203,7 +3203,7 @@
 
     function build(){
       if(built) return; built = true;
-      const NG = weak ? 800 : 1500, NT = weak ? 650 : 1000, NS = weak ? 160 : 280, f = GR / 200;
+      const NG = weak ? 420 : 700, NT = weak ? 650 : 1000, NS = weak ? 160 : 280, f = GR / 200;
       for(let gi=0; gi<3; gi++){
         const dir = GN[gi].dir;
         for(let i=0;i<NG;i++){
@@ -3214,6 +3214,22 @@
         }
       }
       gal.sort((p,q)=>p.k-q.k);
+      // Polvo fino de la galaxia (miles de puntitos de 1-2 px): brazos espesos + núcleo brillante + neblina entre brazos
+      const ND = weak ? 3200 : 6500, AL = [.2, .36, .58];
+      for(let gi=0; gi<3; gi++){
+        const dir = GN[gi].dir;
+        for(let i=0;i<ND;i++){
+          const kind = Math.random(); let r0, a;
+          if(kind < .68){ r0 = Math.pow(Math.random(), .75) * 205 + 3; a = r0 * .034 + (i % 3) * 2.0944 + gauss() * (.48 * (1 - r0/240) + .07); }
+          else if(kind < .86){ r0 = Math.abs(gauss()) * 38 + 2; a = Math.random() * 6.2832; }
+          else { r0 = Math.pow(Math.random(), .7) * 215 + 4; a = Math.random() * 6.2832; }
+          const g = r0 < 40 ? 0 : r0 < 95 ? 1 + (Math.random()<.4?1:0) : r0 < 150 ? 2 + (Math.random()<.5?1:0) : 3 + (Math.random()<.5?1:0);
+          const ab = r0 < 45 ? (Math.random() < .55 ? 2 : 1) : (Math.random() < .5 ? 0 : (Math.random() < .7 ? 1 : 2));
+          const yy = gauss() * (r0 < 40 ? 14 : 10 * (1 - r0/230) + 2) * f * 1.4;
+          dust.push({ gi, r: r0 * f, ca: Math.cos(a * dir), sa: Math.sin(a * dir), y: yy, k: (gi * 5 + g) * 3 + ab, col: PALS[gi][g], al: AL[ab] });
+        }
+      }
+      dust.sort((p,q)=>p.k-q.k);
       for(let i=0;i<NS;i++) stars.push({ x:(Math.random()-.5)*900, y:(Math.random()-.5)*700, z:(Math.random()-.5)*900, s:Math.random()*1.1+.4, a:Math.random()*.6+.25 });
       // Contorno del corazón hecho de piedritas / mini meteoritos. u = 0 en la punta de abajo (nosotros) y sube por ali, la hendidura, axel y vuelve a nosotros
       for(let i=0;i<NT;i++){
@@ -3370,6 +3386,24 @@
         ctx.globalAlpha = s.a * (.7 + .3*Math.sin(clock*2 + i));
         const z = Math.max(1.6, s.s * 1.6 * Math.sqrt(pp)); ctx.drawImage(starSpr, px - z/2, py - z/2, z, z);
       }
+      // polvo fino (dibujado por lotes: muy rápido aunque sean miles)
+      {
+        const cds = [], sds = [];
+        GN.forEach((G, gi)=>{ const d = spin * G.dir; cds[gi] = Math.cos(d); sds[gi] = Math.sin(d); });
+        const dz = clamp(.55 * Math.sqrt(F / D * K * zoom), 1, 2.8);
+        let ck = -1;
+        ctx.beginPath();
+        for(let i=0;i<dust.length;i+=skip){
+          const p = dust[i];
+          if(p.k !== ck){ if(ck >= 0) ctx.fill(); ctx.beginPath(); ctx.fillStyle = p.col; ctx.globalAlpha = p.al; ck = p.k; }
+          const G = GN[p.gi], cd = cds[p.gi], sd = sds[p.gi];
+          const lx = p.r * (p.ca * cd - p.sa * sd), lz = p.r * (p.sa * cd + p.ca * sd);
+          const y1 = p.y * G.c - lz * G.s, z1 = p.y * G.s + lz * G.c;
+          if(!proj(G.x + lx * G.rc - y1 * G.rs, G.y + lx * G.rs + y1 * G.rc, G.z + z1)) continue;
+          ctx.rect(px - dz/2, py - dz/2, dz, dz);
+        }
+        if(ck >= 0) ctx.fill();
+      }
       let lastC = '', spr = null;
       for(let i=0;i<gal.length;i+=skip){
         const p = gal[i];
@@ -3377,7 +3411,7 @@
         place(p.gi, p.r, p.y, p.a + spin * GN[p.gi].dir);
         if(!proj(gx, gy, gz)) continue;
         ctx.globalAlpha = Math.min(.9, .4 + pp*.35);
-        const z = Math.min(9, Math.max(1.8, p.s * 2.1 * Math.sqrt(pp))); ctx.drawImage(spr, px - z/2, py - z/2, z, z);
+        const z = Math.min(7, Math.max(1.8, p.s * 1.7 * Math.sqrt(pp))); ctx.drawImage(spr, px - z/2, py - z/2, z, z);
       }
       for(const G of GN){
         if(!proj(G.x, G.y, G.z)) continue;
@@ -3495,7 +3529,7 @@
       focused = i; interactive = true; ptrs.clear(); pinch = null;
       zLo = z; zHi = z * 6; // aquí queda fijo el zoom mínimo; el máximo deja ver las fotos dentro de los cuadritos
       flyTo({ x: G.x, y: G.y, z: G.z, zoom: z }, 850);
-      showHint('Acércate: las fotos están dentro de los cuadritos · doble toque: volver');
+      showHint('Acércate para ver las fotos entre las estrellas · doble toque: volver');
     }
     function leave(){
       focused = -1; ptrs.clear(); pinch = null;
