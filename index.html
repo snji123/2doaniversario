@@ -293,7 +293,7 @@
   .tn-title.b{opacity:0;}
   .topnav.drag .tn-title{transition:none;}
   .gal-page{position:fixed;inset:0;z-index:12;overflow:hidden;touch-action:none;transform:translateX(100%);visibility:hidden;
-    background:radial-gradient(75% 28% at 22% 16%,rgba(30,210,150,.15),transparent 70%),radial-gradient(70% 32% at 80% 28%,rgba(60,120,255,.16),transparent 70%),radial-gradient(70% 45% at 50% 46%,rgba(40,80,150,.20),transparent 72%),radial-gradient(90% 40% at 50% 96%,rgba(20,150,140,.18),transparent 70%),#02040a;
+    background:#010103;
     transition:transform .6s cubic-bezier(.25,.8,.25,1), visibility 0s linear .6s;}
   .gal-page.open,.gal-page.vis{visibility:visible;transition-delay:0s,0s;}
   .gal-page.open{transform:none;}
@@ -3226,20 +3226,20 @@
     const hx = t => 16 * Math.pow(Math.sin(t), 3) * HS;
     const hy = t => -(13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t)) * HS + YOFF;
     const GN = [
-      { x: hx(-TL),    y: hy(-TL),    z: 0, tilt: -.3, roll: -.3, dir:  1, glow:'120,175,255', sx:0, sy:0 }, // 0 = ali (arriba izquierda, azul con toque rosa)
-      { x: hx(TL),     y: hy(TL),     z: 0, tilt: -.22, roll: .3, dir: -1, glow:'100,250,165', sx:0, sy:0 }, // 1 = axel (arriba derecha, verde)
-      { x: hx(Math.PI), y: hy(Math.PI), z: 0, tilt: -.4, roll: 0, dir:  1, glow:'90,225,225', sx:0, sy:0 }  // 2 = nosotros (abajo, mezcla azul-verde)
+      { x: hx(-TL),    y: hy(-TL),    z: 0, tilt: -.3, roll: -.3, dir:  1, glow:'100,160,255', core:'225,240,255', sx:0, sy:0 }, // 0 = ali (arriba izquierda, azul)
+      { x: hx(TL),     y: hy(TL),     z: 0, tilt: -.22, roll: .3, dir: -1, glow:'90,225,225', core:'225,255,248', sx:0, sy:0 }, // 1 = axel (arriba derecha, azul-verde)
+      { x: hx(Math.PI), y: hy(Math.PI), z: 0, tilt: -.4, roll: 0, dir:  1, glow:'255,205,110', core:'255,243,210', sx:0, sy:0 }  // 2 = nosotros (abajo, dorado)
     ];
     GN.forEach(G=>{ G.c = Math.cos(G.tilt); G.s = Math.sin(G.tilt); G.rc = Math.cos(G.roll); G.rs = Math.sin(G.roll); G.sr = 0; });
     const PALS = [
-      // ali: azul (con un toque de rosa hacia las puntas de los brazos)
-      ['rgba(235,245,255,.95)','rgba(130,195,255,.9)','rgba(90,150,255,.85)','rgba(170,140,255,.8)','rgba(255,150,215,.75)'],
-      // axel: verde (con un toque turquesa en las puntas)
-      ['rgba(235,255,242,.95)','rgba(150,255,190,.9)','rgba(70,230,150,.85)','rgba(40,205,165,.8)','rgba(70,195,230,.75)'],
-      // nosotros: fusión azul + verde (turquesa, cian, azul y verde)
-      ['rgba(240,255,250,.95)','rgba(120,235,220,.9)','rgba(80,200,240,.85)','rgba(90,160,255,.8)','rgba(70,230,170,.8)']
+      // ali (ella): azul puro
+      ['rgba(235,245,255,.95)','rgba(140,200,255,.9)','rgba(85,150,255,.85)','rgba(60,120,255,.8)','rgba(120,175,255,.75)'],
+      // axel (él): el color que tenía "nosotros" (fusión turquesa, cian, azul y verde)
+      ['rgba(240,255,250,.95)','rgba(120,235,220,.9)','rgba(80,200,240,.85)','rgba(90,160,255,.8)','rgba(70,230,170,.8)'],
+      // nosotros: dorado
+      ['rgba(255,249,228,.95)','rgba(255,228,150,.9)','rgba(255,203,92,.85)','rgba(255,178,62,.8)','rgba(255,218,125,.75)']
     ];
-    const PAL_H = ['rgba(150,215,255,.95)','rgba(255,255,255,.95)','rgba(110,240,190,.9)'];
+    const PAL_H = ['rgba(135,190,255,.95)','rgba(255,228,150,.95)','rgba(100,228,225,.9)'];
     const gauss = ()=> (Math.random()+Math.random()+Math.random()-1.5)/1.5;
     const clamp = (v,a,b)=> Math.max(a, Math.min(b, v));
     const sstep = (a,b,x)=>{ const t = clamp((x-a)/(b-a), 0, 1); return t*t*(3-2*t); };
@@ -3513,7 +3513,7 @@
         if(!proj(G.x, G.y, G.z)) continue;
         G.sx = px; G.sy = py; G.sr = GR * pp;
         const R = GR * .45 * pp, g = ctx.createRadialGradient(px, py, 0, px, py, R);
-        g.addColorStop(0, 'rgba(232,250,255,.6)'); g.addColorStop(.35, `rgba(${G.glow},.22)`); g.addColorStop(1, `rgba(${G.glow},0)`);
+        g.addColorStop(0, `rgba(${G.core},.6)`); g.addColorStop(.35, `rgba(${G.glow},.22)`); g.addColorStop(1, `rgba(${G.glow},0)`);
         if(px + R < 0 || px - R > W || py + R < 0 || py - R > H) continue;
         ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(px - R, py - R, R*2, R*2);
       }
