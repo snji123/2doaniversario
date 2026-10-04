@@ -320,10 +320,6 @@
   .gal-chips button[data-g="0"].on{border-color:#7fb6ff;background:rgba(110,170,255,.16);}
   .gal-chips button[data-g="1"].on{border-color:#5cf0a0;background:rgba(80,240,160,.15);}
   .gal-chips button[data-g="2"].on{border-color:#5fe3e0;background:rgba(90,225,225,.15);}
-  .gal-load{position:absolute;left:50%;bottom:calc(132px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:7px;min-width:160px;padding:9px 16px;border-radius:14px;background:rgba(20,10,30,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font-size:11.5px;color:rgba(255,255,255,.82);opacity:0;pointer-events:none;transition:opacity .25s;}
-  .gal-load.show{opacity:1;transition:opacity .3s .5s;}
-  .gal-load i{display:block;width:100%;height:3px;border-radius:2px;background:rgba(255,255,255,.16);overflow:hidden;}
-  .gal-load b{display:block;height:100%;width:0;background:#ff8fc8;transition:width .25s;}
   .gal-prev{width:100%;max-height:200px;object-fit:cover;border-radius:12px;display:none;}
   .gal-thumbs{display:none;grid-template-columns:repeat(4,1fr);gap:6px;max-height:172px;overflow-y:auto;}
   .gal-thumbs img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;display:block;cursor:pointer;}
@@ -845,7 +841,7 @@
     <span class="tn-title b" id="tnB">Galaxia</span>
   </div>
 </nav>
-<div class="gal-page" id="galBox" aria-hidden="true"><canvas id="galCanvas"></canvas><div class="gal-hint" id="galHint">Toca una galaxia para explorarla</div><div class="gal-load" id="galLoad"><span id="galLoadTx"></span><i><b id="galLoadBar"></b></i></div>
+<div class="gal-page" id="galBox" aria-hidden="true"><canvas id="galCanvas"></canvas><div class="gal-hint" id="galHint">Toca una galaxia para explorarla</div>
   <button type="button" class="gal-add" id="galAdd" aria-label="Agregar foto o frase a la galaxia"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
 
 <div class="gal-add-modal" id="galAddModal">
@@ -3319,40 +3315,15 @@
         sp.bmp = c; sp.bmp2 = c2; sp.ok = true;
       }catch(e){ sp.bad = true; }
     }
-    // Miniatura ligera para la galaxia: las fotos de Cloudinary se piden ya recortadas a 256 px (la foto grande solo se baja en el visor)
-    function thumbUrl(u){
-      try{
-        const x = new URL(u); if(x.hostname !== 'res.cloudinary.com') return u;
-        const key = '/image/upload/', i = x.pathname.indexOf(key); if(i < 0) return u;
-        const rest = x.pathname.slice(i + key.length);
-        if(/^[a-z]{1,3}_/.test(rest)) return u; // ya trae transformaciones
-        x.pathname = x.pathname.slice(0, i + key.length) + 'c_fill,w_256,h_256,q_auto,f_auto/' + rest;
-        return x.toString();
-      }catch(e){ return u; }
-    }
-    // Las fotos se cargan poco a poco (6 a la vez con la galaxia abierta, 3 en segundo plano) para no saturar el teléfono
-    const queue = []; let active = 0, loadTotal = 0, loadDone = 0;
-    const loadEl = document.getElementById('galLoad'), loadTx = document.getElementById('galLoadTx'), loadBar = document.getElementById('galLoadBar');
-    function enqueue(job){ loadTotal++; queue.push(job); }
-    function updateLoad(){
-      if(!loadEl) return;
-      const show = running && loadTotal - loadDone > 0 && loadTotal >= 4;
-      loadEl.classList.toggle('show', show);
-      if(show){ loadTx.textContent = 'Cargando fotos ' + loadDone + '/' + loadTotal; loadBar.style.width = (loadDone / loadTotal * 100) + '%'; }
-    }
+    // Las fotos se cargan poco a poco (6 a la vez) para no saturar el teléfono
+    const queue = []; let active = 0;
     function pump(){
-      while(active < (running ? 6 : 3) && queue.length){
+      while(active < 6 && queue.length){
         const job = queue.shift(); active++;
         const img = new Image(); img.decoding = 'async';
-        const fin = ()=>{ active--; loadDone++; updateLoad(); pump(); };
-        img.onload = ()=>{
-          const go = ()=>{ prepImg(job.sp, img); fin(); };
-          if(img.decode) img.decode().then(go, go); else go(); // decodifica fuera del hilo principal para no trabar
-        };
-        img.onerror = ()=>{
-          if(job.fallback){ job.url = job.fallback; job.fallback = null; queue.unshift(job); active--; pump(); return; } // si la miniatura falla, usa la original
-          job.sp.bad = true; fin();
-        };
+        const done = ()=>{ active--; pump(); };
+        img.onload = ()=>{ prepImg(job.sp, img); done(); };
+        img.onerror = ()=>{ job.sp.bad = true; done(); };
         img.src = job.url;
       }
     }
@@ -3388,19 +3359,19 @@
         const sp = it.kind === 'img' ? { kind:'img', ok:false, gi, url:it.url } : { kind:'txt', text:String(it.text || ''), gi };
         anchor(sp); if(sp.pi == null) continue;
         sprites.push(sp); customIds.set(it.id, sp);
-        if(sp.kind === 'img'){ enqueue({ sp, url: thumbUrl(it.url), fallback: it.url }); }
+        if(sp.kind === 'img'){ queue.push({ sp, url: it.url }); }
       }
       pump();
     }
     function buildSprites(){
       if(spritesBuilt) return; spritesBuilt = true;
-      sprites.length = 0; queue.length = 0; loadTotal = loadDone = 0;
+      sprites.length = 0; queue.length = 0;
       const per = [[], [], []];
       GALAXY_SETS.forEach((set, gi)=> set.files.forEach(name=>{
         const sp = { kind:'img', ok:false, gi };
         per[gi].push(sp); sprites.push(sp);
         sp.url = GALAXY_IMG_DIR + set.dir + '/' + encodeURIComponent(name);
-        enqueue({ sp, url: sp.url });
+        queue.push({ sp, url: sp.url });
       }));
       GALAXY_WORDS.forEach((w, i)=>{ const sp = { kind:'txt', text:w, gi:i % 3 }; per[sp.gi].push(sp); sprites.push(sp); });
       per.forEach(arr=>{
@@ -3744,12 +3715,10 @@
         build(); buildSprites();
         running = true; drawT = 0; showHint('Toca una galaxia para explorarla');
         if(!ro && window.ResizeObserver){ ro = new ResizeObserver(()=>resize()); ro.observe(box); }
-        resize(); last = 0; updateLoad(); pump();
+        resize(); last = 0;
         if(!raf && !document.hidden) raf = requestAnimationFrame(frame);
       },
-      stop(){ running = false; updateLoad(); if(raf){ cancelAnimationFrame(raf); raf = 0; } },
-      // prepara todo en segundo plano (puntitos, fotos, etc.) para que la galaxia abra ya "caliente"
-      preload(){ build(); buildSprites(); PALS.forEach(p=>p.forEach(dotSprite)); PAL_H.forEach(dotSprite); dotSprite('#ffffff'); },
+      stop(){ running = false; if(raf){ cancelAnimationFrame(raf); raf = 0; } },
       isInteractive(){ return interactive; },
       focusedIndex(){ return focused; },
       setCustom(items){ pendingCustom = items; applyCustom(); },
@@ -3806,12 +3775,6 @@
     }, err=>{ console.warn('galaxy', err); toast('Galaxia', 'No se pudieron leer las fotos agregadas. Revisa las reglas de Firestore para la colección «galaxy».', 'warn'); });
   }
   if(window.fb) initGalaxyDb(); else window.addEventListener('firebase-ready', initGalaxyDb);
-  // precarga de la galaxia en segundo plano (mientras usas el reproductor), cuando el teléfono está libre
-  (function(){
-    const go = ()=>{ const run = ()=>{ try{ galaxy.preload(); }catch(e){ console.warn('preload galaxia', e); } };
-      if(window.requestIdleCallback) requestIdleCallback(run, { timeout: 5000 }); else setTimeout(run, 2500); };
-    if(document.readyState === 'complete') setTimeout(go, 1200); else window.addEventListener('load', ()=>setTimeout(go, 1200));
-  })();
 
   (function(){
     const $ = id=>document.getElementById(id);
