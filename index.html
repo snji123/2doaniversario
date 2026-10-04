@@ -3169,7 +3169,6 @@
     let spin = 0, phase = 0, clock = 0;
     let zoom = 1, tz = 1, spritesBuilt = false, sized = false;
     let skip = 1, frames = 0, acc = 0, built = false, interactive = false, hintTm = 0;
-    let ema = .0167, qv = 1, qCeil = 1, qCool = 0; // calidad adaptativa (1 = todo el polvo)
     let camX = 0, camY = 0, camZ = 0, drawT = 0;
     const gal = [], dust = [], stars = [], trail = [], sprites = [];
     let DN = 0, dR, dCa, dSa, dY, dGi, dK; const kCol = [], kAl = [];
@@ -3205,7 +3204,7 @@
 
     function build(){
       if(built) return; built = true;
-      const NG = weak ? 420 : 700, NT = weak ? 650 : 1000, NS = weak ? 160 : 280, f = GR / 200;
+      const NG = weak ? 300 : 450, NT = weak ? 650 : 1000, NS = weak ? 160 : 280, f = GR / 200;
       for(let gi=0; gi<3; gi++){
         const dir = GN[gi].dir;
         for(let i=0;i<NG;i++){
@@ -3217,7 +3216,7 @@
       }
       gal.sort((p,q)=>p.k-q.k);
       // Polvo fino de la galaxia (miles de puntitos de 1-2 px): brazos espesos + núcleo brillante + neblina entre brazos
-      const ND = weak ? 2400 : 5000, AL = [.2, .36, .58];
+      const ND = weak ? 1000 : 1800, AL = [.28, .46, .7];
       for(let gi=0; gi<3; gi++){
         const dir = GN[gi].dir;
         for(let i=0;i<ND;i++){
@@ -3247,7 +3246,7 @@
     // Imágenes (de la carpeta del repositorio) y frases repartidas alrededor de cada galaxia
     function prepImg(sp, img){
       try{
-        const N = 160, rr = N * .16, c = document.createElement('canvas'); c.width = c.height = N;
+        const N = 224, rr = N * .16, c = document.createElement('canvas'); c.width = c.height = N;
         const m = Math.min(img.naturalWidth, img.naturalHeight) || 1, x = c.getContext('2d');
         const path = ()=>{ x.beginPath(); if(x.roundRect) x.roundRect(0, 0, N, N, rr); else x.rect(0, 0, N, N); };
         x.save(); path(); x.clip();
@@ -3256,7 +3255,7 @@
         x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 3; x.beginPath();
         if(x.roundRect) x.roundRect(1.5, 1.5, N - 3, N - 3, rr); else x.rect(1.5, 1.5, N - 3, N - 3);
         x.stroke();
-        const c2 = document.createElement('canvas'); c2.width = c2.height = 56; c2.getContext('2d').drawImage(c, 0, 0, 56, 56);
+        const c2 = document.createElement('canvas'); c2.width = c2.height = 96; const x2 = c2.getContext('2d'); x2.imageSmoothingQuality = 'high'; x2.drawImage(c, 0, 0, 96, 96);
         sp.bmp = c; sp.bmp2 = c2; sp.ok = true;
       }catch(e){ sp.bad = true; }
     }
@@ -3314,7 +3313,7 @@
     function resize(){
       const r = box.getBoundingClientRect(); if(!r.width || !r.height) return;
       W = r.width; H = r.height; K = Math.min(W, H) / 340;
-      dpr = Math.min(window.devicePixelRatio || 1, weak ? 1 : 1.5, Math.sqrt(1700000 / (W * H)));
+      dpr = Math.min(window.devicePixelRatio || 1, weak ? 1.25 : 1.75, Math.sqrt(2400000 / (W * H)));
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       // zoom inicial: que quepa todo el corazón (3 galaxias) en pantalla
@@ -3379,13 +3378,7 @@
       const dt = Math.min(.05, (now - (last || now)) / 1000); last = now;
       if(!W){ resize(); if(!W) return; }
       frames++; acc += dt;
-      ema = ema * .93 + dt * .07; if(qCool > 0) qCool--;
-      if(frames % 20 === 0 && qCool === 0){
-        if(ema > .0235 && qv > .3){ qv = Math.max(.3, qv * .8); qCeil = Math.min(qCeil, qv * 1.3); qCool = 40; }          // va lento: menos polvo
-        else if(ema < .0185 && qv < qCeil){ qv = Math.min(qCeil, qv * 1.06); qCool = 40; }                              // va sobrado: sube un poco
-        if(frames % 1200 === 0) qCeil = Math.min(1, qCeil * 1.2);
-        skip = qv > .6 ? 1 : qv > .4 ? 2 : 3;
-      }
+      if(frames === 90){ if(acc/90 > .04 && skip < 2) skip++; frames = 0; acc = 0; } // solo baja si va MUY lento, y nunca vuelve a cambiar (sin parpadeo)
       clock += dt; drawT += dt;
       const playing = (typeof isPlaying !== 'undefined') && isPlaying;
       phase += dt * (playing ? 7.4 : 4.6);
@@ -3408,14 +3401,14 @@
       if(DN){
         const cds = [], sds = [];
         GN.forEach((G, gi)=>{ const d = spin * G.dir; cds[gi] = Math.cos(d); sds[gi] = Math.sin(d); });
-        const dz = clamp(.55 * Math.sqrt(F / D * K * zoom), 1, 2.8) * (qv < 1 ? 1 + (1 - qv) * .6 : 1);
+        const dz = clamp(.7 * Math.sqrt(F / D * K * zoom), 1.3, 3.2);
         const m0 = M[0], m1 = M[1], m2 = M[2], m3 = M[3], m4 = M[4], m5 = M[5], m6 = M[6], m7 = M[7], m8 = M[8];
-        const sc = F * K * zoom, hw = W * .5, hh = H * .5, stride = 1 / qv;
+        const sc = F * K * zoom, hw = W * .5, hh = H * .5;
         let ck = -1, Gx = 0, Gy = 0, Gz = 0, Gc = 0, Gs = 0, Grc = 0, Grs = 0, cd = 1, sd = 0, cg = -1;
         ctx.beginPath();
-        for(let f=0; f<DN; f+=stride){
-          const i = f | 0, k = dK[i];
-          if(k !== ck){ if(ck >= 0) ctx.fill(); ctx.beginPath(); ctx.fillStyle = kCol[k]; ctx.globalAlpha = Math.min(1, kAl[k] * (qv < 1 ? 1 + (1 - qv) * .5 : 1)); ck = k; }
+        for(let i=0; i<DN; i++){
+          const k = dK[i];
+          if(k !== ck){ if(ck >= 0) ctx.fill(); ctx.beginPath(); ctx.fillStyle = kCol[k]; ctx.globalAlpha = kAl[k]; ck = k; }
           const gi = dGi[i];
           if(gi !== cg){ const G = GN[gi]; cg = gi; Gx = G.x - camX; Gy = G.y - camY; Gz = G.z - camZ; Gc = G.c; Gs = G.s; Grc = G.rc; Grs = G.rs; cd = cds[gi]; sd = sds[gi]; }
           const r = dR[i], ca = dCa[i], sa = dSa[i], yv = dY[i];
@@ -3483,7 +3476,7 @@
         } else {
           const z = Math.min(cap, (s.wsz || 3.6) * it.p); if(z < 3) continue;
           ctx.globalAlpha = (.88 + .12 * al) * clamp((z - 3) / 4, 0, 1);
-          ctx.drawImage(z <= 60 ? s.bmp2 : s.bmp, it.x - z/2, it.y - z/2, z, z);
+          ctx.drawImage(z * dpr <= 90 ? s.bmp2 : s.bmp, it.x - z/2, it.y - z/2, z, z);
         }
       }
       ctx.globalAlpha = 1;
