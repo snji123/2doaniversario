@@ -320,7 +320,15 @@
   .gal-chips button[data-g="0"].on{border-color:#7fb6ff;background:rgba(110,170,255,.16);}
   .gal-chips button[data-g="1"].on{border-color:#5cf0a0;background:rgba(80,240,160,.15);}
   .gal-chips button[data-g="2"].on{border-color:#5fe3e0;background:rgba(90,225,225,.15);}
+  .gal-load{position:absolute;left:50%;bottom:calc(132px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:7px;min-width:160px;padding:9px 16px;border-radius:14px;background:rgba(20,10,30,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font-size:11.5px;color:rgba(255,255,255,.82);opacity:0;pointer-events:none;transition:opacity .25s;}
+  .gal-load.show{opacity:1;transition:opacity .3s .5s;}
+  .gal-load i{display:block;width:100%;height:3px;border-radius:2px;background:rgba(255,255,255,.16);overflow:hidden;}
+  .gal-load b{display:block;height:100%;width:0;background:#ff8fc8;transition:width .25s;}
   .gal-prev{width:100%;max-height:200px;object-fit:cover;border-radius:12px;display:none;}
+  .gal-thumbs{display:none;grid-template-columns:repeat(4,1fr);gap:6px;max-height:172px;overflow-y:auto;}
+  .gal-thumbs img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;display:block;cursor:pointer;}
+  .gal-thumbs .more{display:flex;align-items:center;justify-content:center;aspect-ratio:1;border-radius:9px;background:var(--surface-2);color:var(--text-dim);font-size:12.5px;font-weight:700;}
+  .gal-hint2{font-size:11.5px;color:var(--text-dim);margin-top:-2px;}
   .gal-prog{height:4px;border-radius:2px;background:var(--surface-2);overflow:hidden;display:none;}
   .gal-prog i{display:block;height:100%;width:0;background:var(--green);transition:width .2s;}
   .gal-add-card .save-btn:disabled{opacity:.4;}
@@ -837,7 +845,7 @@
     <span class="tn-title b" id="tnB">Galaxia</span>
   </div>
 </nav>
-<div class="gal-page" id="galBox" aria-hidden="true"><canvas id="galCanvas"></canvas><div class="gal-hint" id="galHint">Toca una galaxia para explorarla</div>
+<div class="gal-page" id="galBox" aria-hidden="true"><canvas id="galCanvas"></canvas><div class="gal-hint" id="galHint">Toca una galaxia para explorarla</div><div class="gal-load" id="galLoad"><span id="galLoadTx"></span><i><b id="galLoadBar"></b></i></div>
   <button type="button" class="gal-add" id="galAdd" aria-label="Agregar foto o frase a la galaxia"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
 
 <div class="gal-add-modal" id="galAddModal">
@@ -847,9 +855,10 @@
     <label>¿En qué galaxia?</label>
     <div class="gal-chips" id="gaCat"><button type="button" data-g="0">Ali</button><button type="button" data-g="1">Axel</button><button type="button" data-g="2">Nosotros</button></div>
     <div id="gaImgBox">
-      <div class="file-row"><button type="button" class="pick-btn" id="gaPick">Elegir foto</button><span class="pick-name" id="gaName">Ninguna seleccionada</span></div>
-      <img class="gal-prev" id="gaPrev" alt="">
-      <input type="file" id="gaFile" accept="image/*" hidden>
+      <div class="file-row"><button type="button" class="pick-btn" id="gaPick">Elegir fotos</button><span class="pick-name" id="gaName">Ninguna seleccionada</span></div>
+      <div class="gal-thumbs" id="gaThumbs"></div>
+      <div class="gal-hint2" id="gaHint2" style="display:none;">Toca una miniatura para quitarla</div>
+      <input type="file" id="gaFile" accept="image/*" multiple hidden>
     </div>
     <div id="gaTxtBox" style="display:none;"><input type="text" id="gaText" maxlength="30" placeholder="Escribe tu frase (ej. Te amo)" autocomplete="off"></div>
     <div class="gal-prog" id="gaProg"><i id="gaProgFill"></i></div>
@@ -3310,15 +3319,40 @@
         sp.bmp = c; sp.bmp2 = c2; sp.ok = true;
       }catch(e){ sp.bad = true; }
     }
-    // Las fotos se cargan poco a poco (6 a la vez) para no saturar el teléfono
-    const queue = []; let active = 0;
+    // Miniatura ligera para la galaxia: las fotos de Cloudinary se piden ya recortadas a 256 px (la foto grande solo se baja en el visor)
+    function thumbUrl(u){
+      try{
+        const x = new URL(u); if(x.hostname !== 'res.cloudinary.com') return u;
+        const key = '/image/upload/', i = x.pathname.indexOf(key); if(i < 0) return u;
+        const rest = x.pathname.slice(i + key.length);
+        if(/^[a-z]{1,3}_/.test(rest)) return u; // ya trae transformaciones
+        x.pathname = x.pathname.slice(0, i + key.length) + 'c_fill,w_256,h_256,q_auto,f_auto/' + rest;
+        return x.toString();
+      }catch(e){ return u; }
+    }
+    // Las fotos se cargan poco a poco (6 a la vez con la galaxia abierta, 3 en segundo plano) para no saturar el teléfono
+    const queue = []; let active = 0, loadTotal = 0, loadDone = 0;
+    const loadEl = document.getElementById('galLoad'), loadTx = document.getElementById('galLoadTx'), loadBar = document.getElementById('galLoadBar');
+    function enqueue(job){ loadTotal++; queue.push(job); }
+    function updateLoad(){
+      if(!loadEl) return;
+      const show = running && loadTotal - loadDone > 0 && loadTotal >= 4;
+      loadEl.classList.toggle('show', show);
+      if(show){ loadTx.textContent = 'Cargando fotos ' + loadDone + '/' + loadTotal; loadBar.style.width = (loadDone / loadTotal * 100) + '%'; }
+    }
     function pump(){
-      while(active < 6 && queue.length){
+      while(active < (running ? 6 : 3) && queue.length){
         const job = queue.shift(); active++;
         const img = new Image(); img.decoding = 'async';
-        const done = ()=>{ active--; pump(); };
-        img.onload = ()=>{ prepImg(job.sp, img); done(); };
-        img.onerror = ()=>{ job.sp.bad = true; done(); };
+        const fin = ()=>{ active--; loadDone++; updateLoad(); pump(); };
+        img.onload = ()=>{
+          const go = ()=>{ prepImg(job.sp, img); fin(); };
+          if(img.decode) img.decode().then(go, go); else go(); // decodifica fuera del hilo principal para no trabar
+        };
+        img.onerror = ()=>{
+          if(job.fallback){ job.url = job.fallback; job.fallback = null; queue.unshift(job); active--; pump(); return; } // si la miniatura falla, usa la original
+          job.sp.bad = true; fin();
+        };
         img.src = job.url;
       }
     }
@@ -3354,19 +3388,19 @@
         const sp = it.kind === 'img' ? { kind:'img', ok:false, gi, url:it.url } : { kind:'txt', text:String(it.text || ''), gi };
         anchor(sp); if(sp.pi == null) continue;
         sprites.push(sp); customIds.set(it.id, sp);
-        if(sp.kind === 'img'){ queue.push({ sp, url: it.url }); }
+        if(sp.kind === 'img'){ enqueue({ sp, url: thumbUrl(it.url), fallback: it.url }); }
       }
       pump();
     }
     function buildSprites(){
       if(spritesBuilt) return; spritesBuilt = true;
-      sprites.length = 0; queue.length = 0;
+      sprites.length = 0; queue.length = 0; loadTotal = loadDone = 0;
       const per = [[], [], []];
       GALAXY_SETS.forEach((set, gi)=> set.files.forEach(name=>{
         const sp = { kind:'img', ok:false, gi };
         per[gi].push(sp); sprites.push(sp);
         sp.url = GALAXY_IMG_DIR + set.dir + '/' + encodeURIComponent(name);
-        queue.push({ sp, url: sp.url });
+        enqueue({ sp, url: sp.url });
       }));
       GALAXY_WORDS.forEach((w, i)=>{ const sp = { kind:'txt', text:w, gi:i % 3 }; per[sp.gi].push(sp); sprites.push(sp); });
       per.forEach(arr=>{
@@ -3710,10 +3744,12 @@
         build(); buildSprites();
         running = true; drawT = 0; showHint('Toca una galaxia para explorarla');
         if(!ro && window.ResizeObserver){ ro = new ResizeObserver(()=>resize()); ro.observe(box); }
-        resize(); last = 0;
+        resize(); last = 0; updateLoad(); pump();
         if(!raf && !document.hidden) raf = requestAnimationFrame(frame);
       },
-      stop(){ running = false; if(raf){ cancelAnimationFrame(raf); raf = 0; } },
+      stop(){ running = false; updateLoad(); if(raf){ cancelAnimationFrame(raf); raf = 0; } },
+      // prepara todo en segundo plano (puntitos, fotos, etc.) para que la galaxia abra ya "caliente"
+      preload(){ build(); buildSprites(); PALS.forEach(p=>p.forEach(dotSprite)); PAL_H.forEach(dotSprite); dotSprite('#ffffff'); },
       isInteractive(){ return interactive; },
       focusedIndex(){ return focused; },
       setCustom(items){ pendingCustom = items; applyCustom(); },
@@ -3770,15 +3806,22 @@
     }, err=>{ console.warn('galaxy', err); toast('Galaxia', 'No se pudieron leer las fotos agregadas. Revisa las reglas de Firestore para la colección «galaxy».', 'warn'); });
   }
   if(window.fb) initGalaxyDb(); else window.addEventListener('firebase-ready', initGalaxyDb);
+  // precarga de la galaxia en segundo plano (mientras usas el reproductor), cuando el teléfono está libre
+  (function(){
+    const go = ()=>{ const run = ()=>{ try{ galaxy.preload(); }catch(e){ console.warn('preload galaxia', e); } };
+      if(window.requestIdleCallback) requestIdleCallback(run, { timeout: 5000 }); else setTimeout(run, 2500); };
+    if(document.readyState === 'complete') setTimeout(go, 1200); else window.addEventListener('load', ()=>setTimeout(go, 1200));
+  })();
 
   (function(){
     const $ = id=>document.getElementById(id);
     const modal = $('galAddModal'), kindBox = $('gaKind'), catBox = $('gaCat'), imgBox = $('gaImgBox'), txtBox = $('gaTxtBox');
-    const fileIn = $('gaFile'), prev = $('gaPrev'), nameEl = $('gaName'), textIn = $('gaText'), saveBtn = $('gaSave'), prog = $('gaProg'), fill = $('gaProgFill');
-    const st = { kind:'img', gi:-1, file:null, busy:false };
+    const fileIn = $('gaFile'), thumbs = $('gaThumbs'), hint2 = $('gaHint2'), nameEl = $('gaName'), textIn = $('gaText'), saveBtn = $('gaSave'), prog = $('gaProg'), fill = $('gaProgFill');
+    const st = { kind:'img', gi:-1, files:[], busy:false };
+    const MAX_FILES = 30;
     const NAMES = ['Ali', 'Axel', 'Nosotros'];
     function validate(){
-      const ok = st.gi >= 0 && (st.kind === 'img' ? !!st.file : textIn.value.trim().length > 0);
+      const ok = st.gi >= 0 && (st.kind === 'img' ? st.files.length > 0 : textIn.value.trim().length > 0);
       saveBtn.disabled = !ok || st.busy;
     }
     function setKind(k){
@@ -3788,10 +3831,26 @@
       validate();
     }
     function setCat(g){ st.gi = g; catBox.querySelectorAll('button').forEach(b=>b.classList.toggle('on', +b.dataset.g === g)); validate(); }
+    // miniaturas de las fotos elegidas (máx. 11 visibles + contador) y texto del botón
+    function renderFiles(){
+      const n = st.files.length, SHOW = 11;
+      thumbs.innerHTML = '';
+      st.files.slice(0, n > SHOW + 1 ? SHOW : n).forEach(f=>{
+        const im = document.createElement('img'); im.alt = ''; im.decoding = 'async';
+        const u = URL.createObjectURL(f); im.onload = ()=>URL.revokeObjectURL(u); im.src = u;
+        im.addEventListener('click', ()=>{ if(st.busy) return; st.files = st.files.filter(x=>x !== f); renderFiles(); validate(); });
+        thumbs.appendChild(im);
+      });
+      if(n > SHOW + 1){ const m = document.createElement('div'); m.className = 'more'; m.textContent = '+' + (n - SHOW); thumbs.appendChild(m); }
+      thumbs.style.display = n ? 'grid' : 'none'; hint2.style.display = n ? '' : 'none';
+      nameEl.textContent = n === 0 ? 'Ninguna seleccionada' : n === 1 ? st.files[0].name : n + ' fotos seleccionadas';
+      $('gaPick').textContent = n ? 'Agregar más' : 'Elegir fotos';
+      if(!st.busy) saveBtn.textContent = n > 1 ? 'Agregar ' + n + ' fotos' : 'Agregar';
+    }
     function resetForm(){
-      st.file = null; st.busy = false; fileIn.value = ''; textIn.value = ''; prev.style.display = 'none'; prev.removeAttribute('src');
-      nameEl.textContent = 'Ninguna seleccionada'; prog.style.display = 'none'; fill.style.width = '0';
-      saveBtn.textContent = 'Agregar'; setKind('img');
+      st.files = []; st.busy = false; fileIn.value = ''; textIn.value = '';
+      prog.style.display = 'none'; fill.style.width = '0';
+      renderFiles(); setKind('img');
     }
     function open(){ resetForm(); setCat(galaxy.focusedIndex()); modal.classList.add('show'); }
     function close(){ if(st.busy) return; modal.classList.remove('show'); }
@@ -3802,24 +3861,43 @@
     catBox.addEventListener('click', e=>{ const b = e.target.closest('button'); if(b && !st.busy) setCat(+b.dataset.g); });
     $('gaPick').addEventListener('click', ()=>fileIn.click());
     fileIn.addEventListener('change', ()=>{
-      const f = fileIn.files && fileIn.files[0]; st.file = f || null;
-      if(f){ nameEl.textContent = f.name; prev.src = URL.createObjectURL(f); prev.style.display = 'block'; }
-      validate();
+      const picked = Array.from(fileIn.files || []), key = f=>f.name + '|' + f.size + '|' + f.lastModified;
+      const have = new Set(st.files.map(key));
+      picked.forEach(f=>{ if(!have.has(key(f)) && st.files.length < MAX_FILES){ st.files.push(f); have.add(key(f)); } });
+      if(st.files.length >= MAX_FILES && picked.length) toast('Fotos', 'Máximo ' + MAX_FILES + ' fotos por vez. Agrega las demás después.', 'warn');
+      fileIn.value = ''; renderFiles(); validate();
     });
     textIn.addEventListener('input', validate);
     saveBtn.addEventListener('click', async ()=>{
       if(saveBtn.disabled) return;
-      st.busy = true; saveBtn.disabled = true; saveBtn.textContent = 'Subiendo…';
+      st.busy = true; saveBtn.disabled = true;
+      const { db, collection, addDoc } = window.fb, by = (typeof myRole !== 'undefined' && myRole) || null;
       try{
-        const data = { kind: st.kind, gi: st.gi, ts: Date.now(), by: (typeof myRole !== 'undefined' && myRole) || null };
         if(st.kind === 'img'){
-          prog.style.display = 'block';
-          data.url = await cloudinaryUpload(st.file, 'image', p=>{ fill.style.width = (p * 100) + '%'; });
-        } else data.text = textIn.value.trim();
-        const { db, collection, addDoc } = window.fb;
-        await addDoc(collection(db, 'galaxy'), data);
-        st.busy = false; modal.classList.remove('show');
-        toast(st.kind === 'img' ? 'Foto agregada' : 'Frase agregada', 'Ya está en la galaxia de ' + NAMES[st.gi] + ' ✨', 'ok');
+          // varias fotos: se suben una por una (con barra de progreso general) y cada una queda guardada en cuanto termina
+          const list = st.files.slice(), total = list.length; let done = 0, fail = null;
+          prog.style.display = 'block'; fill.style.width = '0';
+          for(let i=0;i<total;i++){
+            saveBtn.textContent = total > 1 ? 'Subiendo ' + (i + 1) + '/' + total + '…' : 'Subiendo…';
+            try{
+              const url = await cloudinaryUpload(list[i], 'image', p=>{ fill.style.width = (((i + p) / total) * 100) + '%'; });
+              await addDoc(collection(db, 'galaxy'), { kind:'img', gi:st.gi, ts:Date.now() + i, by, url });
+              done++; st.files = st.files.filter(x=>x !== list[i]);
+            }catch(err){ fail = err; break; }
+          }
+          st.busy = false;
+          if(!fail){
+            modal.classList.remove('show');
+            toast(done > 1 ? done + ' fotos agregadas' : 'Foto agregada', 'Ya ' + (done > 1 ? 'están' : 'está') + ' en la galaxia de ' + NAMES[st.gi] + ' ✨', 'ok');
+          } else {
+            console.warn('galaxy add', fail); prog.style.display = 'none'; renderFiles(); validate();
+            toast(done ? 'Se subieron ' + done + ' de ' + total : 'No se pudo agregar', (done ? 'Las demás siguen seleccionadas para reintentar. ' : '') + String((fail && fail.message) || fail || 'Intenta de nuevo'), 'err');
+          }
+        } else {
+          await addDoc(collection(db, 'galaxy'), { kind:'txt', gi:st.gi, ts:Date.now(), by, text:textIn.value.trim() });
+          st.busy = false; modal.classList.remove('show');
+          toast('Frase agregada', 'Ya está en la galaxia de ' + NAMES[st.gi] + ' ✨', 'ok');
+        }
       }catch(err){
         console.warn('galaxy add', err); st.busy = false; saveBtn.textContent = 'Agregar'; prog.style.display = 'none'; validate();
         toast('No se pudo agregar', String((err && err.message) || err || 'Intenta de nuevo'), 'err');
