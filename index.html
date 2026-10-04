@@ -3264,6 +3264,22 @@
           sp.ph = Math.random() * 6.28; sp.sz = sp.kind==='img' ? 38 + Math.random()*14 : 12 + Math.random()*4;
         });
       });
+      // Fotos MINÚSCULAS dentro de los cuadritos de los brazos: cada una se pega a una partícula de su galaxia (y gira con ella)
+      for(let gi=0; gi<3; gi++){
+        const imgs = sprites.filter(q=>q.kind==='img' && q.gi===gi), cand = [];
+        gal.forEach((p, i)=>{ if(p.gi===gi && p.r > 4) cand.push(i); });
+        for(let i=cand.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [cand[i], cand[j]] = [cand[j], cand[i]]; }
+        const used = [];
+        imgs.forEach(q=>{
+          let pick = -1;
+          for(const ci of cand){
+            const p = gal[ci], x = p.r * Math.cos(p.a), z = p.r * Math.sin(p.a);
+            if(used.every(u=>Math.hypot(u.x - x, u.z - z) > 5.2)){ pick = ci; used.push({ x, z }); break; }
+          }
+          if(pick < 0) pick = cand[Math.floor(Math.random() * cand.length)];
+          q.pi = pick; q.wsz = 3.4 + Math.random() * .8; // tamaño en unidades del mundo (muy pequeña)
+        });
+      }
       pump();
     }
 
@@ -3377,7 +3393,8 @@
       const list = [];
       for(const sp_ of sprites){
         if(sp_.bad || (sp_.kind==='img' && !sp_.ok)) continue;
-        place(sp_.gi, sp_.rr, sp_.y + Math.sin(clock * .9 + sp_.ph) * 4, sp_.a0 + clock * sp_.w * GN[sp_.gi].dir);
+        if(sp_.kind === 'img' && sp_.pi != null){ const q = gal[sp_.pi]; place(q.gi, q.r, q.y, q.a + spin * GN[q.gi].dir); }
+        else place(sp_.gi, sp_.rr, sp_.y + Math.sin(clock * .9 + sp_.ph) * 4, sp_.a0 + clock * sp_.w * GN[sp_.gi].dir);
         if(!proj(gx, gy, gz)) continue;
         list.push({ s: sp_, x: px, y: py, p: pp, z: pz });
       }
@@ -3392,8 +3409,8 @@
           ctx.shadowColor = 'rgba(255,90,170,.9)'; ctx.shadowBlur = fpx > 10 ? 8 : 0;
           ctx.fillStyle = '#fff'; ctx.fillText(s.text, it.x, it.y); ctx.shadowBlur = 0;
         } else {
-          const z = Math.min(cap, s.sz * it.p * (.08 + .55 * ds)); if(z < 1.5) continue;
-          const al2 = al * (.3 + .7 * ds), rr = Math.max(2, z * .16);
+          const z = Math.min(cap, (s.wsz || 3.6) * it.p); if(z < 3) continue;
+          const al2 = Math.max(.55, al) * clamp((z - 3) / 5, 0, 1), rr = Math.max(1.5, z * .16);
           if(z < 7){ ctx.globalAlpha = al2; ctx.drawImage(s.bmp, it.x - z/2, it.y - z/2, z, z); continue; }
           ctx.save(); ctx.globalAlpha = al2; ctx.beginPath();
           if(ctx.roundRect) ctx.roundRect(it.x - z/2, it.y - z/2, z, z, rr); else ctx.rect(it.x - z/2, it.y - z/2, z, z);
@@ -3413,7 +3430,8 @@
     // Vista general: la cámara está quieta y deslizar cambia de página.
     // Toca una galaxia -> la cámara vuela hasta ella y ahí tienes libertad total (girar, mover, acercar).
     // Toca otra galaxia para ir a ella. Doble toque en cualquier parte: vuelves a la vista general.
-    let focused = -1, anim = null;
+    let focused = -1, anim = null, zLo = 0, zHi = 0;
+    const zClamp = v => focused >= 0 ? clamp(v, zLo, zHi) : clamp(v, ZMIN, ZMAX);
     const ptrs = new Map(); let pinch = null, tapT = 0, tapX = 0, tapY = 0;
 
     function m2q(m){
@@ -3462,8 +3480,9 @@
       const G = GN[i]; if(!G) return;
       const z = clamp(Math.min(W, H) * .40 / (GR * F / D * K), ZMIN, ZMAX);
       focused = i; interactive = true; ptrs.clear(); pinch = null;
+      zLo = z; zHi = z * 6; // aquí queda fijo el zoom mínimo; el máximo deja ver las fotos dentro de los cuadritos
       flyTo({ x: G.x, y: G.y, z: G.z, zoom: z }, 850);
-      showHint('1 dedo: girar · 2 dedos: acercar y mover · doble toque: volver');
+      showHint('Acércate: las fotos están dentro de los cuadritos · doble toque: volver');
     }
     function leave(){
       focused = -1; ptrs.clear(); pinch = null;
@@ -3499,7 +3518,7 @@
         const t = twoTouch();
         if(pinch){
           pan(t.cx - pinch.cx, t.cy - pinch.cy);
-          tz = clamp(tz * t.d / pinch.d, ZMIN, ZMAX); zoom = tz;
+          tz = zClamp(tz * t.d / pinch.d); zoom = tz;
         }
         pinch = t;
       }
@@ -3522,7 +3541,7 @@
     cv.addEventListener('contextmenu', e=>{ if(interactive) e.preventDefault(); });
     cv.addEventListener('wheel', e=>{
       if(!interactive || anim) return; e.preventDefault();
-      tz = clamp(tz * Math.exp(-e.deltaY * .001), ZMIN, ZMAX); zoom = tz;
+      tz = zClamp(tz * Math.exp(-e.deltaY * .001)); zoom = tz;
     }, { passive:false });
 
     document.addEventListener('visibilitychange', ()=>{
