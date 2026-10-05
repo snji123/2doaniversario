@@ -570,7 +570,7 @@
   .dlg-ico.ok{background:rgba(30,215,96,.14);color:var(--green);}
   .dlg-ico.warn{background:rgba(255,180,84,.14);color:#ffb454;}
   .dlg h4{margin:14px 0 6px;font-size:17px;font-weight:700;}
-  .dlg p{margin:0;font-size:13px;color:#b3b3b3;line-height:1.55;}
+  .dlg p{margin:0;font-size:13px;color:#b3b3b3;line-height:1.55;white-space:pre-line;}
   .dlg input{width:100%;margin-top:14px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:11px 14px;font-family:var(--font);font-size:14px;}
   .dlg-acts{display:flex;gap:10px;margin-top:20px;}
   .dlg-acts button{flex:1;border:none;border-radius:999px;padding:11px 12px;font-family:var(--font);font-size:13.5px;font-weight:700;cursor:pointer;}
@@ -1063,14 +1063,14 @@
 </div>
 <div class="batch-modal" id="batchModal">
   <div class="batch-card">
-    <h3>Subir por lote</h3>
+    <h3>Agregar canciones</h3>
     <div class="b-dest">
       <button type="button" id="bDestOurs" class="on">Nuestras canciones</button>
       <button type="button" id="bDestMine">Mis canciones</button>
     </div>
     <div class="file-row">
       <button type="button" class="pick-btn" id="bPick">Elegir archivos</button>
-      <span class="pick-name" id="bPickName">mp3 o m4a, varios a la vez</span>
+      <span class="pick-name" id="bPickName">mp3 o m4a, una o varias</span>
     </div>
     <input type="file" id="bFiles" accept="audio/*" multiple hidden>
     <div class="b-summary" id="bSummary"></div>
@@ -1105,11 +1105,6 @@
     <button class="adm-card" id="admAlbums" type="button">
       <span class="adm-ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/></svg></span>
       <span class="adm-txt"><b>Álbumes</b><span>Crea, edita o elimina tus álbumes personalizados.</span></span>
-      <svg class="adm-chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
-    </button>
-    <button class="adm-card" id="admBatch" type="button">
-      <span class="adm-ico"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
-      <span class="adm-txt"><b>Subir por lote</b><span>Agrega varias canciones a la vez con su portada.</span></span>
       <svg class="adm-chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
     </button>
     <button class="adm-card" id="admTrash" type="button">
@@ -1323,7 +1318,14 @@
   let currentIndex = null;
   let isPlaying = false;
   const mini = document.getElementById('miniplayer');
-  const audio = new Audio(); // reproductor único: sigue sonando al cerrar la ficha
+  // Dos reproductores para el relevo sin pausa: uno suena (audio) y el otro (idleEl) ya tiene lista la siguiente canción
+  const playerA = new Audio(), playerB = new Audio();
+  let audio = playerA;
+  let idleEl = playerB;
+  // Escucha eventos de los dos, pero solo reacciona al que está sonando
+  function onActive(type, fn){
+    [playerA, playerB].forEach(el => el.addEventListener(type, e => { if(el === audio) fn(e); }));
+  }
 
   function fmtTime(t){
     if(!isFinite(t)) return '0:00';
@@ -1880,11 +1882,8 @@
       }catch(e){ results.innerHTML = '<div class="cr-msg">No se pudo buscar ahora</div>'; }
     });
 
-    fab.addEventListener('click', ()=>{
-      const opening = form.style.display==='none';
-      form.style.display = opening ? 'flex' : 'none';
-      fab.textContent = opening ? '×' : '+';
-    });
+    // Un solo flujo: el "+" abre el modal de lote (sirve para 1 o para muchas canciones)
+    fab.addEventListener('click', ()=> openBatchFor(isShared ? 'ourSongs' : 'mySongs'));
     q('.b-audio').addEventListener('click', ()=>q('.i-audio').click());
     q('.b-cover').addEventListener('click', ()=>q('.i-cover').click());
     // Valores rellenados automáticamente: si el usuario no los tocó, una nueva selección los reemplaza
@@ -2027,7 +2026,47 @@
       else { isPlaying=false; setPlayIcons(false); }
     });
   }
+  // ----- Relevo sin pausa: la siguiente canción arranca en el otro reproductor justo antes de que termine la actual -----
+  let preSong = null, preIdx = null, crossing = false, crossId = 0, preTimer = 0;
+  function pickNextIndex(){
+    if(!playlist.length) return null;
+    if(shuffleOn && playlist.length > 1){ let n; do{ n = Math.floor(Math.random()*playlist.length); }while(n === currentIndex); return n; }
+    return (currentIndex + 1) % playlist.length;
+  }
+  function preloadNext(){
+    clearTimeout(preTimer);
+    preSong = null; preIdx = null;
+    if(currentIndex === null || !playlist.length) return;
+    const n = pickNextIndex(); if(n === null) return;
+    const song = playlist[n]; if(!song) return;
+    try{ idleEl.pause(); }catch(e){}
+    idleEl.src = audioSrc(song);
+    idleEl.preload = 'auto';
+    try{ idleEl.load(); }catch(e){}
+    preSong = song; preIdx = n;
+  }
+  function crossToNext(){
+    if(crossing || preIdx === null || audio.loop) return false;
+    if(playlist[preIdx] !== preSong || idleEl.readyState < 3) return false; // si no está lista, se usa el cambio normal al terminar
+    crossing = true;
+    const id = ++crossId, next = idleEl, old = audio, idx = preIdx, song = preSong;
+    try{ next.currentTime = 0; }catch(e){}
+    next.play().then(()=>{
+      if(id !== crossId){ try{ next.pause(); }catch(e){} return; } // el usuario cambió de canción mientras tanto
+      crossing = false;
+      audio = next; idleEl = old;
+      currentIndex = idx; wantPlay = true; isPlaying = true;
+      preSong = null; preIdx = null;
+      document.getElementById('sheetTimeDur').textContent = fmtTime(audio.duration || 0);
+      setPlayIcons(true); renderTracks(); mini.classList.add('show'); refreshNowPlayingUI(); msUpdate(song);
+      if(MS){ try{ MS.playbackState = 'playing'; }catch(e){} }
+      clearTimeout(preTimer); preTimer = setTimeout(preloadNext, 900); // espera a que el anterior termine su último instante
+    }).catch(()=>{ if(id === crossId) crossing = false; });
+    return true;
+  }
   function playIndex(i){
+    crossId++; crossing = false; clearTimeout(preTimer);
+    try{ if(idleEl !== audio) idleEl.pause(); }catch(e){}
     currentIndex = i;
     const s = playlist[i];
     audio.src = audioSrc(s);
@@ -2037,6 +2076,7 @@
     mini.classList.add('show');
     refreshNowPlayingUI();
     msUpdate(s);
+    preTimer = setTimeout(preloadNext, 1200); // prepara la siguiente en el otro reproductor
   }
   function togglePlay(){
     if(currentIndex===null){ playIndex(0); return; }
@@ -2059,7 +2099,8 @@
   mini.addEventListener('click', ()=>{ if(currentIndex!==null) openSheet(currentIndex); });
   document.getElementById('heroPlay').addEventListener('click', togglePlay);
   var seekDrag = false;
-  audio.addEventListener('timeupdate', ()=>{
+  onActive('timeupdate', ()=>{
+    if(audio.duration > 1 && audio.duration - audio.currentTime < 0.45) crossToNext(); // relevo sin pausa
     if(audio.duration && !seekDrag){
       const pct = (audio.currentTime/audio.duration*100)+'%';
       document.getElementById('mpProgress').style.width = pct;
@@ -2068,10 +2109,16 @@
       document.getElementById('sheetTimeDur').textContent = fmtTime(audio.duration);
     }
   });
-  audio.addEventListener('loadedmetadata', ()=>{
+  onActive('loadedmetadata', ()=>{
     document.getElementById('sheetTimeDur').textContent = fmtTime(audio.duration);
   });
-  audio.addEventListener('ended', ()=> nextTrack());
+  onActive('ended', ()=>{
+    if(crossing){ // el relevo está arrancando; si no logra empezar en 3 s, pasa a la siguiente de la forma normal
+      setTimeout(()=>{ if(crossing && audio.ended){ crossing = false; crossId++; nextTrack(); } }, 3000);
+      return;
+    }
+    nextTrack();
+  });
 
   // ----- Media Session: controles en pantalla de bloqueo y reproducción estable con la pantalla apagada -----
   const MS = ('mediaSession' in navigator) ? navigator.mediaSession : null;
@@ -2090,15 +2137,15 @@
     h('previoustrack', ()=>prevTrack(false));
     h('nexttrack', ()=>nextTrack());
     h('seekto', d=>{ if(d && d.seekTime!=null && isFinite(audio.duration)) audio.currentTime = d.seekTime; });
-    audio.addEventListener('play', ()=>{ try{ MS.playbackState = 'playing'; }catch(e){} });
-    audio.addEventListener('pause', ()=>{
+    onActive('play', ()=>{ try{ MS.playbackState = 'playing'; }catch(e){} });
+    onActive('pause', ()=>{
       if(audio.ended) return;
       try{ MS.playbackState = 'paused'; }catch(e){}
       // pausa externa (audífonos, llamada...): sincroniza los iconos. Con readyState<2 es un cambio de canción, se ignora.
       if(audio.readyState >= 2 && wantPlay){ wantPlay = false; isPlaying=false; setPlayIcons(false); renderTracks(); }
     });
     let msPosT = 0;
-    audio.addEventListener('timeupdate', ()=>{
+    onActive('timeupdate', ()=>{
       const n = Date.now(); if(n - msPosT < 1000) return; msPosT = n;
       if(isFinite(audio.duration) && audio.duration > 0){
         try{ MS.setPositionState({ duration:audio.duration, playbackRate:audio.playbackRate||1, position:Math.min(audio.currentTime, audio.duration) }); }catch(e){}
@@ -2136,7 +2183,7 @@
   document.getElementById('sheetPlayBtn').addEventListener('click', togglePlay);
   document.getElementById('sheetNextBtn').addEventListener('click', nextTrack);
   document.getElementById('sheetPrevBtn').addEventListener('click', ()=>prevTrack(false));
-  document.getElementById('shuffleBtn').addEventListener('click', e=>{ shuffleOn = !shuffleOn; e.currentTarget.classList.toggle('on', shuffleOn); toast(shuffleOn ? 'Aleatorio activado' : 'Aleatorio desactivado', shuffleOn ? 'Las canciones sonarán en orden aleatorio.' : 'Las canciones sonarán en orden.', 'info', { ms:1600 }); });
+  document.getElementById('shuffleBtn').addEventListener('click', e=>{ shuffleOn = !shuffleOn; if(currentIndex!==null && !crossing) preloadNext(); e.currentTarget.classList.toggle('on', shuffleOn); toast(shuffleOn ? 'Aleatorio activado' : 'Aleatorio desactivado', shuffleOn ? 'Las canciones sonarán en orden aleatorio.' : 'Las canciones sonarán en orden.', 'info', { ms:1600 }); });
   document.getElementById('repeatBtn').addEventListener('click', e=>{ audio.loop = !audio.loop; e.currentTarget.classList.toggle('on', audio.loop); toast(audio.loop ? 'Repetir canción activado' : 'Repetir canción desactivado', audio.loop ? 'La canción actual se repetirá.' : 'Seguirá con la siguiente canción.', 'info', { ms:1600 }); });
   document.getElementById('sheetLike').addEventListener('click', ()=>{
     const x = playlist[currentIndex]; if(!x) return;
@@ -2642,7 +2689,7 @@
       if(it.thumbUrl) URL.revokeObjectURL(it.thumbUrl);
       batchItems = batchItems.filter(o=>o!==it);
       row.remove(); refreshBatchRows();
-      bF('bPickName').textContent = batchItems.length ? batchItems.length + ' en la lista' : 'mp3 o m4a, varios a la vez';
+      bF('bPickName').textContent = batchItems.length ? batchItems.length + ' en la lista' : 'mp3 o m4a, una o varias';
     });
     bF('bList').appendChild(row);
     updateBatchRow(it);
@@ -2725,11 +2772,17 @@
     if(profileOpen){ closeProfileVisual(); history.back(); }
     batchModal.classList.add('show');
   }
+  function openBatchFor(dest){
+    if(batchBusy){ batchModal.classList.add('show'); return; }
+    setBatchDest(dest);
+    openBatch();
+    if(!batchItems.length) bF('bFiles').click(); // lista vacía: abre directo el selector de canciones
+  }
   function closeBatch(){
     if(batchBusy) return;
     batchItems.filter(i=>i.state==='done').forEach(i=>{ if(i.thumbUrl) URL.revokeObjectURL(i.thumbUrl); if(i.row) i.row.remove(); });
     batchItems = batchItems.filter(i=>i.state!=='done');
-    bF('bPickName').textContent = batchItems.length ? batchItems.length + ' en la lista' : 'mp3 o m4a, varios a la vez';
+    bF('bPickName').textContent = batchItems.length ? batchItems.length + ' en la lista' : 'mp3 o m4a, una o varias';
     bF('bStatus').textContent = ''; bF('bBar').classList.remove('show');
     refreshBatchRows();
     batchModal.classList.remove('show');
@@ -2740,7 +2793,6 @@
     bF('bDestMine').classList.toggle('on', d==='mySongs');
   }
   bF('pAdmin').addEventListener('click', openAdmin);
-  bF('admBatch').addEventListener('click', openBatch);
   bF('bClose').addEventListener('click', closeBatch);
   batchModal.addEventListener('click', (e)=>{ if(e.target===batchModal) closeBatch(); });
   bF('bDestOurs').addEventListener('click', ()=>setBatchDest('ourSongs'));
@@ -2795,7 +2847,7 @@
     let todo = batchItems.filter(i=>i.read && i.state!=='done');
     if(!todo.length) return;
     const dups = todo.filter(i=>batchExists(i) || batchDupInBatch(i));
-    if(dups.length && !(await uiDialog({ tone:'warn', icon:'warn', title:'Posibles canciones repetidas', message: dups.length + (dups.length===1 ? ' archivo parece existir' : ' archivos parecen existir') + ' ya en la lista. ¿Deseas subirlos de todos modos?', confirmText:'Subir todos', cancelText:'Omitir repetidos' }))){
+    if(dups.length && !(await uiDialog({ tone:'warn', icon:'warn', title:'Posibles canciones repetidas', message: dups.length + (dups.length===1 ? ' canción parece repetida:' : ' canciones parecen repetidas:') + '\n\n' + dups.slice(0,6).map(i=>'• ' + (i.artist ? i.artist.trim() + ' – ' : '') + i.title.trim()).join('\n') + (dups.length>6 ? '\n• …y ' + (dups.length-6) + ' más' : '') + '\n\n¿Deseas subirlas de todos modos?', confirmText:'Subir todos', cancelText:'Omitir repetidos' }))){
       dups.forEach(i=>{ i.state = 'skipped'; updateBatchRow(i); });
       todo = todo.filter(i=>!dups.includes(i));
       if(!todo.length){ updateBatchBtn(); return; }
