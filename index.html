@@ -320,10 +320,23 @@
   .gal-chips button[data-g="0"].on{border-color:#7fb6ff;background:rgba(110,170,255,.16);}
   .gal-chips button[data-g="1"].on{border-color:#5cf0a0;background:rgba(80,240,160,.15);}
   .gal-chips button[data-g="2"].on{border-color:#5fe3e0;background:rgba(90,225,225,.15);}
-  .gal-load{position:absolute;left:50%;bottom:calc(132px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:7px;min-width:160px;padding:9px 16px;border-radius:14px;background:rgba(20,10,30,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font-size:11.5px;color:rgba(255,255,255,.82);opacity:0;pointer-events:none;transition:opacity .25s;}
-  .gal-load.show{opacity:1;transition:opacity .3s .5s;}
-  .gal-load i{display:block;width:100%;height:3px;border-radius:2px;background:rgba(255,255,255,.16);overflow:hidden;}
-  .gal-load b{display:block;height:100%;width:0;background:#ff8fc8;transition:width .25s;}
+  .gal-loader{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+    background:radial-gradient(70% 50% at 50% 42%,rgba(180,40,120,.30),transparent 70%),radial-gradient(90% 60% at 50% 90%,rgba(90,60,200,.26),transparent 70%),#07030d;
+    transition:opacity .8s ease, visibility 0s linear .8s;}
+  .gal-loader.done{opacity:0;visibility:hidden;pointer-events:none;}
+  .gl-orb{position:relative;width:104px;height:104px;margin-bottom:6px;}
+  .gl-orb i{position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:#ff8fc8;border-right-color:rgba(255,143,200,.3);animation:glspin 1.7s linear infinite;}
+  .gl-orb i:nth-child(2){inset:13px;border-top-color:#ffd9a0;border-right-color:rgba(255,217,160,.28);animation-duration:2.3s;animation-direction:reverse;}
+  .gl-orb i:nth-child(3){inset:28px;border-top-color:#a98bff;border-right-color:rgba(169,139,255,.3);animation-duration:1.25s;}
+  .gl-orb b{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:radial-gradient(circle,#fff 0,#ffc2de 45%,rgba(255,143,200,0) 72%);animation:glpulse 1.9s ease-in-out infinite;}
+  .gl-title{font:600 18px/1.2 Poppins,system-ui,sans-serif;color:#fff;letter-spacing:.3px;}
+  .gl-sub{font-size:12.5px;color:rgba(255,255,255,.6);min-height:16px;text-align:center;padding:0 24px;}
+  .gl-track{width:min(260px,68vw);height:6px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;}
+  .gl-fill{height:100%;width:100%;border-radius:99px;transform-origin:left center;transform:scaleX(0);transition:transform .35s ease;
+    background:linear-gradient(90deg,#ff8fc8,#ffd9a0,#8fb8ff);box-shadow:0 0 14px rgba(255,143,200,.55);}
+  .gl-pct{font-size:12px;color:rgba(255,255,255,.75);font-variant-numeric:tabular-nums;margin-top:-8px;}
+  @keyframes glspin{to{transform:rotate(360deg)}}
+  @keyframes glpulse{0%,100%{transform:scale(.78);opacity:.8}50%{transform:scale(1.3);opacity:1}}
   .gal-prev{width:100%;max-height:200px;object-fit:cover;border-radius:12px;display:none;}
   .gal-thumbs{display:none;grid-template-columns:repeat(4,1fr);gap:6px;max-height:172px;overflow-y:auto;}
   .gal-thumbs img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;display:block;cursor:pointer;}
@@ -845,7 +858,7 @@
     <span class="tn-title b" id="tnB">Galaxia</span>
   </div>
 </nav>
-<div class="gal-page" id="galBox" aria-hidden="true"><canvas id="galCanvas"></canvas><div class="gal-hint" id="galHint">Toca una galaxia para explorarla</div><div class="gal-load" id="galLoad"><span id="galLoadTx"></span><i><b id="galLoadBar"></b></i></div>
+<div class="gal-page" id="galBox" aria-hidden="true"><canvas id="galCanvas"></canvas><div class="gal-hint" id="galHint">Toca una galaxia para explorarla</div><div class="gal-loader" id="galLoader" aria-live="polite"><div class="gl-orb"><i></i><i></i><i></i><b></b></div><div class="gl-title">Preparando tu galaxia</div><div class="gl-sub" id="glSub">Encendiendo el cielo…</div><div class="gl-track"><div class="gl-fill" id="glFill"></div></div><div class="gl-pct" id="glPct">0%</div></div>
   <button type="button" class="gal-add" id="galAdd" aria-label="Agregar foto o frase a la galaxia"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
 
 <div class="gal-add-modal" id="galAddModal">
@@ -3223,6 +3236,16 @@
     let M = [1,0,0, 0,Math.cos(PITCH0),-Math.sin(PITCH0), 0,Math.sin(PITCH0),Math.cos(PITCH0)];
     let Z0 = 1, ZMIN = .7, ZMAX = 5; // se calculan en resize() para que el corazón completo quepa en pantalla
     let W = 0, H = 0, dpr = 1, K = 1, running = false, raf = 0, last = 0, ro = null;
+    // ---- pantalla de carga de la primera vez: construye, baja las fotos y "calienta" el dibujo con la galaxia tapada ----
+    let ready = false, warmLeft = 0, loadingP = null;
+    const ld = document.getElementById('galLoader'), ldFill = document.getElementById('glFill'), ldPct = document.getElementById('glPct'), ldSub = document.getElementById('glSub');
+    const wait = ms => new Promise(r=>setTimeout(r, ms)), nextFrame = ()=>new Promise(r=>requestAnimationFrame(()=>r()));
+    function setProg(p, txt){
+      const v = Math.max(0, Math.min(1, p));
+      if(ldFill) ldFill.style.transform = 'scaleX(' + v + ')';
+      if(ldPct) ldPct.textContent = Math.round(v * 100) + '%';
+      if(txt && ldSub) ldSub.textContent = txt;
+    }
     let spin = 0, phase = 0, clock = 0;
     let zoom = 1, tz = 1, spritesBuilt = false, sized = false;
     let skip = 1, frames = 0, acc = 0, built = false, interactive = false, hintTm = 0;
@@ -3330,21 +3353,14 @@
         return x.toString();
       }catch(e){ return u; }
     }
-    // Las fotos se cargan poco a poco (6 a la vez con la galaxia abierta, 3 en segundo plano) para no saturar el teléfono
+    // Las fotos se cargan poco a poco (6 a la vez) para no saturar el teléfono
     const queue = []; let active = 0, loadTotal = 0, loadDone = 0;
-    const loadEl = document.getElementById('galLoad'), loadTx = document.getElementById('galLoadTx'), loadBar = document.getElementById('galLoadBar');
     function enqueue(job){ loadTotal++; queue.push(job); }
-    function updateLoad(){
-      if(!loadEl) return;
-      const show = running && loadTotal - loadDone > 0 && loadTotal >= 4;
-      loadEl.classList.toggle('show', show);
-      if(show){ loadTx.textContent = 'Cargando fotos ' + loadDone + '/' + loadTotal; loadBar.style.width = (loadDone / loadTotal * 100) + '%'; }
-    }
     function pump(){
-      while(active < (running ? 6 : 3) && queue.length){
+      while(active < 6 && queue.length){
         const job = queue.shift(); active++;
         const img = new Image(); img.decoding = 'async';
-        const fin = ()=>{ active--; loadDone++; updateLoad(); pump(); };
+        const fin = ()=>{ active--; loadDone++; pump(); };
         img.onload = ()=>{
           const go = ()=>{ prepImg(job.sp, img); fin(); };
           if(img.decode) img.decode().then(go, go); else go(); // decodifica fuera del hilo principal para no trabar
@@ -3422,6 +3438,36 @@
       pump();
     }
 
+    function loadAll(){
+      if(loadingP) return loadingP;
+      loadingP = (async ()=>{
+        setProg(.02, 'Encendiendo el cielo…');
+        await wait(650); // deja terminar la animación de entrada para que sea suave
+        build(); setProg(.1, 'Creando las galaxias…'); await nextFrame();
+        PALS.forEach(p=>p.forEach(dotSprite)); PAL_H.forEach(dotSprite); dotSprite('#ffffff');
+        // espera (máx. 2 s) a que lleguen tus fotos y frases guardadas
+        for(let w=0; pendingCustom === null && window.fb && w < 20; w++) await wait(100);
+        buildSprites(); await nextFrame();
+        const t0 = performance.now();
+        while(loadDone < loadTotal && performance.now() - t0 < 15000){
+          setProg(.15 + .7 * (loadTotal ? loadDone / loadTotal : 1), 'Cargando fotos ' + loadDone + ' de ' + loadTotal);
+          await wait(90);
+        }
+        setProg(.85, 'Encendiendo las estrellas…');
+      })();
+      return loadingP;
+    }
+    function beginWarm(){
+      if(ready) return;
+      warmLeft = 18; last = 0;
+      if(!raf && !document.hidden) raf = requestAnimationFrame(frame); // la galaxia se dibuja unos cuadros tapada para quedar "caliente"
+    }
+    function reveal(){
+      ready = true; drawT = -.5; setProg(1, '¡Lista!');
+      if(ld) ld.classList.add('done');
+      showHint('Toca una galaxia para explorarla');
+    }
+
     function resize(){
       const r = box.getBoundingClientRect(); if(!r.width || !r.height) return;
       W = r.width; H = r.height; K = Math.min(W, H) / 340;
@@ -3489,6 +3535,7 @@
       raf = requestAnimationFrame(frame);
       const dt = Math.min(.05, (now - (last || now)) / 1000); last = now;
       if(!W){ resize(); if(!W) return; }
+      if(warmLeft > 0){ warmLeft--; setProg(.86 + .14 * (1 - warmLeft / 18)); if(warmLeft === 0) reveal(); }
       frames++; acc += dt;
       if(frames === 90){ if(acc/90 > .04 && skip < 2) skip++; frames = 0; acc = 0; } // solo baja si va MUY lento, y nunca vuelve a cambiar (sin parpadeo)
       clock += dt; drawT += dt;
@@ -3741,15 +3788,17 @@
     return {
       start(){
         if(running) return;
-        build(); buildSprites();
-        running = true; drawT = 0; showHint('Toca una galaxia para explorarla');
+        running = true;
         if(!ro && window.ResizeObserver){ ro = new ResizeObserver(()=>resize()); ro.observe(box); }
-        resize(); last = 0; updateLoad(); pump();
-        if(!raf && !document.hidden) raf = requestAnimationFrame(frame);
+        resize(); last = 0;
+        if(ready){
+          build(); buildSprites(); pump(); drawT = 0; showHint('Toca una galaxia para explorarla');
+          if(!raf && !document.hidden) raf = requestAnimationFrame(frame);
+          return;
+        }
+        loadAll().then(()=>{ if(running) beginWarm(); }); // primera vez: pantalla de carga hasta que todo esté listo
       },
-      stop(){ running = false; updateLoad(); if(raf){ cancelAnimationFrame(raf); raf = 0; } },
-      // prepara todo en segundo plano (puntitos, fotos, etc.) para que la galaxia abra ya "caliente"
-      preload(){ build(); buildSprites(); PALS.forEach(p=>p.forEach(dotSprite)); PAL_H.forEach(dotSprite); dotSprite('#ffffff'); },
+      stop(){ running = false; if(raf){ cancelAnimationFrame(raf); raf = 0; } },
       isInteractive(){ return interactive; },
       focusedIndex(){ return focused; },
       setCustom(items){ pendingCustom = items; applyCustom(); },
@@ -3806,12 +3855,6 @@
     }, err=>{ console.warn('galaxy', err); toast('Galaxia', 'No se pudieron leer las fotos agregadas. Revisa las reglas de Firestore para la colección «galaxy».', 'warn'); });
   }
   if(window.fb) initGalaxyDb(); else window.addEventListener('firebase-ready', initGalaxyDb);
-  // precarga de la galaxia en segundo plano (mientras usas el reproductor), cuando el teléfono está libre
-  (function(){
-    const go = ()=>{ const run = ()=>{ try{ galaxy.preload(); }catch(e){ console.warn('preload galaxia', e); } };
-      if(window.requestIdleCallback) requestIdleCallback(run, { timeout: 5000 }); else setTimeout(run, 2500); };
-    if(document.readyState === 'complete') setTimeout(go, 1200); else window.addEventListener('load', ()=>setTimeout(go, 1200));
-  })();
 
   (function(){
     const $ = id=>document.getElementById(id);
