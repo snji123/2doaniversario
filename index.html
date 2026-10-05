@@ -2018,19 +2018,30 @@
 
   const _rnp = refreshNowPlayingUI;
   refreshNowPlayingUI = function(){ _rnp.apply(this, arguments); if(typeof offBtnState==='function') offBtnState(); if(typeof spUpdate==='function') spUpdate(); };
+  // wantPlay = "el usuario quiere que suene" (se mantiene aunque el celular tenga la pantalla apagada)
+  let wantPlay = false;
+  function tryPlay(n){
+    audio.play().then(()=>{ isPlaying=true; setPlayIcons(true); renderTracks(); }).catch(err=>{
+      if(err && err.name==='AbortError') return; // otra canción tomó el lugar, ella se encarga
+      if(wantPlay && n<4){ setTimeout(()=>{ if(wantPlay && audio.paused) tryPlay(n+1); }, 350*(n+1)); }
+      else { isPlaying=false; setPlayIcons(false); }
+    });
+  }
   function playIndex(i){
     currentIndex = i;
     const s = playlist[i];
     audio.src = audioSrc(s);
     audio.currentTime = 0;
-    audio.play().then(()=>{ isPlaying=true; setPlayIcons(true); renderTracks(); }).catch(()=>{ isPlaying=false; setPlayIcons(false); });
+    wantPlay = true;
+    tryPlay(0);
     mini.classList.add('show');
     refreshNowPlayingUI();
+    msUpdate(s);
   }
   function togglePlay(){
     if(currentIndex===null){ playIndex(0); return; }
-    if(audio.paused){ audio.play().then(()=>{isPlaying=true; setPlayIcons(true); renderTracks();}).catch(()=>{}); }
-    else { audio.pause(); isPlaying=false; setPlayIcons(false); renderTracks(); }
+    if(audio.paused){ wantPlay = true; tryPlay(0); }
+    else { wantPlay = false; audio.pause(); isPlaying=false; setPlayIcons(false); renderTracks(); }
   }
   var shuffleOn = false;
   function nextTrack(){
@@ -2061,6 +2072,39 @@
     document.getElementById('sheetTimeDur').textContent = fmtTime(audio.duration);
   });
   audio.addEventListener('ended', ()=> nextTrack());
+
+  // ----- Media Session: controles en pantalla de bloqueo y reproducción estable con la pantalla apagada -----
+  const MS = ('mediaSession' in navigator) ? navigator.mediaSession : null;
+  function msUpdate(s){
+    if(!MS || !s) return;
+    try{
+      const c = covOf(s);
+      const art = c ? [{ src:c, sizes:'512x512' }] : [{ src:'icon-512.png', sizes:'512x512', type:'image/png' }];
+      MS.metadata = new MediaMetadata({ title:s.title||'', artist:s.artist||'', album:'Para Ti', artwork:art });
+    }catch(e){}
+  }
+  if(MS){
+    const h = (a,f)=>{ try{ MS.setActionHandler(a,f); }catch(e){} };
+    h('play', ()=>{ if(currentIndex===null){ playIndex(0); return; } wantPlay = true; tryPlay(0); });
+    h('pause', ()=>{ wantPlay = false; audio.pause(); isPlaying=false; setPlayIcons(false); renderTracks(); });
+    h('previoustrack', ()=>prevTrack(false));
+    h('nexttrack', ()=>nextTrack());
+    h('seekto', d=>{ if(d && d.seekTime!=null && isFinite(audio.duration)) audio.currentTime = d.seekTime; });
+    audio.addEventListener('play', ()=>{ try{ MS.playbackState = 'playing'; }catch(e){} });
+    audio.addEventListener('pause', ()=>{
+      if(audio.ended) return;
+      try{ MS.playbackState = 'paused'; }catch(e){}
+      // pausa externa (audífonos, llamada...): sincroniza los iconos. Con readyState<2 es un cambio de canción, se ignora.
+      if(audio.readyState >= 2 && wantPlay){ wantPlay = false; isPlaying=false; setPlayIcons(false); renderTracks(); }
+    });
+    let msPosT = 0;
+    audio.addEventListener('timeupdate', ()=>{
+      const n = Date.now(); if(n - msPosT < 1000) return; msPosT = n;
+      if(isFinite(audio.duration) && audio.duration > 0){
+        try{ MS.setPositionState({ duration:audio.duration, playbackRate:audio.playbackRate||1, position:Math.min(audio.currentTime, audio.duration) }); }catch(e){}
+      }
+    });
+  }
 
   // Detail sheet
   const sheet = document.getElementById('sheet');
@@ -2348,7 +2392,7 @@
     opts = opts || {};
     const playing = currentIndex!==null && playlist[currentIndex]===s;
     if(playing){
-      audio.pause(); isPlaying=false; setPlayIcons(false);
+      wantPlay = false; audio.pause(); isPlaying=false; setPlayIcons(false);
       mini.classList.remove('show');
       currentIndex = null;
       if(sheetIsOpen) history.back();
@@ -4224,7 +4268,7 @@
   document.getElementById('pLogout').addEventListener('click', ()=>{
     if(profileOpen){ closeProfileVisual(); history.back(); }
     if(sheetIsOpen) closeSheetVisual();
-    audio.pause(); isPlaying = false; currentIndex = null; playlist = songs;
+    wantPlay = false; audio.pause(); isPlaying = false; currentIndex = null; playlist = songs;
     setPlayIcons(false); mini.classList.remove('show');
     try{ localStorage.removeItem('paraTiRole'); }catch(e){}
     myRole = null; chosenRole = null; pendingPhoto = null;
