@@ -3300,7 +3300,7 @@
     ];
     // Tres disposiciones: casa (corazón), grupo (juntas) y capas (fusionadas una sobre otra, vistas desde arriba)
     const CL = [{ x: -58, y: -34 }, { x: 58, y: -34 }, { x: 0, y: 67 }], TC = .3;
-    const MG = [{ x: 0, y: -9 }, { x: 0, y: 0 }, { x: 0, y: 9 }], TM = 0, MS = [1, .86, .72], PH = [0, .7, 1.4];
+    const MG = [{ x: 0, y: -22 }, { x: 0, y: 0 }, { x: 0, y: 22 }], TM = 0, MS = [1, .86, .72], PH = [0, .7, 1.4];
     GN.forEach(G=>{ G.ox = G.x; G.oy = G.y; G.t0 = G.tilt; G.sc = 1; G.phA = 0; });
     let gt = 0, gTarget = 0, mt = 0, mTarget = 0;
     function applyGather(){
@@ -3515,7 +3515,7 @@
       if(!raf && !document.hidden) raf = requestAnimationFrame(frame); // la galaxia se dibuja unos cuadros tapada para quedar "caliente"
     }
     function reveal(){
-      ready = true; drawT = -.5; setProg(1, '¡Lista!');
+      ready = true; drawT = -.5; setProg(1, '¡Lista!'); syncNav();
       if(ld) ld.classList.add('done');
       showHint('Toca una galaxia para explorarla');
     }
@@ -3762,7 +3762,7 @@
       return M0.slice();
     }
     const nav = document.getElementById('galNav');
-    function syncNav(){ if(nav){ nav.classList.toggle('show', interactive); const g = nav.querySelector('[data-a=gather]'), m = nav.querySelector('[data-a=merge]'); if(g) g.classList.toggle('on', !!gTarget && !mTarget); if(m) m.classList.toggle('on', !!mTarget); } }
+    function syncNav(){ if(nav){ nav.classList.toggle('show', ready); const g = nav.querySelector('[data-a=gather]'), m = nav.querySelector('[data-a=merge]'); if(g) g.classList.toggle('on', !!gTarget && !mTarget); if(m) m.classList.toggle('on', !!mTarget); } }
     function focusGalaxy(i){
       const G = GN[i]; if(!G) return;
       mTarget = 0; // si estaban en capas, se separan al elegir una
@@ -3774,7 +3774,6 @@
     }
     function leave(){
       focused = -1; gTarget = 0; mTarget = 0; ptrs.clear(); pinch = null;
-      if(nav) nav.classList.remove('show');
       flyTo({ x: 0, y: 0, z: 0, zoom: Z0, q: m2q(M0) }, 850, ()=>{ interactive = false; syncNav(); showHint('Toca una galaxia para explorarla'); });
     }
     const gatherFly = ()=>flyTo({ x: 0, y: 0, z: 0, zoom: clamp(Z0 * 1.25, ZMIN, ZMAX), q: m2q(viewFor({ rc: 1, rs: 0 }, .42, TC)) }, 1200);
@@ -3794,7 +3793,7 @@
       if(!mTarget){
         mTarget = 1;
         const z = clamp(Math.min(W, H) * .40 / (GR * F / D * K) * .95, ZMIN, ZMAX);
-        flyTo({ x: 0, y: 0, z: 0, zoom: z, q: m2q(viewFor({ rc: 1, rs: 0 }, .92, TM)) }, 1300);
+        flyTo({ x: 0, y: 0, z: 0, zoom: z, q: m2q(viewFor({ rc: 1, rs: 0 }, .72, TM)) }, 1300);
         showHint('Las tres galaxias, capa sobre capa');
       } else {
         mTarget = 0;
