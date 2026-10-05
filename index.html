@@ -888,6 +888,7 @@
 <div class="gal-page" id="galBox" aria-hidden="true"><canvas id="galCanvas"></canvas><div class="gal-hint" id="galHint">Toca una galaxia para explorarla</div><div class="gal-nav" id="galNav" aria-label="Controles de galaxia">
     <button type="button" data-a="home" aria-label="Volver al corazón"><svg viewBox="0 0 24 24"><path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z"/></svg></button>
     <button type="button" data-a="gather" aria-label="Juntar las tres galaxias"><svg viewBox="0 0 24 24"><circle cx="9" cy="10" r="4.2"/><circle cx="15" cy="10" r="4.2"/><circle cx="12" cy="15.5" r="4.2"/></svg></button>
+    <button type="button" data-a="merge" aria-label="Fusionar las tres galaxias, capa sobre capa"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 12.5l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg></button>
     <button type="button" data-a="next" aria-label="Siguiente galaxia"><svg viewBox="0 0 24 24"><path d="M6 6l6 6-6 6M13 6l6 6-6 6"/></svg></button>
   </div><div class="gal-loader" id="galLoader" aria-live="polite"><div class="gl-orb"><i></i><i></i><i></i><b></b></div><div class="gl-title">Preparando tu galaxia</div><div class="gl-sub" id="glSub">Encendiendo el cielo…</div><div class="gl-track"><div class="gl-fill" id="glFill"></div></div><div class="gl-pct" id="glPct">0%</div></div>
   <button type="button" class="gal-add" id="galAdd" aria-label="Agregar foto o frase a la galaxia"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
@@ -3297,18 +3298,22 @@
       { x: hx(TL),     y: hy(TL),     z: 0, tilt: .815, roll: 0, dir: -1, glow:'150,200,255', core:'255,245,235', sx:0, sy:0 }, // 1 = axel (arriba derecha, azul)
       { x: hx(Math.PI), y: hy(Math.PI), z: 0, tilt: .24, roll: 0, dir:  1, glow:'255,215,150', core:'255,245,235', sx:0, sy:0 }  // 2 = nosotros (abajo, dorado)
     ];
-    // para "juntar las 3 galaxias": posición original / de grupo e inclinación común
+    // Tres disposiciones: casa (corazón), grupo (juntas) y capas (fusionadas una sobre otra, vistas desde arriba)
     const CL = [{ x: -58, y: -34 }, { x: 58, y: -34 }, { x: 0, y: 67 }], TC = .3;
-    GN.forEach(G=>{ G.ox = G.x; G.oy = G.y; G.t0 = G.tilt; });
-    let gt = 0, gTarget = 0;
+    const MG = [{ x: 0, y: -9 }, { x: 0, y: 0 }, { x: 0, y: 9 }], TM = 0, MS = [1, .86, .72], PH = [0, .7, 1.4];
+    GN.forEach(G=>{ G.ox = G.x; G.oy = G.y; G.t0 = G.tilt; G.sc = 1; G.phA = 0; });
+    let gt = 0, gTarget = 0, mt = 0, mTarget = 0;
     function applyGather(){
-      const e = gt * gt * (3 - 2 * gt);
+      const eg = gt * gt * (3 - 2 * gt), em = mt * mt * (3 - 2 * mt);
       GN.forEach((G, i)=>{
-        G.x = G.ox + (CL[i].x - G.ox) * e; G.y = G.oy + (CL[i].y - G.oy) * e;
-        G.tilt = G.t0 + (TC - G.t0) * e; G.c = Math.cos(G.tilt); G.s = Math.sin(G.tilt);
+        const gx = G.ox + (CL[i].x - G.ox) * eg, gy = G.oy + (CL[i].y - G.oy) * eg, gtil = G.t0 + (TC - G.t0) * eg;
+        G.x = gx + (MG[i].x - gx) * em; G.y = gy + (MG[i].y - gy) * em;
+        G.tilt = gtil + (TM - gtil) * em; G.c = Math.cos(G.tilt); G.s = Math.sin(G.tilt);
+        G.sc = 1 + (MS[i] - 1) * em; G.phA = PH[i] * em;
       });
     }
-    const endPos = i => gTarget ? CL[i] : { x: GN[i].ox, y: GN[i].oy }, endTilt = i => gTarget ? TC : GN[i].t0;
+    const endPos = i => mTarget ? MG[i] : gTarget ? CL[i] : { x: GN[i].ox, y: GN[i].oy };
+    const endTilt = i => mTarget ? TM : gTarget ? TC : GN[i].t0;
     GN.forEach(G=>{ G.c = Math.cos(G.tilt); G.s = Math.sin(G.tilt); G.rc = Math.cos(G.roll); G.rs = Math.sin(G.roll); G.sr = 0; });
     const PALS = [
       // ali (ella): rosa
@@ -3327,8 +3332,8 @@
     let gx = 0, gy = 0, gz = 0;
     // posición en el mundo de un punto (radio r, altura y, ángulo ang) del disco de la galaxia gi
     function place(gi, r, y, ang){
-      const G = GN[gi], lx = Math.cos(ang) * r, lz = Math.sin(ang) * r;
-      const y1 = y * G.c - lz * G.s, z1 = y * G.s + lz * G.c; // inclinación del disco
+      const G = GN[gi], an = ang + G.phA, lx = Math.cos(an) * r * G.sc, lz = Math.sin(an) * r * G.sc, ys = y * G.sc;
+      const y1 = ys * G.c - lz * G.s, z1 = ys * G.s + lz * G.c; // inclinación del disco
       gx = G.x + lx * G.rc - y1 * G.rs; gy = G.y + lx * G.rs + y1 * G.rc; gz = G.z + z1; // y giro en pantalla
     }
 
@@ -3582,7 +3587,11 @@
       raf = requestAnimationFrame(frame);
       const dt = Math.min(.05, (now - (last || now)) / 1000); last = now;
       if(!W){ resize(); if(!W) return; }
-      if(gt !== gTarget){ gt = gTarget > gt ? Math.min(gTarget, gt + dt / 1.5) : Math.max(gTarget, gt - dt / 1.5); applyGather(); }
+      if(gt !== gTarget || mt !== mTarget){
+        gt = gTarget > gt ? Math.min(gTarget, gt + dt / 1.5) : Math.max(gTarget, gt - dt / 1.5);
+        mt = mTarget > mt ? Math.min(mTarget, mt + dt / 1.7) : Math.max(mTarget, mt - dt / 1.7);
+        applyGather();
+      }
       if(warmLeft > 0){ warmLeft--; setProg(.86 + .14 * (1 - warmLeft / 18)); if(warmLeft === 0) reveal(); }
       frames++; acc += dt;
       if(frames === 90){ if(acc/90 > .04 && skip < 2) skip++; frames = 0; acc = 0; } // solo baja si va MUY lento, y nunca vuelve a cambiar (sin parpadeo)
@@ -3591,7 +3600,7 @@
       phase += dt * (playing ? 7.4 : 4.6);
       // La cámara NO se mueve sola: solo cambia con tus dedos (sin inercia, sin balanceo, sin volver al centro)
       stepAnim(); zoom = tz;
-      spin += dt * .1;
+      spin += dt * .065;
       const beat = 1 + .045 * Math.sin(phase) + (playing ? .05 * Math.pow(Math.max(0, Math.sin(phase * .5)), 8) : 0);
       const r = zoom / Z0;
 
@@ -3607,18 +3616,18 @@
       // polvo fino: arrays tipados + proyección en línea + dibujado por lotes (lo más rápido posible)
       if(DN){
         const cds = [], sds = [];
-        GN.forEach((G, gi)=>{ const d = spin * G.dir; cds[gi] = Math.cos(d); sds[gi] = Math.sin(d); });
+        GN.forEach((G, gi)=>{ const d = spin * G.dir + G.phA; cds[gi] = Math.cos(d); sds[gi] = Math.sin(d); });
         const dz = clamp(.8 * Math.sqrt(F / D * K * zoom), 1.5, 3.4);
         const m0 = M[0], m1 = M[1], m2 = M[2], m3 = M[3], m4 = M[4], m5 = M[5], m6 = M[6], m7 = M[7], m8 = M[8];
         const sc = F * K * zoom, hw = W * .5, hh = H * .5;
-        let ck = -1, Gx = 0, Gy = 0, Gz = 0, Gc = 0, Gs = 0, Grc = 0, Grs = 0, cd = 1, sd = 0, cg = -1;
+        let ck = -1, Gx = 0, Gy = 0, Gz = 0, Gc = 0, Gs = 0, Grc = 0, Grs = 0, Gsc = 1, cd = 1, sd = 0, cg = -1;
         ctx.beginPath();
         for(let i=0; i<DN; i++){
           const k = dK[i];
           if(k !== ck){ if(ck >= 0) ctx.fill(); ctx.beginPath(); ctx.fillStyle = kCol[k]; ctx.globalAlpha = kAl[k]; ck = k; }
           const gi = dGi[i];
-          if(gi !== cg){ const G = GN[gi]; cg = gi; Gx = G.x - camX; Gy = G.y - camY; Gz = G.z - camZ; Gc = G.c; Gs = G.s; Grc = G.rc; Grs = G.rs; cd = cds[gi]; sd = sds[gi]; }
-          const r = dR[i], ca = dCa[i], sa = dSa[i], yv = dY[i];
+          if(gi !== cg){ const G = GN[gi]; cg = gi; Gx = G.x - camX; Gy = G.y - camY; Gz = G.z - camZ; Gc = G.c; Gs = G.s; Grc = G.rc; Grs = G.rs; Gsc = G.sc; cd = cds[gi]; sd = sds[gi]; }
+          const r = dR[i] * Gsc, ca = dCa[i], sa = dSa[i], yv = dY[i] * Gsc;
           const lx = r * (ca * cd - sa * sd), lz = r * (sa * cd + ca * sd);
           const y1 = yv * Gc - lz * Gs, z1 = yv * Gs + lz * Gc;
           const wx = Gx + lx * Grc - y1 * Grs, wy = Gy + lx * Grs + y1 * Grc, wz = Gz + z1;
@@ -3640,8 +3649,8 @@
       }
       for(const G of GN){
         if(!proj(G.x, G.y, G.z)) continue;
-        G.sx = px; G.sy = py; G.sr = GR * pp;
-        const R = GR * .45 * pp, g = ctx.createRadialGradient(px, py, 0, px, py, R);
+        G.sx = px; G.sy = py; G.sr = GR * G.sc * pp;
+        const R = GR * .45 * G.sc * pp, g = ctx.createRadialGradient(px, py, 0, px, py, R);
         g.addColorStop(0, `rgba(${G.core},.6)`); g.addColorStop(.35, `rgba(${G.glow},.22)`); g.addColorStop(1, `rgba(${G.glow},0)`);
         if(px + R < 0 || px - R > W || py + R < 0 || py - R > H) continue;
         ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(px - R, py - R, R*2, R*2);
@@ -3753,9 +3762,10 @@
       return M0.slice();
     }
     const nav = document.getElementById('galNav');
-    function syncNav(){ if(nav){ nav.classList.toggle('show', interactive); const g = nav.querySelector('[data-a=gather]'); if(g) g.classList.toggle('on', !!gTarget); } }
+    function syncNav(){ if(nav){ nav.classList.toggle('show', interactive); const g = nav.querySelector('[data-a=gather]'), m = nav.querySelector('[data-a=merge]'); if(g) g.classList.toggle('on', !!gTarget && !mTarget); if(m) m.classList.toggle('on', !!mTarget); } }
     function focusGalaxy(i){
       const G = GN[i]; if(!G) return;
+      mTarget = 0; // si estaban en capas, se separan al elegir una
       const z = clamp(Math.min(W, H) * .40 / (GR * F / D * K), ZMIN, ZMAX), P = endPos(i);
       focused = i; interactive = true; ptrs.clear(); pinch = null;
       zLo = z; zHi = z * 6; // aquí queda fijo el zoom mínimo; el máximo deja ver las fotos dentro de los cuadritos
@@ -3763,28 +3773,39 @@
       syncNav(); showHint('Acércate para ver las fotos entre las estrellas · doble toque: volver');
     }
     function leave(){
-      focused = -1; gTarget = 0; ptrs.clear(); pinch = null;
+      focused = -1; gTarget = 0; mTarget = 0; ptrs.clear(); pinch = null;
       if(nav) nav.classList.remove('show');
       flyTo({ x: 0, y: 0, z: 0, zoom: Z0, q: m2q(M0) }, 850, ()=>{ interactive = false; syncNav(); showHint('Toca una galaxia para explorarla'); });
     }
+    const gatherFly = ()=>flyTo({ x: 0, y: 0, z: 0, zoom: clamp(Z0 * 1.25, ZMIN, ZMAX), q: m2q(viewFor({ rc: 1, rs: 0 }, .42, TC)) }, 1200);
+    const homeFly = ()=>flyTo({ x: 0, y: 0, z: 0, zoom: Z0, q: m2q(M0) }, 1200);
     function toggleGather(){
       if(anim) return;
       focused = -1; interactive = true; ptrs.clear(); pinch = null;
-      if(!gTarget){
-        gTarget = 1;
-        flyTo({ x: 0, y: 0, z: 0, zoom: clamp(Z0 * 1.25, ZMIN, ZMAX), q: m2q(viewFor({ rc: 1, rs: 0 }, .42, TC)) }, 1200);
-        showHint('Las tres galaxias, juntas');
+      if(mTarget){ mTarget = 0; gTarget = 1; gatherFly(); showHint('Las tres galaxias, juntas'); }
+      else if(!gTarget){ gTarget = 1; gatherFly(); showHint('Las tres galaxias, juntas'); }
+      else { gTarget = 0; homeFly(); showHint('Galaxias separadas · toca una para explorarla'); }
+      syncNav();
+    }
+    // fusionar: las tres galaxias quedan una sobre otra (capa sobre capa) y la cámara las ve desde arriba
+    function toggleMerge(){
+      if(anim) return;
+      focused = -1; interactive = true; ptrs.clear(); pinch = null;
+      if(!mTarget){
+        mTarget = 1;
+        const z = clamp(Math.min(W, H) * .40 / (GR * F / D * K) * .95, ZMIN, ZMAX);
+        flyTo({ x: 0, y: 0, z: 0, zoom: z, q: m2q(viewFor({ rc: 1, rs: 0 }, .92, TM)) }, 1300);
+        showHint('Las tres galaxias, capa sobre capa');
       } else {
-        gTarget = 0;
-        flyTo({ x: 0, y: 0, z: 0, zoom: Z0, q: m2q(M0) }, 1200);
-        showHint('Galaxias separadas · toca una para explorarla');
+        mTarget = 0;
+        if(gTarget){ gatherFly(); showHint('Las tres galaxias, juntas'); } else { homeFly(); showHint('Galaxias separadas · toca una para explorarla'); }
       }
       syncNav();
     }
     function nextGalaxy(){ if(anim) return; focusGalaxy(focused < 0 ? 0 : (focused + 1) % GN.length); }
     if(nav) nav.addEventListener('click', e=>{
       const b = e.target.closest('button'); if(!b || anim) return;
-      if(b.dataset.a === 'home') leave(); else if(b.dataset.a === 'gather') toggleGather(); else if(b.dataset.a === 'next') nextGalaxy();
+      if(b.dataset.a === 'home') leave(); else if(b.dataset.a === 'gather') toggleGather(); else if(b.dataset.a === 'merge') toggleMerge(); else if(b.dataset.a === 'next') nextGalaxy();
     });
 
     // gira como un "turntable": de lado = alrededor del eje vertical; arriba/abajo = inclina. La cámara no se desnivela sola.
@@ -3872,7 +3893,7 @@
       isInteractive(){ return interactive; },
       focusedIndex(){ return focused; },
       setCustom(items){ pendingCustom = items; applyCustom(); },
-      exit(){ interactive = false; focused = -1; anim = null; gTarget = 0; gt = 0; applyGather(); ptrs.clear(); pinch = null; resetView(); syncNav(); },
+      exit(){ interactive = false; focused = -1; anim = null; gTarget = 0; gt = 0; mTarget = 0; mt = 0; applyGather(); ptrs.clear(); pinch = null; resetView(); syncNav(); },
       photosOf(gi){ return sprites.filter(q=>q.kind === 'img' && q.gi === gi && q.ok && !q.bad && q.url).map(q=>q.url); }
     };
   })();
