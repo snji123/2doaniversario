@@ -3799,8 +3799,8 @@
     // Vista general: la cámara está quieta y deslizar cambia de página.
     // Toca una galaxia -> la cámara vuela hasta ella y ahí tienes libertad total (girar, mover, acercar).
     // Toca otra galaxia para ir a ella. Doble toque en cualquier parte: vuelves a la vista general.
-    let focused = -1, anim = null, zLo = 0, zHi = 0;
-    const zClamp = v => focused >= 0 ? clamp(v, zLo, zHi) : clamp(v, ZMIN, ZMAX);
+    let focused = -1, anim = null, zLo = 0, zHi = 0, zMergeHi = 0;
+    const zClamp = v => focused >= 0 ? clamp(v, zLo, zHi) : clamp(v, ZMIN, mTarget ? Math.max(ZMAX, zMergeHi) : ZMAX); // en capas el máximo es como en una galaxia sola (6 veces su encuadre)
     const ptrs = new Map(); let pinch = null, tapT = 0, tapX = 0, tapY = 0;
 
     function m2q(m){
@@ -3889,6 +3889,7 @@
       if(!mTarget){
         mTarget = 1;
         const z = clamp(Math.min(W, H) * .40 / (GR * F / D * K) * .95, ZMIN, ZMAX);
+        zMergeHi = z * 6;
         flyTo({ x: 0, y: 0, z: 0, zoom: z, q: m2q(viewFor({ rc: 1, rs: 0 }, .72, TM)) }, 1300);
         showHint('Las tres galaxias, capa sobre capa');
       } else {
