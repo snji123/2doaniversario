@@ -79,8 +79,35 @@
   .stat-chip{
     margin:0 20px 6px; padding:14px 16px; border-radius:14px;
     background:var(--surface); border:1px solid var(--divider);
-    display:flex; align-items:center; gap:12px;
+    display:flex; flex-direction:column; align-items:stretch; gap:12px; cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
+  .stat-chip .sc-head{display:flex; align-items:center; gap:12px;}
+  .stat-chip .sc-hint{margin-left:auto; font-size:11px; color:var(--text-dim); display:flex; align-items:center; gap:4px;}
+  .stat-chip .sc-hint i{display:inline-block; font-style:normal; transition:transform .25s;}
+  .stat-chip.open .sc-hint i{transform:rotate(180deg);}
+  .sc-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:6px; text-align:center;}
+  .sc-cell{background:rgba(255,255,255,.04); border-radius:10px; padding:8px 0 6px;}
+  .sc-cell b{display:block; font-size:18px; font-weight:800; color:var(--text); font-variant-numeric:tabular-nums; line-height:1.1;}
+  .sc-cell span{display:block; margin-top:3px; font-size:9.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--text-dim);}
+  .sc-extra{display:grid; grid-template-rows:0fr; transition:grid-template-rows .3s ease;}
+  .stat-chip.open .sc-extra{grid-template-rows:1fr;}
+  .sc-extra > div{overflow:hidden; min-height:0;}
+  .bd-card{margin-top:10px; padding:16px 14px 14px; border-radius:18px; position:relative; overflow:hidden;
+    background:linear-gradient(145deg, rgba(30,215,96,.16), rgba(60,64,62,.55) 55%, rgba(12,12,12,.9));
+    border:1px solid rgba(30,215,96,.25);}
+  .bd-card:first-child{margin-top:0;}
+  .bd-card::after{content:'💚'; position:absolute; right:12px; top:8px; font-size:15px; opacity:.55; animation:bdBeat 1.8s ease-in-out infinite;}
+  @keyframes bdBeat{0%,100%{transform:scale(1);}50%{transform:scale(1.25);}}
+  .bd-top{display:flex; align-items:center; gap:12px; margin-bottom:14px;}
+  .bd-em{font-size:30px; line-height:1; filter:drop-shadow(0 2px 8px rgba(30,215,96,.35));}
+  .bd-who b{display:block; font-size:16px; font-weight:800; color:var(--text);}
+  .bd-who small{display:block; font-size:12px; color:var(--text-dim); margin-top:3px;}
+  .bd-grid{grid-template-columns:repeat(5,1fr);}
+  .bd-grid .sc-cell{background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.06); padding:11px 0 9px; border-radius:12px;}
+  .bd-grid .sc-cell b{font-size:25px; color:var(--green); text-shadow:0 0 16px rgba(30,215,96,.35);}
+  .bd-msg{margin-top:12px; text-align:center; font-size:12px; color:#b9c4bd; font-style:italic;}
+  .bd-today{text-align:center; padding:6px 0 2px; font-size:15px; font-weight:700; color:var(--text);}
+  .sc-love{text-align:center; font-size:11.5px; color:var(--text-dim); margin-top:8px;}
   .stat-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none;box-shadow:0 0 8px var(--green);}
   .stat-chip .txt{font-size:13px;color:var(--text-dim);}
   .stat-chip .txt b{color:var(--text);font-weight:700;}
@@ -138,7 +165,16 @@
     transform:translateY(0); transition:transform .25s ease;
   }
   .miniplayer.show{display:flex;cursor:pointer;}
-  .mp-cover{width:40px;height:40px;border-radius:6px;flex:none;}
+  .mp-cover{width:40px;height:40px;border-radius:6px;flex:none;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+  .mp-cover .mp-bars{display:flex;gap:2px;align-items:flex-end;height:14px;}
+  .mp-cover .mp-bars span{width:3px;background:var(--green);border-radius:2px;animation:eq 0.8s ease-in-out infinite;}
+  .mp-cover .mp-bars span:nth-child(2){animation-delay:.2s;}
+  .mp-cover .mp-bars span:nth-child(3){animation-delay:.4s;}
+  .miniplayer:not(.mp-on) .mp-cover .mp-bars span{animation:none;}
+  .miniplayer:not(.mp-on) .mp-cover .mp-bars span:nth-child(1){height:6px;}
+  .miniplayer:not(.mp-on) .mp-cover .mp-bars span:nth-child(2){height:14px;}
+  .miniplayer:not(.mp-on) .mp-cover .mp-bars span:nth-child(3){height:9px;}
+  .play-fab.is-playing svg{margin-left:0;}
   .mp-meta{flex:1;min-width:0;}
   .mp-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .mp-artist{font-size:11px;color:var(--text-dim);}
@@ -866,7 +902,7 @@
     <button class="role-card" data-role="bodoca"><span class="emo"><svg width="56" height="52" aria-hidden="true"><use href="#panda"/></svg></span><span>Soy bodoca<small>para quien es todo esto</small></span></button>
   </div>
   <div class="gate-step" id="stepDate">
-    <h1 id="dateTitle">Tu cumpleaños</h1>
+    <h1 id="dateTitle">Tu fecha de nacimiento</h1>
     <p class="sub">Desliza para elegir tu fecha</p>
     <div class="picker" id="picker">
       <div class="wheel w-day" id="wDay"></div>
@@ -933,9 +969,25 @@
     </div>
   </div>
 
-  <div class="stat-chip">
-    <div class="dot"></div>
-    <div class="txt">Llevamos juntos <b id="clockValue">calculando…</b></div>
+  <div class="stat-chip" id="statChip" role="button" tabindex="0" aria-expanded="false">
+    <div class="sc-head">
+      <div class="dot"></div>
+      <div class="txt">Llevamos juntos</div>
+      <div class="sc-hint">cumpleaños 🎂 <i>▾</i></div>
+    </div>
+    <div class="sc-grid">
+      <div class="sc-cell"><b id="ckY">0</b><span id="ckYl">años</span></div>
+      <div class="sc-cell"><b id="ckM">0</b><span id="ckMl">meses</span></div>
+      <div class="sc-cell"><b id="ckD">0</b><span id="ckDl">días</span></div>
+      <div class="sc-cell"><b id="ckH">0</b><span>horas</span></div>
+      <div class="sc-cell"><b id="ckI">0</b><span>min</span></div>
+      <div class="sc-cell"><b id="ckS">0</b><span>seg</span></div>
+    </div>
+    <div class="sc-extra"><div>
+      <div class="bd-card" id="bdA"></div>
+      <div class="bd-card" id="bdB"></div>
+      <div class="sc-love">Cada día que pasa es uno menos para celebrarnos 💚</div>
+    </div></div>
   </div>
 
   <nav class="tabs">
@@ -965,7 +1017,7 @@
 
 <div class="miniplayer" id="miniplayer">
   <div class="mp-progress" id="mpProgress"></div>
-  <div class="mp-cover" id="mpCover"></div>
+  <div class="mp-cover" id="mpCover"><div class="mp-bars"><span></span><span></span><span></span></div></div>
   <div class="mp-meta">
     <div class="mp-title" id="mpTitle"></div>
     <div class="mp-artist" id="mpArtist"></div>
@@ -1215,16 +1267,80 @@
 <script>
   // ----- Fecha de inicio real -----
   const START_DATE = new Date("2024-10-19T00:00:00");
+  // Fechas de nacimiento (las mismas de la entrada) para la cuenta regresiva de cumpleaños
+  const BDAYS = [
+    { who:'bodoca', d:16, m:5, y:2000, el:'bdA' },
+    { who:'bodoco', d:28, m:6, y:2004, el:'bdB' }
+  ];
+  const MESES_L = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const pad2 = n => String(n).padStart(2,'0');
+  const plural = (n, one, many) => n === 1 ? one : many;
+  // Tiempo transcurrido en años, meses, días, horas, minutos y segundos reales de calendario
+  function ymdhmsDiff(a, b){
+    let y = b.getFullYear() - a.getFullYear(), m = b.getMonth() - a.getMonth(), d = b.getDate() - a.getDate();
+    let h = b.getHours() - a.getHours(), mi = b.getMinutes() - a.getMinutes(), se = b.getSeconds() - a.getSeconds();
+    if(se < 0){ se += 60; mi--; }
+    if(mi < 0){ mi += 60; h--; }
+    if(h < 0){ h += 24; d--; }
+    if(d < 0){ d += new Date(b.getFullYear(), b.getMonth(), 0).getDate(); m--; }
+    if(m < 0){ m += 12; y--; }
+    return { y, m, d, h, mi, se };
+  }
+  const BD_MSG = {
+    bodoca: 'Cada segundo nos acerca a celebrarla 💚',
+    bodoco: 'Cada segundo nos acerca a celebrarlo 💚'
+  };
+  function buildBirthday(b){
+    const cell = (k, l) => '<div class="sc-cell"><b id="' + b.el + k + '">0</b><span id="' + b.el + k + 'l">' + l + '</span></div>';
+    document.getElementById(b.el).innerHTML =
+      '<div class="bd-top"><div class="bd-em">🎂</div><div class="bd-who"><b>Cumpleaños de ' + b.who + '</b><small id="' + b.el + 'sub"></small></div></div>' +
+      '<div class="sc-grid bd-grid" id="' + b.el + 'grid">' + cell('M','meses') + cell('D','días') + cell('H','horas') + cell('I','min') + cell('S','seg') + '</div>' +
+      '<div class="bd-today" id="' + b.el + 'today" style="display:none"></div>' +
+      '<div class="bd-msg" id="' + b.el + 'msg"></div>';
+  }
+  function paintBirthday(b, now){
+    const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let t = new Date(now.getFullYear(), b.m - 1, b.d);
+    if(t < today0) t = new Date(now.getFullYear() + 1, b.m - 1, b.d);
+    const age = t.getFullYear() - b.y;
+    const $ = k => document.getElementById(b.el + k);
+    const isToday = t.getTime() === today0.getTime();
+    $('sub').textContent = b.d + ' de ' + MESES_L[b.m - 1] + ' · cumple ' + age + ' años';
+    $('grid').style.display = isToday ? 'none' : '';
+    $('today').style.display = isToday ? '' : 'none';
+    if(isToday){
+      $('today').textContent = '🎉 ¡Hoy es su cumpleaños! Felicidades 💚';
+      $('msg').textContent = BD_MSG[b.who];
+      return;
+    }
+    const d = ymdhmsDiff(now, t);
+    const months = d.y * 12 + d.m;
+    $('M').textContent = months; $('Ml').textContent = plural(months, 'mes', 'meses');
+    $('D').textContent = d.d;    $('Dl').textContent = plural(d.d, 'día', 'días');
+    $('H').textContent = pad2(d.h); $('I').textContent = pad2(d.mi); $('S').textContent = pad2(d.se);
+    $('msg').textContent = BD_MSG[b.who];
+  }
   function updateClock(){
     const now = new Date();
-    let diff = Math.max(0, now - START_DATE);
-    const day=86400000,hour=3600000,min=60000;
-    const days=Math.floor(diff/day); diff-=days*day;
-    const hours=Math.floor(diff/hour); diff-=hours*hour;
-    const mins=Math.floor(diff/min); diff-=mins*min;
-    const secs=Math.floor(diff/1000);
-    document.getElementById('clockValue').textContent = `${days}d ${hours}h ${mins}m ${secs}s`;
+    const t = ymdhmsDiff(START_DATE, now < START_DATE ? START_DATE : now);
+    const set = (id, v) => { const el = document.getElementById(id); if(el.textContent !== String(v)) el.textContent = v; };
+    set('ckY', t.y); set('ckM', t.m); set('ckD', t.d); set('ckH', pad2(t.h)); set('ckI', pad2(t.mi)); set('ckS', pad2(t.se));
+    document.getElementById('ckYl').textContent = plural(t.y, 'año', 'años');
+    document.getElementById('ckMl').textContent = plural(t.m, 'mes', 'meses');
+    document.getElementById('ckDl').textContent = plural(t.d, 'día', 'días');
+    if(document.getElementById('statChip').classList.contains('open')) BDAYS.forEach(b => paintBirthday(b, now));
   }
+  (function(){
+    const chip = document.getElementById('statChip');
+    const toggle = ()=>{
+      const open = chip.classList.toggle('open');
+      chip.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if(open) BDAYS.forEach(b => paintBirthday(b, new Date()));
+    };
+    chip.addEventListener('click', toggle);
+    chip.addEventListener('keydown', e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); } });
+  })();
+  BDAYS.forEach(buildBirthday);
   updateClock(); setInterval(updateClock,1000);
 
   // ----- Avisos y diálogos con el estilo de la página -----
@@ -1995,6 +2111,11 @@
       : '<path d="M8 5v14l11-7z"/>';
     document.getElementById('mpIcon').innerHTML = shape;
     document.getElementById('sheetPlayIcon').innerHTML = shape;
+    const hp = document.getElementById('heroPlay');
+    hp.querySelector('svg').innerHTML = shape;
+    hp.classList.toggle('is-playing', !!playing);
+    hp.title = playing ? 'Pausar' : 'Reproducir';
+    document.getElementById('miniplayer').classList.toggle('mp-on', !!playing);
   }
 
   function refreshNowPlayingUI(){
@@ -4398,7 +4519,7 @@
   document.querySelectorAll('.role-card').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       chosenRole = btn.dataset.role;
-      document.getElementById('dateTitle').textContent = chosenRole==='bodoca' ? 'Tu cumpleaños, bodoca' : 'Tu cumpleaños, bodoco';
+      document.getElementById('dateTitle').textContent = chosenRole==='bodoca' ? 'Tu fecha de nacimiento, bodoca' : 'Tu fecha de nacimiento, bodoco';
       document.getElementById('gateErr').textContent = '';
       showStep('stepDate');
       setWheels(1, 1, 2002); // arranque neutro
