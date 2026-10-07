@@ -85,8 +85,11 @@
   .th-hsl label{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-dim);padding:7px 0;}.th-hsl span{width:74px;}
   .th-hsl input{flex:1;-webkit-appearance:none;appearance:none;height:14px;border-radius:7px;outline:0;margin:0;}
   .th-hsl input::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid #0008;box-shadow:0 2px 6px #0006;}
-  #thH{background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);}
+  #thH,#pkH{background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);}
   .th-more summary{padding:14px 0;font-weight:700;font-size:14px;cursor:pointer;}
+  .th-row[data-pk]{cursor:pointer;}.th-dot{width:46px;height:32px;border-radius:10px;border:2px solid var(--divider);box-shadow:0 2px 8px rgba(0,0,0,.3);}.th-row.open .th-dot{border-color:var(--green);}
+  .th-pk{padding:6px 0 12px;border-bottom:1px solid var(--divider);}.pk-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:9px;padding:6px 0 10px;}
+  .pk-g button{aspect-ratio:1;border-radius:50%;border:2px solid rgba(255,255,255,.2);padding:0;cursor:pointer;}.pk-g button:active{transform:scale(.88);}
   .th-note{font-size:12px;color:var(--text-dim);padding:2px 0 10px;}
   .th-status{font-size:12px;color:var(--text-dim);min-height:16px;text-align:center;margin:4px 0 14px;}
   .th-actions{display:flex;gap:10px;flex-wrap:wrap;padding:6px 0 12px;}
@@ -1282,18 +1285,18 @@
       <div class="th-hsl"><label><span>Tono</span><input type="range" id="thH" min="0" max="360"></label><label><span>Intensidad</span><input type="range" id="thS" min="0" max="100"></label><label><span>Brillo</span><input type="range" id="thL" min="10" max="95"></label></div>
     </div>
     <details class="th-card th-more"><summary>Más colores (fondo, tarjetas, texto)</summary>
-      <label class="th-row"><span>Fondo</span><input type="color" id="thBg"></label>
-      <label class="th-row"><span>Tarjetas y barras</span><input type="color" id="thSurface"></label>
-      <label class="th-row"><span>Texto</span><input type="color" id="thText"></label>
-      <label class="th-row"><span>Tono de la parte de arriba</span><input type="color" id="thHero"></label>
+      <div class="th-row" data-pk="thBg"><span>Fondo</span><i class="th-dot"></i><input type="color" id="thBg" hidden></div>
+      <div class="th-row" data-pk="thSurface"><span>Tarjetas y barras</span><i class="th-dot"></i><input type="color" id="thSurface" hidden></div>
+      <div class="th-row" data-pk="thText"><span>Texto</span><i class="th-dot"></i><input type="color" id="thText" hidden></div>
+      <div class="th-row" data-pk="thHero"><span>Tono de la parte de arriba</span><i class="th-dot"></i><input type="color" id="thHero" hidden></div>
     </details>
     <div class="adm-sec">Fondo de pantalla</div>
     <div class="th-card">
       <div class="th-seg" id="thMode"><button type="button" data-m="none">Ninguno</button><button type="button" data-m="grad">Degradado</button><button type="button" data-m="photo">Foto</button></div>
       <div id="thGradBox" style="display:none;">
         <div class="th-grads" id="thGrads"></div>
-        <label class="th-row"><span>Color de arriba</span><input type="color" id="thC1"></label>
-        <label class="th-row"><span>Color de abajo</span><input type="color" id="thC2"></label>
+        <div class="th-row" data-pk="thC1"><span>Color de arriba</span><i class="th-dot"></i><input type="color" id="thC1" hidden></div>
+        <div class="th-row" data-pk="thC2"><span>Color de abajo</span><i class="th-dot"></i><input type="color" id="thC2" hidden></div>
       </div>
       <div id="thPhotoBox" style="display:none;">
         <div class="th-thumb" id="thThumb"></div>
@@ -3392,6 +3395,7 @@
   const thFromHsl = (h,s,l) => { s/=100; l/=100; const c = (1-Math.abs(2*l-1))*s, x = c*(1-Math.abs((h/60)%2-1)), m = l-c/2; const [r,g,b] = h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]:h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x]; return thToHex([(r+m)*255,(g+m)*255,(b+m)*255]); };
   const TH_SWATCHES = ['#1ed760','#00c2ff','#a855f7','#ff4d8d','#ff8a3d','#ffd23f','#ff5252','#e8e8e8'];
   const TH_GRADS = [ ['#0d3b22','#050505'], ['#43206b','#e0664b'], ['#0b3a5b','#04121c'], ['#1b1f4b','#05060f'],
+                     ['#ff9a9e','#fad0c4'], ['#f6d365','#fda085'], ['#84fab0','#8fd3f4'], ['#a18cd1','#fbc2eb'], ['#fccb90','#d57eeb'], ['#667eea','#764ba2'], ['#f093fb','#f5576c'], ['#4facfe','#00f2fe'], ['#43e97b','#38f9d7'], ['#fa709a','#fee140'], ['#30cfd0','#330867'], ['#0f0c29','#302b63'], ['#232526','#414345'], ['#ff512f','#dd2476'], ['#134e5e','#71b280'], ['#200122','#6f0000'],
                      ['#ffd1dc','#c7b8ff'], ['#a0d8ef','#e2c2ff'], ['#ffe8c2','#ffb3d1'], ['#b5ead7','#a0d8ef'],
                      ['#0f766e','#1e1b4b'], ['#3a3d3b','#0a0a0a'], ['#6b2a45','#14070d'], ['#1f3a1f','#2b2b2b'] ];
   let theme = JSON.parse(JSON.stringify(THEME_DEFAULT)), wallPhoto = '', thLastEdit = 0, thSaveT = 0, thPhotoDirty = false;
@@ -3475,6 +3479,7 @@
     document.querySelectorAll('#thGrads button').forEach(b => b.classList.toggle('on', b.dataset.a === t.wall.c1 && b.dataset.b === t.wall.c2));
     $('thGradBox').style.display = t.wall.mode === 'grad' ? '' : 'none';
     $('thPhotoBox').style.display = t.wall.mode === 'photo' ? '' : 'none';
+    document.querySelectorAll('.th-row[data-pk]').forEach(r => r.querySelector('.th-dot').style.background = $(r.dataset.pk).value);
     $('thThumb').style.backgroundImage = wallPhoto ? 'url("' + wallPhoto + '")' : 'none';
   }
   function resizeWall(file){
@@ -3527,6 +3532,25 @@
       history.pushState({ theme:true }, '', '#apariencia');
       const v = $('themeView'); admStack.push(v); admShow(v); thSync(); thStatus('');
     });
+  })();
+  // selector de color propio (reemplaza el cuadro del navegador)
+  (function(){
+    const $ = id => document.getElementById(id);
+    const PK = ['#000000','#0a0a0a','#121212','#1f1f1f','#2d2d2d','#1a1a2e','#16213e','#0f2027','#2b0a3d','#3a1030','#0d3b22','#5a1a2b','#ff4d8d','#ff8a3d','#ffd23f','#1ed760','#00c2ff','#a855f7','#ff5252','#6366f1','#14b8a6','#ffb3d1','#ffd1a9','#fff0a8','#a8e6cf','#a0d8ef','#c7b8ff','#e2c2ff','#a7a7a7','#e8e8e8','#f5f5f5','#ffffff'];
+    const box = document.createElement('div'); box.className = 'th-pk';
+    box.innerHTML = '<div class="pk-g">' + PK.map(c => '<button type="button" data-c="' + c + '" style="background:' + c + '" aria-label="' + c + '"></button>').join('') + '</div><div class="th-hsl"><label><span>Tono</span><input type="range" id="pkH" min="0" max="360"></label><label><span>Intensidad</span><input type="range" id="pkS" min="0" max="100"></label><label><span>Brillo</span><input type="range" id="pkL" min="0" max="100"></label></div>';
+    let cur = null;
+    const paint = (h, s, l) => { $('pkS').style.background = 'linear-gradient(90deg,hsl(' + h + ',0%,' + l + '%),hsl(' + h + ',100%,' + l + '%))'; $('pkL').style.background = 'linear-gradient(90deg,#000,hsl(' + h + ',' + s + '%,50%),#fff)'; };
+    const fill = () => { const [h, s, l] = thHsl(cur.value); $('pkH').value = h; $('pkS').value = s; $('pkL').value = l; paint(h, s, l); };
+    const put = hex => { cur.value = hex; cur.dispatchEvent(new Event('input', { bubbles:true })); };
+    document.addEventListener('click', e => {
+      const r = e.target.closest('.th-row[data-pk]'); if(!r) return;
+      document.querySelectorAll('.th-row.open').forEach(x => x.classList.remove('open'));
+      if(r.nextSibling === box){ box.remove(); cur = null; return; }
+      r.after(box); r.classList.add('open'); cur = $(r.dataset.pk); fill();
+    });
+    box.addEventListener('click', e => { const b = e.target.closest('.pk-g button'); if(b){ put(b.dataset.c); fill(); } });
+    box.addEventListener('input', e => { if(!e.target.id || e.target.id[0] !== 'p' || !cur) return; const h = +$('pkH').value, s = +$('pkS').value, l = +$('pkL').value; put(thFromHsl(h, s, l)); paint(h, s, l); });
   })();
   // ===== fin apariencia =====
 
