@@ -1074,7 +1074,7 @@
     <button type="button" data-a="merge" aria-label="Fusionar las tres galaxias, capa sobre capa"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 12.5l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg></button>
     <button type="button" data-a="next" aria-label="Siguiente galaxia"><svg viewBox="0 0 24 24"><path d="M6 6l6 6-6 6M13 6l6 6-6 6"/></svg></button>
   </div><div class="gal-loader" id="galLoader" aria-live="polite"><div class="gl-orb"><i></i><i></i><i></i><b></b></div><div class="gl-title">Preparando tu galaxia</div><div class="gl-sub" id="glSub">Encendiendo el cielo…</div><div class="gl-track"><div class="gl-fill" id="glFill"></div></div><div class="gl-pct" id="glPct">0%</div></div>
-  <button type="button" class="gal-add" id="galAdd" aria-label="Agregar foto o frase a la galaxia"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
+  <button type="button" class="gal-add" id="galAdd" aria-label="Agregar foto o frase a la galaxia"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button><button type="button" class="gal-add" id="galCfg" style="right:58px" aria-label="Administrar la galaxia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
 
 <div class="game-page" id="gameBox" aria-hidden="true">
   <div class="gm-ico">🎮</div>
@@ -1085,7 +1085,7 @@
 <div class="gal-add-modal" id="galAddModal">
   <div class="gal-add-card">
     <h3>Agregar a la galaxia</h3>
-    <div class="gal-seg" id="gaKind"><button type="button" data-k="img" class="on">Foto</button><button type="button" data-k="txt">Frase</button></div>
+    <div class="gal-seg" id="gaKind"><button type="button" data-k="img" class="on">Foto</button><button type="button" data-k="txt">Frase</button><button type="button" data-k="gh">GitHub</button></div>
     <label>¿En qué galaxia?</label>
     <div class="gal-chips" id="gaCat"><button type="button" data-g="0">Ali</button><button type="button" data-g="1">Axel</button><button type="button" data-g="2">Nosotros</button></div>
     <div id="gaImgBox">
@@ -1094,6 +1094,7 @@
       <div class="gal-hint2" id="gaHint2" style="display:none;">Toca una miniatura para quitarla</div>
       <input type="file" id="gaFile" accept="image/*" multiple hidden>
     </div>
+    <div id="gaGhBox" style="display:none;"><input type="text" id="gaGh" placeholder="Nombre del archivo (ej. 31.jpeg)" autocomplete="off" autocapitalize="none" spellcheck="false"><div class="gal-hint2">Sube primero la foto a la carpeta de esa galaxia en GitHub (ali, axel o nosotros) y escribe aquí su nombre exacto.</div></div>
     <div id="gaTxtBox" style="display:none;"><input type="text" id="gaText" maxlength="30" placeholder="Escribe tu frase (ej. Te amo)" autocomplete="off"></div>
     <div class="gal-prog" id="gaProg"><i id="gaProgFill"></i></div>
     <div class="edit-actions"><button type="button" class="cancel-btn" id="gaCancel">Cancelar</button><button type="button" class="save-btn" id="gaSave" disabled>Agregar</button></div>
@@ -1310,11 +1311,6 @@
     <button class="adm-card" id="admAlbums" type="button">
       <span class="adm-ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/></svg></span>
       <span class="adm-txt"><b>Álbumes</b><span>Crea, edita o elimina tus álbumes personalizados.</span></span>
-      <svg class="adm-chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
-    </button>
-    <button class="adm-card" id="admGal" type="button">
-      <span class="adm-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3a9 9 0 0 1 9 9M12 21a9 9 0 0 1-9-9M5 6c3-3 8-2 10 1M19 18c-3 3-8 2-10-1"/></svg></span>
-      <span class="adm-txt"><b>Galaxia</b><span>Mira, edita o borra las fotos y frases de la galaxia.</span></span>
       <svg class="adm-chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
     </button>
     <button class="adm-card" id="admTheme" type="button">
@@ -4111,17 +4107,19 @@
       }
       pump();
     }
+    let hiddenSet = new Set(), hiddenKey = '';
     function buildSprites(){
       if(spritesBuilt) return; spritesBuilt = true;
       sprites.length = 0; queue.length = 0; loadTotal = loadDone = 0;
       const per = [[], [], []];
       GALAXY_SETS.forEach((set, gi)=> set.files.forEach(name=>{
+        if(hiddenSet.has('i:' + set.dir + '/' + name)) return;
         const sp = { kind:'img', ok:false, gi };
         per[gi].push(sp); sprites.push(sp);
         sp.url = GALAXY_IMG_DIR + set.dir + '/' + encodeURIComponent(name);
         enqueue({ sp, url: sp.url });
       }));
-      GALAXY_WORDS.forEach((w, i)=>{ const sp = { kind:'txt', text:w, gi:i % 3 }; per[sp.gi].push(sp); sprites.push(sp); });
+      GALAXY_WORDS.forEach((w, i)=>{ if(hiddenSet.has('t:' + w)) return; const sp = { kind:'txt', text:w, gi:i % 3 }; per[sp.gi].push(sp); sprites.push(sp); });
       per.forEach(arr=>{
         for(let i=arr.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
         const n = arr.length, R = 22 + n * 1.6;
@@ -4543,6 +4541,10 @@
       stop(){ running = false; if(raf){ cancelAnimationFrame(raf); raf = 0; } },
       isInteractive(){ return interactive; },
       focusedIndex(){ return focused; },
+      setHidden(arr){
+        const k = arr.slice().sort().join('|'); if(k === hiddenKey) return; hiddenKey = k; hiddenSet = new Set(arr);
+        if(spritesBuilt && sprites.length){ spritesBuilt = false; customIds.clear(); buildSprites(); }
+      },
       recolor(cols){
         cols.forEach((h, gi)=>{
           if(h){
@@ -4622,7 +4624,9 @@
   function initGalaxyDb(){
     const { db, collection, onSnapshot } = window.fb;
     onSnapshot(collection(db, 'galaxy'), snap=>{
-      const items = snap.docs.map(d=>({ id:d.id, ...d.data() })).filter(x=>x && (x.kind === 'img' ? x.url : x.text));
+      const raw = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+      window.galHide = raw.filter(x=>x.kind === 'hide' && x.key); try{ galaxy.setHidden(window.galHide.map(x=>x.key)); }catch(e){}
+      const items = raw.filter(x=>x && (x.kind === 'img' ? x.url : x.kind === 'txt' ? x.text : false));
       galaxy.setCustom(items); window.galItems = items; try{ galaxy.recolor(theme.gal.c); }catch(e){} window.dispatchEvent(new Event('gal-items'));
     }, err=>{ console.warn('galaxy', err); toast('Galaxia', 'No se pudieron leer las fotos agregadas. Revisa las reglas de Firestore para la colección «galaxy».', 'warn'); });
   }
@@ -4636,13 +4640,13 @@
     const MAX_FILES = 30;
     const NAMES = ['Ali', 'Axel', 'Nosotros'];
     function validate(){
-      const ok = st.gi >= 0 && (st.kind === 'img' ? st.files.length > 0 : textIn.value.trim().length > 0);
+      const ok = st.gi >= 0 && (st.kind === 'img' ? st.files.length > 0 : st.kind === 'gh' ? $('gaGh').value.trim().length > 0 : textIn.value.trim().length > 0);
       saveBtn.disabled = !ok || st.busy;
     }
     function setKind(k){
       st.kind = k;
       kindBox.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.k === k));
-      imgBox.style.display = k === 'img' ? '' : 'none'; txtBox.style.display = k === 'txt' ? '' : 'none';
+      imgBox.style.display = k === 'img' ? '' : 'none'; txtBox.style.display = k === 'txt' ? '' : 'none'; $('gaGhBox').style.display = k === 'gh' ? '' : 'none';
       validate();
     }
     function setCat(g){ st.gi = g; catBox.querySelectorAll('button').forEach(b=>b.classList.toggle('on', +b.dataset.g === g)); validate(); }
@@ -4663,7 +4667,7 @@
       if(!st.busy) saveBtn.textContent = n > 1 ? 'Agregar ' + n + ' fotos' : 'Agregar';
     }
     function resetForm(){
-      st.files = []; st.busy = false; fileIn.value = ''; textIn.value = '';
+      st.files = []; st.busy = false; fileIn.value = ''; textIn.value = ''; $('gaGh').value = '';
       prog.style.display = 'none'; fill.style.width = '0';
       renderFiles(); setKind('img');
     }
@@ -4682,13 +4686,20 @@
       if(st.files.length >= MAX_FILES && picked.length) toast('Fotos', 'Máximo ' + MAX_FILES + ' fotos por vez. Agrega las demás después.', 'warn');
       fileIn.value = ''; renderFiles(); validate();
     });
-    textIn.addEventListener('input', validate);
+    textIn.addEventListener('input', validate); $('gaGh').addEventListener('input', validate);
     saveBtn.addEventListener('click', async ()=>{
       if(saveBtn.disabled) return;
       st.busy = true; saveBtn.disabled = true;
       const { db, collection, addDoc } = window.fb, by = (typeof myRole !== 'undefined' && myRole) || null;
       try{
-        if(st.kind === 'img'){
+        if(st.kind === 'gh'){
+          const nm = $('gaGh').value.trim().split('/').pop(), dir = GALAXY_SETS[st.gi].dir, url = GALAXY_IMG_DIR + dir + '/' + encodeURIComponent(nm);
+          saveBtn.textContent = 'Buscando…';
+          await new Promise((ok, no)=>{ const im = new Image(); im.onload = ok; im.onerror = ()=>no(new Error('No encontré «' + nm + '» en la carpeta ' + dir + '. Revisa el nombre y que ya esté subida (GitHub tarda cerca de 1 minuto en publicar).')); im.src = url + '?v=' + Date.now(); });
+          await addDoc(collection(db, 'galaxy'), { kind:'img', gi:st.gi, ts:Date.now(), by, url, src:'github' });
+          st.busy = false; modal.classList.remove('show');
+          toast('Foto agregada', 'Ya está en la galaxia de ' + NAMES[st.gi] + ' ✨', 'ok');
+        } else if(st.kind === 'img'){
           // varias fotos: se suben una por una (con barra de progreso general) y cada una queda guardada en cuanto termina
           const list = st.files.slice(), total = list.length; let done = 0, fail = null;
           prog.style.display = 'block'; fill.style.width = '0';
@@ -4726,24 +4737,28 @@
     let flt = -1, ed = null;
     const thumb = u=>String(u).replace('/image/upload/', '/image/upload/w_160,h_160,c_fill,q_auto/');
     function render(){
-      const all = (window.galItems || []).slice().sort((a,b)=>(b.ts||0)-(a.ts||0)), vis = all.filter(x=>flt < 0 || x.gi === flt);
-      $('galAdmSub').textContent = all.filter(x=>x.kind === 'img').length + ' fotos · ' + all.filter(x=>x.kind !== 'img').length + ' frases';
+      const hide = new Set((window.galHide || []).map(h=>h.key)), cus = (window.galItems || []).slice().sort((a,b)=>(b.ts||0)-(a.ts||0)), defs = [];
+      GALAXY_SETS.forEach((set, gi)=>set.files.forEach(n=>defs.push({ def:true, kind:'img', gi, key:'i:' + set.dir + '/' + n, url:GALAXY_IMG_DIR + set.dir + '/' + encodeURIComponent(n) })));
+      GALAXY_WORDS.forEach((w, i)=>defs.push({ def:true, kind:'txt', gi:i % 3, key:'t:' + w, text:w }));
+      defs.forEach(d=>{ d.off = hide.has(d.key); });
+      const all = cus.concat(defs.filter(d=>!d.off), defs.filter(d=>d.off)), vis = all.filter(x=>flt < 0 || x.gi === flt);
+      $('galAdmSub').textContent = all.filter(x=>!x.off && x.kind === 'img').length + ' fotos · ' + all.filter(x=>!x.off && x.kind !== 'img').length + ' frases' + (defs.some(d=>d.off) ? ' · ' + defs.filter(d=>d.off).length + ' quitadas' : '');
       list.innerHTML = vis.length ? '' : '<div class="tr-note"><span>Aquí no hay nada todavía.</span></div>';
       vis.forEach(x=>{
-        const r = document.createElement('div'); r.className = 'gm-row'; r.dataset.id = x.id;
+        const r = document.createElement('div'); r.className = 'gm-row'; if(x.def) r.dataset.key = x.key; else r.dataset.id = x.id; if(x.off) r.style.opacity = '.5';
         const t = x.kind === 'img' ? document.createElement('img') : document.createElement('div'); t.className = 'gm-th';
-        if(x.kind === 'img'){ t.src = thumb(x.url); t.alt = ''; t.loading = 'lazy'; } else t.textContent = '💬';
+        if(x.kind === 'img'){ t.src = thumb(x.url); t.alt = ''; t.loading = 'lazy'; t.decoding = 'async'; } else t.textContent = '💬';
         const tx = document.createElement('div'); tx.className = 'gm-tx';
         const b = document.createElement('b'); b.textContent = x.kind === 'img' ? 'Foto' : (x.text || '');
-        const sm = document.createElement('small'); sm.textContent = 'Galaxia de ' + (NAMES[x.gi] || '—');
-        tx.appendChild(b); tx.appendChild(sm);
-        const e = document.createElement('button'); e.className = 'gm-btn'; e.dataset.a = 'e'; e.textContent = '✏️'; e.setAttribute('aria-label', 'Editar');
-        const d = document.createElement('button'); d.className = 'gm-btn'; d.dataset.a = 'd'; d.textContent = '🗑️'; d.setAttribute('aria-label', 'Borrar');
-        r.append(t, tx, e, d); list.appendChild(r);
+        const sm = document.createElement('small'); sm.textContent = 'Galaxia de ' + (NAMES[x.gi] || '—') + (x.def ? (x.off ? ' · quitada' : ' · de GitHub') : '');
+        tx.appendChild(b); tx.appendChild(sm); r.append(t, tx);
+        const mk = (a, em, lb)=>{ const e = document.createElement('button'); e.className = 'gm-btn'; e.dataset.a = a; e.textContent = em; e.setAttribute('aria-label', lb); r.appendChild(e); };
+        if(x.def) mk('h', x.off ? '↩️' : '🗑️', x.off ? 'Restaurar' : 'Quitar'); else { mk('e', '✏️', 'Editar'); mk('d', '🗑️', 'Borrar'); }
+        list.appendChild(r);
       });
     }
     window.addEventListener('gal-items', render);
-    $('admGal').addEventListener('click', ()=>{
+    $('galCfg').addEventListener('click', ()=>{
       history.pushState({ galadm:true }, '', '#galaxia-admin');
       const v = $('galAdmView'); v.scrollTop = 0; admStack.push(v); admShow(v); render();
     });
@@ -4753,6 +4768,18 @@
     const setGi = g=>{ ed.gi = g; $('geCat').querySelectorAll('button').forEach(b=>b.classList.toggle('on', +b.dataset.g === g)); };
     list.addEventListener('click', async e=>{
       const b = e.target.closest('button'); if(!b) return;
+      const rw = b.closest('.gm-row');
+      if(rw.dataset.key){
+        const key = rw.dataset.key, hid = (window.galHide || []).find(h=>h.key === key), { db, collection, addDoc, doc, deleteDoc } = window.fb;
+        try{
+          if(hid){ await deleteDoc(doc(db, 'galaxy', hid.id)); toast('Restaurada', 'Vuelve a la galaxia.', 'ok'); }
+          else {
+            const ok = await uiDialog({ tone:'danger', title:'Quitar de la galaxia', message:'Dejará de verse en la galaxia, pero el archivo sigue en GitHub. Puedes restaurarla cuando quieras.', confirmText:'Quitar' });
+            if(!ok) return; await addDoc(collection(db, 'galaxy'), { kind:'hide', key, ts:Date.now() }); toast('Quitada', 'Ya no aparece en la galaxia.', 'ok');
+          }
+        }catch(err){ toast('No se pudo', String((err && err.message) || err), 'err'); }
+        return;
+      }
       const x = (window.galItems || []).find(i=>i.id === b.closest('.gm-row').dataset.id); if(!x) return;
       if(b.dataset.a === 'e'){
         ed = { x, gi:x.gi, file:null, busy:false };
