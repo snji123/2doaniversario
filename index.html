@@ -30,6 +30,7 @@
     --green-dim:#1aa34a;
     --green-rgb:30,215,96;
     --accent-fill:#1ed760;
+    --gc0:#ff8fc8;--gc1:#8fb8ff;--gc2:#ffd9a0;--gx1:180,40,120;--gx2:90,60,200;--gx-bg:#07030d;
     --heart:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-7.5-4.8-9.7-9.3C.8 8.6 2.3 5 5.7 5c2.3 0 4.1 1.4 6.3 3.7C14.2 6.4 16 5 18.3 5c3.4 0 4.9 3.6 3.4 6.7C19.5 16.2 12 21 12 21z'/%3E%3C/svg%3E");
     --on-accent:#0a0a0a;
     --bg-rgb:10,10,10;
@@ -119,6 +120,18 @@
   .pv-card{margin:0 14px 14px;padding:12px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--divider);}
   .pv-card b{display:block;font-size:14px;color:var(--text);}.pv-card small{display:block;margin-top:2px;font-size:12px;color:var(--text-dim);}
   .pv-wall{padding-top:26px;min-height:104px;}
+  .gm-row{display:flex;align-items:center;gap:12px;padding:10px;margin-bottom:10px;border-radius:18px;background:var(--surface);border:1px solid var(--divider);}
+  .gm-th{width:58px;height:58px;border-radius:14px;object-fit:cover;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:24px;flex:none;}
+  .gm-tx{flex:1;min-width:0;}.gm-tx b{display:block;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.gm-tx small{font-size:12px;color:var(--text-dim);}
+  .gm-btn{width:40px;height:40px;border-radius:50%;border:none;background:var(--surface-2);font-size:16px;cursor:pointer;flex:none;}.gm-btn:active{transform:scale(.9);}
+  .ge-img{width:64px;height:64px;border-radius:14px;object-fit:cover;flex:none;}
+  .gx-prev{position:relative;height:100px;border-radius:18px;overflow:hidden;margin:12px 0 6px;border:1px solid var(--divider);background:radial-gradient(70% 90% at 50% 40%,rgba(var(--gx1),.30),transparent 70%),radial-gradient(90% 80% at 50% 100%,rgba(var(--gx2),.26),transparent 70%),var(--gx-bg);}
+  .gx-prev i{position:absolute;width:36px;height:36px;border-radius:50%;top:14px;}
+  .gx-prev i:nth-child(1){left:18%;background:radial-gradient(circle,#fff 0,var(--gc0) 30%,transparent 70%);}
+  .gx-prev i:nth-child(2){right:18%;background:radial-gradient(circle,#fff 0,var(--gc1) 30%,transparent 70%);}
+  .gx-prev i:nth-child(3){left:50%;margin-left:-18px;top:38px;background:radial-gradient(circle,#fff 0,var(--gc2) 30%,transparent 70%);}
+  .gx-bar{position:absolute;left:24%;right:24%;bottom:10px;height:5px;border-radius:99px;background:rgba(255,255,255,.12);}
+  .gx-bar::after{content:'';position:absolute;left:0;top:0;bottom:0;width:62%;border-radius:99px;background:linear-gradient(90deg,var(--gc0),var(--gc2),var(--gc1));}
   .th-note{font-size:12px;color:var(--text-dim);padding:2px 0 10px;}
   .th-status{font-size:12px;color:var(--text-dim);min-height:16px;text-align:center;margin:4px 0 14px;}
   .th-actions{display:flex;gap:10px;flex-wrap:wrap;padding:6px 0 12px;}
@@ -445,7 +458,7 @@
   @keyframes gmFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
   .topnav.drag .tn-title{transition:none;}
   .gal-page{position:fixed;inset:0;z-index:12;overflow:hidden;touch-action:none;transform:translateX(100%);visibility:hidden;
-    background:radial-gradient(70% 50% at 50% 42%,rgba(180,40,120,.30),transparent 70%),radial-gradient(90% 60% at 50% 90%,rgba(90,60,200,.26),transparent 70%),#07030d;
+    background:radial-gradient(70% 50% at 50% 42%,rgba(var(--gx1),.30),transparent 70%),radial-gradient(90% 60% at 50% 90%,rgba(var(--gx2),.26),transparent 70%),var(--gx-bg);
     transition:transform .6s cubic-bezier(.25,.8,.25,1), visibility 0s linear .6s;}
   .gal-page.open,.gal-page.vis{visibility:visible;transition-delay:0s,0s;}
   .gal-page.open{transform:none;}
@@ -473,19 +486,19 @@
   .gal-chips button[data-g="1"].on{border-color:#5cf0a0;background:rgba(80,240,160,.15);}
   .gal-chips button[data-g="2"].on{border-color:#5fe3e0;background:rgba(90,225,225,.15);}
   .gal-loader{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
-    background:radial-gradient(70% 50% at 50% 42%,rgba(180,40,120,.30),transparent 70%),radial-gradient(90% 60% at 50% 90%,rgba(90,60,200,.26),transparent 70%),#07030d;
+    background:radial-gradient(70% 50% at 50% 42%,rgba(var(--gx1),.30),transparent 70%),radial-gradient(90% 60% at 50% 90%,rgba(var(--gx2),.26),transparent 70%),var(--gx-bg);
     transition:opacity .8s ease, visibility 0s linear .8s;}
   .gal-loader.done{opacity:0;visibility:hidden;pointer-events:none;}
   .gl-orb{position:relative;width:104px;height:104px;margin-bottom:6px;}
-  .gl-orb i{position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:#ff8fc8;border-right-color:rgba(255,143,200,.3);animation:glspin 1.7s linear infinite;}
-  .gl-orb i:nth-child(2){inset:13px;border-top-color:#ffd9a0;border-right-color:rgba(255,217,160,.28);animation-duration:2.3s;animation-direction:reverse;}
-  .gl-orb i:nth-child(3){inset:28px;border-top-color:#a98bff;border-right-color:rgba(169,139,255,.3);animation-duration:1.25s;}
-  .gl-orb b{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:radial-gradient(circle,#fff 0,#ffc2de 45%,rgba(255,143,200,0) 72%);animation:glpulse 1.9s ease-in-out infinite;}
+  .gl-orb i{position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:var(--gc0);border-right-color:color-mix(in srgb,var(--gc0) 30%,transparent);animation:glspin 1.7s linear infinite;}
+  .gl-orb i:nth-child(2){inset:13px;border-top-color:var(--gc2);border-right-color:color-mix(in srgb,var(--gc2) 28%,transparent);animation-duration:2.3s;animation-direction:reverse;}
+  .gl-orb i:nth-child(3){inset:28px;border-top-color:var(--gc1);border-right-color:color-mix(in srgb,var(--gc1) 30%,transparent);animation-duration:1.25s;}
+  .gl-orb b{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:radial-gradient(circle,#fff 0,color-mix(in srgb,var(--gc0) 55%,#fff) 45%,color-mix(in srgb,var(--gc0) 0%,transparent) 72%);animation:glpulse 1.9s ease-in-out infinite;}
   .gl-title{font:600 18px/1.2 Poppins,system-ui,sans-serif;color:#fff;letter-spacing:.3px;}
   .gl-sub{font-size:12.5px;color:rgba(255,255,255,.6);min-height:16px;text-align:center;padding:0 24px;}
   .gl-track{width:min(260px,68vw);height:6px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;}
   .gl-fill{height:100%;width:100%;border-radius:99px;transform-origin:left center;transform:scaleX(0);transition:transform .35s ease;
-    background:linear-gradient(90deg,#ff8fc8,#ffd9a0,#8fb8ff);box-shadow:0 0 14px rgba(255,143,200,.55);}
+    background:linear-gradient(90deg,var(--gc0),var(--gc2),var(--gc1));box-shadow:0 0 14px color-mix(in srgb,var(--gc0) 55%,transparent);}
   .gl-pct{font-size:12px;color:rgba(255,255,255,.75);font-variant-numeric:tabular-nums;margin-top:-8px;}
   @keyframes glspin{to{transform:rotate(360deg)}}
   @keyframes glpulse{0%,100%{transform:scale(.78);opacity:.8}50%{transform:scale(1.3);opacity:1}}
@@ -1299,6 +1312,11 @@
       <span class="adm-txt"><b>Álbumes</b><span>Crea, edita o elimina tus álbumes personalizados.</span></span>
       <svg class="adm-chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
     </button>
+    <button class="adm-card" id="admGal" type="button">
+      <span class="adm-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3a9 9 0 0 1 9 9M12 21a9 9 0 0 1-9-9M5 6c3-3 8-2 10 1M19 18c-3 3-8 2-10-1"/></svg></span>
+      <span class="adm-txt"><b>Galaxia</b><span>Mira, edita o borra las fotos y frases de la galaxia.</span></span>
+      <svg class="adm-chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+    </button>
     <button class="adm-card" id="admTheme" type="button">
       <span class="adm-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="8.5" cy="10" r="1.2"/><circle cx="12" cy="7.5" r="1.2"/><circle cx="15.5" cy="10" r="1.2"/><path d="M12 21c-1.5 0-2-1-2-2 0-1.4 1-2 2-3 1-1 2-1.6 3.5-1.6H17"/></svg></span>
       <span class="adm-txt"><b>Apariencia</b><span>Cambia tus colores y el fondo de pantalla. Solo se ve en tu cuenta.</span></span>
@@ -1351,6 +1369,14 @@
         <input type="file" id="thFile" accept="image/*" hidden>
       </div>
     </div>
+    <div class="th-card"><div class="th-hd"><b>Galaxia</b><small>Afecta: las galaxias, su cielo, y la pantalla y barra de carga</small></div>
+      <div class="gx-prev"><i></i><i></i><i></i><span class="gx-bar"></span></div>
+      <div class="th-row" data-pk="thG0"><span>Galaxia de Ali<small>su color y brillo</small></span><i class="th-dot"></i><input type="color" id="thG0" hidden></div>
+      <div class="th-row" data-pk="thG1"><span>Galaxia de Axel<small>su color y brillo</small></span><i class="th-dot"></i><input type="color" id="thG1" hidden></div>
+      <div class="th-row" data-pk="thG2"><span>Galaxia de Nosotros<small>su color y brillo</small></span><i class="th-dot"></i><input type="color" id="thG2" hidden></div>
+      <div class="th-row" data-pk="thGB"><span>Cielo<small>el fondo detrás de las galaxias</small></span><i class="th-dot"></i><input type="color" id="thGB" hidden></div>
+      <div class="th-actions"><button type="button" class="th-btn ghost" id="thGalReset">Colores originales de la galaxia</button></div>
+    </div>
     <div class="th-status" id="thStatus"></div>
     <div class="th-actions"><button type="button" class="th-btn ghost" id="thReset">Restablecer colores y fondo</button></div>
   </div>
@@ -1367,6 +1393,28 @@
     <div id="trList"></div>
   </div>
 </div>
+<div class="adm-view" id="galAdmView" aria-hidden="true">
+  <div class="adm-wrap">
+    <div class="adm-top">
+      <button class="adm-back" id="galAdmBack" type="button" aria-label="Volver"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="adm-eyebrow">Administración</div>
+      <div class="adm-title">Galaxia</div>
+      <div class="adm-sub" id="galAdmSub"></div>
+    </div>
+    <div class="gal-chips" id="gmFilter" style="margin-bottom:14px"><button type="button" data-g="-1" class="on">Todas</button><button type="button" data-g="0">Ali</button><button type="button" data-g="1">Axel</button><button type="button" data-g="2">Nosotros</button></div>
+    <button class="alb-play" id="gmNew" type="button" style="width:100%;justify-content:center;margin-bottom:16px"><svg viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>Agregar foto o frase</button>
+    <div id="gmList"></div>
+  </div>
+</div>
+<div class="gal-add-modal" id="galEdModal"><div class="gal-add-card">
+  <h3 id="geTitle">Editar</h3>
+  <label>¿En qué galaxia?</label>
+  <div class="gal-chips" id="geCat"><button type="button" data-g="0">Ali</button><button type="button" data-g="1">Axel</button><button type="button" data-g="2">Nosotros</button></div>
+  <div id="geImgBox"><div class="file-row"><img class="ge-img" id="geImg" alt=""><button type="button" class="pick-btn" id="gePick">Cambiar foto</button></div><input type="file" id="geFile" accept="image/*" hidden></div>
+  <div id="geTxtBox" style="display:none;"><input type="text" id="geText" maxlength="30" autocomplete="off"></div>
+  <div class="gal-prog" id="geProg"><i id="geProgFill"></i></div>
+  <div class="edit-actions"><button type="button" class="cancel-btn" id="geCancel">Cancelar</button><button type="button" class="save-btn" id="geSave">Guardar</button></div>
+</div></div>
 <div class="adm-view" id="albAdmView" aria-hidden="true">
   <div class="adm-wrap">
     <div class="adm-top">
@@ -3434,6 +3482,7 @@
 
   // ===== Apariencia personal: colores y fondo de pantalla (cada perfil guarda los suyos) =====
   const THEME_DEFAULT = { accent:'#1ed760', bg:'#0a0a0a', surface:'#181818', text:'#ffffff', hero:'#3a1030',
+    gal:{ bg:'', c:['','',''] },
     wall:{ mode:'none', c1:'#0d3b22', c2:'#050505', angle:160, dim:35 } };
   const TH_SO = ['#1ed760','#00b4d8','#a855f7','#ff4d8d','#ff8a3d','#ffd23f','#ff5252','#14b8a6','#6366f1','#e8e8e8'];
   const TH_PA = ['#a8e6cf','#a0d8ef','#c7b8ff','#ffb3d1','#ffd1a9','#fff0a8','#ffb4a8','#e2c2ff','#b5ead7','#d9d9e8'];
@@ -3457,6 +3506,7 @@
     ['accent','bg','surface','text','hero'].forEach(k => { o[k] = thHex(t[k]) || d[k]; });
     const w = t.wall || {};
     o.accent2 = thHex(t.accent2) || '';
+    { const g = t.gal || {}; o.gal = { bg: thHex(g.bg) || '', c: [0,1,2].map(i => thHex(g.c && g.c[i]) || '') }; }
     o.wall.mode = ['none','grad','photo'].includes(w.mode) ? w.mode : 'none';
     o.wall.c1 = thHex(w.c1) || d.wall.c1; o.wall.c2 = thHex(w.c2) || d.wall.c2;
     o.wall.angle = Number.isFinite(+w.angle) ? +w.angle : 160;
@@ -3466,6 +3516,11 @@
   function applyTheme(){
     const t = theme, st = document.documentElement.style, set = (k, v) => st.setProperty(k, v);
     set('--green', t.accent); set('--green-dim', thMix(t.accent, '#000000', .3)); set('--green-rgb', thRgb(t.accent).join(','));
+    { const g = t.gal || { bg:'', c:['','',''] }, D = ['#ff8fc8','#8fb8ff','#ffd9a0'];
+      [0,1,2].forEach(i => set('--gc' + i, g.c[i] || D[i]));
+      if(g.bg){ set('--gx-bg', thMix(g.bg, '#000000', .7)); set('--gx1', thRgb(thMix(g.bg, '#ffffff', .1)).join(',')); set('--gx2', thRgb(g.bg).join(',')); }
+      else ['--gx-bg','--gx1','--gx2'].forEach(k => st.removeProperty(k));
+      try{ galaxy.recolor(g.c); }catch(e){} }
     set('--accent-fill', t.accent2 ? 'linear-gradient(135deg,' + t.accent + ',' + t.accent2 + ')' : t.accent);
     set('--on-accent', thLum(t.accent2 ? thMix(t.accent, t.accent2, .5) : t.accent) > .55 ? '#0a0a0a' : '#ffffff');
     set('--bg', t.bg); set('--bg-rgb', thRgb(t.bg).join(','));
@@ -3528,6 +3583,7 @@
     $('thSolidBox').style.display = t.wall.mode === 'none' ? '' : 'none';
     $('thGradBox').style.display = t.wall.mode === 'grad' ? '' : 'none';
     $('thPhotoBox').style.display = t.wall.mode === 'photo' ? '' : 'none';
+    ['#ff8fc8','#8fb8ff','#ffd9a0'].forEach((d, i) => { $('thG' + i).value = t.gal.c[i] || d; }); $('thGB').value = t.gal.bg || '#07030d';
     document.querySelectorAll('.th-row[data-pk]').forEach(r => r.querySelector('.th-dot').style.background = $(r.dataset.pk).value);
     $('thThumb').style.backgroundImage = wallPhoto ? 'url("' + wallPhoto + '")' : 'none';
   }
@@ -3552,6 +3608,8 @@
     // muestras rápidas de acento y degradados
     $('thGrads').innerHTML = TH_GRADS.map(g => '<button type="button" data-a="' + g[0] + '" data-b="' + g[1] + '" style="background:linear-gradient(160deg,' + g[0] + ',' + g[1] + ')" aria-label="Degradado"></button>').join('');
     const bindColor = (id, fn) => $(id).addEventListener('input', e => { fn(e.target.value); thTouch(); thSync(); });
+    [0,1,2].forEach(i => bindColor('thG' + i, v => { theme.gal.c[i] = v; })); bindColor('thGB', v => { theme.gal.bg = v; });
+    $('thGalReset').addEventListener('click', () => { theme.gal = { bg:'', c:['','',''] }; thTouch(); thSync(); });
     bindColor('thBg', v => theme.bg = v);
     bindColor('thSurface', v => theme.surface = v); bindColor('thText', v => theme.text = v); bindColor('thHero', v => theme.hero = v);
     bindColor('thC1', v => { theme.wall.c1 = v; theme.wall.mode = 'grad'; }); bindColor('thC2', v => { theme.wall.c2 = v; theme.wall.mode = 'grad'; });
@@ -3915,6 +3973,7 @@
       // nosotros: dorado
       ['rgba(255,244,214,.95)','rgba(255,205,140,.9)','rgba(255,150,170,.85)','rgba(240,110,190,.8)','rgba(160,130,255,.8)']
     ];
+    const PALS0 = PALS.map(p=>p.slice()), GLOW0 = GN.map(G=>G.glow);
     const PAL_H = ['rgba(255,255,255,.95)','rgba(255,255,255,.95)','rgba(255,255,255,.9)']; // polvo del corazón: blanco
     const gauss = ()=> (Math.random()+Math.random()+Math.random()-1.5)/1.5;
     const clamp = (v,a,b)=> Math.max(a, Math.min(b, v));
@@ -4484,6 +4543,18 @@
       stop(){ running = false; if(raf){ cancelAnimationFrame(raf); raf = 0; } },
       isInteractive(){ return interactive; },
       focusedIndex(){ return focused; },
+      recolor(cols){
+        cols.forEach((h, gi)=>{
+          if(h){
+            const mk = (hx, a)=>'rgba(' + thRgb(hx).join(',') + ',' + a + ')', [hh, ss, ll] = thHsl(h), sh = d=>thFromHsl((hh + d) % 360, ss, ll);
+            PALS[gi] = [mk(thMix(h, '#ffffff', .8), .95), mk(thMix(h, '#ffffff', .35), .9), mk(h, .85), mk(sh(25), .8), mk(sh(55), .75)];
+            GN[gi].glow = thRgb(h).join(',');
+          } else { PALS[gi] = PALS0[gi].slice(); GN[gi].glow = GLOW0[gi]; }
+        });
+        gal.forEach(p=>{ p.col = PALS[p.gi][p.k % 5]; });
+        dust.forEach(p=>{ p.col = PALS[p.gi][Math.floor(p.k / 3) % 5]; kCol[p.k] = p.col; });
+        PALS.forEach(p=>p.forEach(dotSprite));
+      },
       setCustom(items){ pendingCustom = items; applyCustom(); },
       exit(){ interactive = false; focused = -1; anim = null; gTarget = 0; gt = 0; mTarget = 0; mt = 0; applyGather(); ptrs.clear(); pinch = null; resetView(); syncNav(); },
       photosOf(gi){ return sprites.filter(q=>q.kind === 'img' && q.gi === gi && q.ok && !q.bad && q.url).map(q=>q.url); }
@@ -4552,7 +4623,7 @@
     const { db, collection, onSnapshot } = window.fb;
     onSnapshot(collection(db, 'galaxy'), snap=>{
       const items = snap.docs.map(d=>({ id:d.id, ...d.data() })).filter(x=>x && (x.kind === 'img' ? x.url : x.text));
-      galaxy.setCustom(items);
+      galaxy.setCustom(items); window.galItems = items; try{ galaxy.recolor(theme.gal.c); }catch(e){} window.dispatchEvent(new Event('gal-items'));
     }, err=>{ console.warn('galaxy', err); toast('Galaxia', 'No se pudieron leer las fotos agregadas. Revisa las reglas de Firestore para la colección «galaxy».', 'warn'); });
   }
   if(window.fb) initGalaxyDb(); else window.addEventListener('firebase-ready', initGalaxyDb);
@@ -4646,6 +4717,76 @@
         console.warn('galaxy add', err); st.busy = false; saveBtn.textContent = 'Agregar'; prog.style.display = 'none'; validate();
         toast('No se pudo agregar', String((err && err.message) || err || 'Intenta de nuevo'), 'err');
       }
+    });
+  })();
+
+  // ===== Galaxia: administrar (ver, editar, borrar) =====
+  (function(){
+    const $ = id=>document.getElementById(id), NAMES = ['Ali', 'Axel', 'Nosotros'], list = $('gmList'), modal = $('galEdModal');
+    let flt = -1, ed = null;
+    const thumb = u=>String(u).replace('/image/upload/', '/image/upload/w_160,h_160,c_fill,q_auto/');
+    function render(){
+      const all = (window.galItems || []).slice().sort((a,b)=>(b.ts||0)-(a.ts||0)), vis = all.filter(x=>flt < 0 || x.gi === flt);
+      $('galAdmSub').textContent = all.filter(x=>x.kind === 'img').length + ' fotos · ' + all.filter(x=>x.kind !== 'img').length + ' frases';
+      list.innerHTML = vis.length ? '' : '<div class="tr-note"><span>Aquí no hay nada todavía.</span></div>';
+      vis.forEach(x=>{
+        const r = document.createElement('div'); r.className = 'gm-row'; r.dataset.id = x.id;
+        const t = x.kind === 'img' ? document.createElement('img') : document.createElement('div'); t.className = 'gm-th';
+        if(x.kind === 'img'){ t.src = thumb(x.url); t.alt = ''; t.loading = 'lazy'; } else t.textContent = '💬';
+        const tx = document.createElement('div'); tx.className = 'gm-tx';
+        const b = document.createElement('b'); b.textContent = x.kind === 'img' ? 'Foto' : (x.text || '');
+        const sm = document.createElement('small'); sm.textContent = 'Galaxia de ' + (NAMES[x.gi] || '—');
+        tx.appendChild(b); tx.appendChild(sm);
+        const e = document.createElement('button'); e.className = 'gm-btn'; e.dataset.a = 'e'; e.textContent = '✏️'; e.setAttribute('aria-label', 'Editar');
+        const d = document.createElement('button'); d.className = 'gm-btn'; d.dataset.a = 'd'; d.textContent = '🗑️'; d.setAttribute('aria-label', 'Borrar');
+        r.append(t, tx, e, d); list.appendChild(r);
+      });
+    }
+    window.addEventListener('gal-items', render);
+    $('admGal').addEventListener('click', ()=>{
+      history.pushState({ galadm:true }, '', '#galaxia-admin');
+      const v = $('galAdmView'); v.scrollTop = 0; admStack.push(v); admShow(v); render();
+    });
+    $('galAdmBack').addEventListener('click', admBack);
+    $('gmNew').addEventListener('click', ()=>$('galAdd').click());
+    $('gmFilter').addEventListener('click', e=>{ const b = e.target.closest('button'); if(!b) return; flt = +b.dataset.g; $('gmFilter').querySelectorAll('button').forEach(x=>x.classList.toggle('on', x === b)); render(); });
+    const setGi = g=>{ ed.gi = g; $('geCat').querySelectorAll('button').forEach(b=>b.classList.toggle('on', +b.dataset.g === g)); };
+    list.addEventListener('click', async e=>{
+      const b = e.target.closest('button'); if(!b) return;
+      const x = (window.galItems || []).find(i=>i.id === b.closest('.gm-row').dataset.id); if(!x) return;
+      if(b.dataset.a === 'e'){
+        ed = { x, gi:x.gi, file:null, busy:false };
+        const img = x.kind === 'img'; $('geTitle').textContent = img ? 'Editar foto' : 'Editar frase';
+        $('geImgBox').style.display = img ? '' : 'none'; $('geTxtBox').style.display = img ? 'none' : '';
+        if(img) $('geImg').src = thumb(x.url); else $('geText').value = x.text || '';
+        $('geProg').style.display = 'none'; $('gePick').textContent = 'Cambiar foto'; setGi(x.gi); modal.classList.add('show');
+      } else {
+        const ok = await uiDialog({ tone:'danger', title:'Eliminar de la galaxia', message: x.kind === 'img' ? 'Se borrará esta foto de la galaxia y también de Cloudinary.' : 'Se borrará la frase «' + (x.text || '') + '».', confirmText:'Eliminar' });
+        if(!ok) return;
+        try{
+          const { db, doc, deleteDoc } = window.fb; await deleteDoc(doc(db, 'galaxy', x.id));
+          if(x.kind === 'img') await cloudinaryCleanup([x.url]);
+          toast('Eliminado', 'Ya no está en la galaxia.', 'ok');
+        }catch(err){ toast('No se pudo eliminar', String((err && err.message) || err), 'err'); }
+      }
+    });
+    $('geCat').addEventListener('click', e=>{ const b = e.target.closest('button'); if(b && ed && !ed.busy) setGi(+b.dataset.g); });
+    $('gePick').addEventListener('click', ()=>$('geFile').click());
+    $('geFile').addEventListener('change', e=>{ const f = e.target.files[0]; e.target.value = ''; if(!f || !ed) return; ed.file = f; $('geImg').src = URL.createObjectURL(f); $('gePick').textContent = 'Otra foto'; });
+    $('geCancel').addEventListener('click', ()=>{ if(!ed || !ed.busy) modal.classList.remove('show'); });
+    $('geSave').addEventListener('click', async ()=>{
+      if(!ed || ed.busy) return; const x = ed.x, img = x.kind === 'img', txt = $('geText').value.trim();
+      if(!img && !txt){ toast('Frase vacía', 'Escribe algo para guardar.', 'warn'); return; }
+      ed.busy = true; $('geSave').disabled = true;
+      try{
+        const { db, doc, updateDoc } = window.fb, data = { gi: ed.gi };
+        if(img && ed.file){ $('geProg').style.display = 'block'; data.url = await cloudinaryUpload(ed.file, 'image', p=>{ $('geProgFill').style.width = (p*100) + '%'; }); }
+        if(!img) data.text = txt;
+        await updateDoc(doc(db, 'galaxy', x.id), data);
+        if(data.url) cloudinaryCleanup([x.url], { silent:true });
+        modal.classList.remove('show'); toast('Guardado', 'Cambios hechos en la galaxia ✨', 'ok');
+      }catch(err){ toast('No se pudo guardar', String((err && err.message) || err), 'err'); }
+      ed.busy = false; $('geSave').disabled = false;
     });
   })();
 
