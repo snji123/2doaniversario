@@ -49,7 +49,8 @@
   #appWall{position:fixed;inset:0;z-index:-1;display:none;background:var(--wall) center/cover no-repeat;pointer-events:none;}
   html.has-wall #appWall{display:block;}
   html.has-wall body{background:transparent;}
-  html.has-wall .hero{background:linear-gradient(to bottom, rgba(var(--bg-rgb),.5), transparent);}
+  html.has-wall .hero{background:radial-gradient(120% 160% at 30% -10%, color-mix(in srgb,var(--hero-a) 96%,transparent) 0%, color-mix(in srgb,var(--hero-b) 80%,transparent) 45%, transparent 84%);}
+  html.has-wall .adm-top{background:radial-gradient(120% 160% at 30% -10%,color-mix(in srgb,var(--hero-a) 96%,transparent) 0%,color-mix(in srgb,var(--hero-b) 80%,transparent) 45%,transparent 86%);}
   html.has-wall .adm-view{background:var(--wall) center/cover fixed no-repeat, var(--bg);}
   html.has-wall .game-page{background:var(--wall) center/cover no-repeat, var(--bg);}
   /* Pantalla Apariencia */
@@ -73,7 +74,7 @@
 
   .hrt{display:inline-block;width:1em;height:1em;vertical-align:-.12em;background:var(--accent-fill);-webkit-mask:var(--heart) center/contain no-repeat;mask:var(--heart) center/contain no-repeat;}
   .th-prev{border-radius:20px;overflow:hidden;margin:0 0 14px;background:var(--wall,var(--bg)) center/cover;border:1px solid var(--divider);}
-  .tp-hero{padding:18px 16px 14px;background:linear-gradient(var(--hero-a),transparent);}
+  .tp-hero{padding:18px 16px 14px;background:linear-gradient(165deg,var(--hero-a),color-mix(in srgb,var(--hero-b) 45%,transparent));}
   .tp-t{font:800 22px var(--font);color:var(--text);display:flex;gap:6px;align-items:center;}
   .tp-s{font-size:12px;color:var(--text-dim);}
   .tp-row{display:flex;align-items:center;gap:12px;padding:12px 16px 16px;background:rgba(var(--bg-rgb),.55);}
@@ -132,6 +133,34 @@
   .gx-prev i:nth-child(3){left:50%;margin-left:-18px;top:38px;background:radial-gradient(circle,#fff 0,var(--gc2) 30%,transparent 70%);}
   .gx-bar{position:absolute;left:24%;right:24%;bottom:10px;height:5px;border-radius:99px;background:rgba(255,255,255,.12);}
   .gx-bar::after{content:'';position:absolute;left:0;top:0;bottom:0;width:62%;border-radius:99px;background:linear-gradient(90deg,var(--gc0),var(--gc2),var(--gc1));}
+  .gm-row{border-left:4px solid var(--mk,var(--divider));}
+  .gm-row[data-gi="0"],#gmFilter button[data-g="0"]{--mk:var(--gc0);}.gm-row[data-gi="1"],#gmFilter button[data-g="1"]{--mk:var(--gc1);}.gm-row[data-gi="2"],#gmFilter button[data-g="2"]{--mk:var(--gc2);}
+  .gm-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--mk,var(--green));margin-right:6px;box-shadow:0 0 8px var(--mk,var(--green));}
+  .gm-row.warn{border-color:#ff6b6b;}.gm-th.bad{background:rgba(255,107,107,.18);}
+  #gmFilter button{display:flex;align-items:center;justify-content:center;gap:7px;}
+  #gmFilter button::before{content:'';width:9px;height:9px;border-radius:50%;background:var(--mk,var(--green));box-shadow:0 0 8px var(--mk,var(--green));}
+  #gmFilter button.on{border-color:var(--mk,var(--green));background:color-mix(in srgb,var(--mk,var(--green)) 22%,var(--surface));}
+  .gm-colors{margin-bottom:14px;padding:0 14px;}.gm-colors summary{padding:14px 0;font-weight:700;font-size:14px;cursor:pointer;}
+  .th-sw,.th-grads,.pk-g{overflow-y:auto;overscroll-behavior:contain;padding-right:8px;}
+  .th-sw{max-height:178px;}.th-grads{max-height:224px;}.pk-g{max-height:94px;}
+  .th-sw::-webkit-scrollbar,.th-grads::-webkit-scrollbar,.pk-g::-webkit-scrollbar{display:block;width:6px;}
+  .th-sw::-webkit-scrollbar-track,.th-grads::-webkit-scrollbar-track,.pk-g::-webkit-scrollbar-track{background:rgba(255,255,255,.08);border-radius:3px;}
+  .th-sw::-webkit-scrollbar-thumb,.th-grads::-webkit-scrollbar-thumb,.pk-g::-webkit-scrollbar-thumb{background:var(--green);border-radius:3px;}
+
+  /* Paletas: máx. 2 filas visibles, el resto se desliza hacia abajo con barra visible */
+  .th-card{container-type:inline-size;}
+  .th-sw{grid-template-columns:repeat(5,1fr);gap:12px;padding:10px 8px 10px 0;max-height:calc(2*((100cqw - 56px) / 5) + 12px + 20px);}
+  .th-grads{gap:10px;padding:4px 8px 8px 0;max-height:calc(2*((100cqw - 38px) / 4) + 10px + 12px);}
+  .pk-g{grid-template-columns:repeat(7,1fr);gap:9px;padding:6px 8px 10px 0;max-height:calc(2*((100cqw - 62px) / 7) + 9px + 16px);}
+  .pk-g button{width:100%;}
+  .th-sw,.th-grads,.pk-g{overflow-y:scroll;-webkit-overflow-scrolling:touch;}
+  .th-sw::-webkit-scrollbar,.th-grads::-webkit-scrollbar,.pk-g::-webkit-scrollbar{display:block;width:7px;}
+  .th-sw::-webkit-scrollbar-track,.th-grads::-webkit-scrollbar-track,.pk-g::-webkit-scrollbar-track{background:rgba(255,255,255,.12);border-radius:4px;}
+  .th-sw::-webkit-scrollbar-thumb,.th-grads::-webkit-scrollbar-thumb,.pk-g::-webkit-scrollbar-thumb{background:var(--green);border-radius:4px;min-height:36px;}
+  .pk-tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 0 4px;}
+  .pk-tabs::-webkit-scrollbar{display:none;}
+  .pk-tabs button{flex:0 0 auto;border:none;border-radius:999px;padding:7px 13px;background:var(--surface-2);color:var(--text-dim);font:600 12px var(--font);cursor:pointer;}
+  .pk-tabs button.on{background:var(--accent-fill);color:var(--on-accent);}
   .th-note{font-size:12px;color:var(--text-dim);padding:2px 0 10px;}
   .th-status{font-size:12px;color:var(--text-dim);min-height:16px;text-align:center;margin:4px 0 14px;}
   .th-actions{display:flex;gap:10px;flex-wrap:wrap;padding:6px 0 12px;}
@@ -372,7 +401,7 @@
   .gate{
     position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;
     padding:calc(24px + env(safe-area-inset-top,0px)) 24px calc(24px + env(safe-area-inset-bottom,0px));
-    background:radial-gradient(120% 90% at 50% -10%, #3a1030 0%, #160a14 50%, #0a0a0a 85%);
+    background:radial-gradient(120% 90% at 50% -10%, var(--hero-a) 0%, var(--hero-b) 50%, var(--bg) 85%);
     transition:opacity .5s ease, visibility .5s;
   }
   .gate{--text:#fff;--text-dim:#a7a7a7;--divider:rgba(255,255,255,0.1);color:#fff;}
@@ -665,7 +694,7 @@
   .adm-view.open{transform:none;visibility:visible;}
   #trashView{z-index:71;}
   .adm-wrap{max-width:480px;margin:0 auto;min-height:100%;padding:0 18px calc(34px + env(safe-area-inset-bottom,0px));}
-  .adm-top{position:relative;margin:0 -18px 20px;padding:calc(14px + env(safe-area-inset-top,0px)) 20px 24px;background:radial-gradient(120% 160% at 30% -10%,#3a1030 0%,#1a0a17 45%,var(--bg) 85%);overflow:hidden;}
+  .adm-top{position:relative;margin:0 -18px 20px;padding:calc(14px + env(safe-area-inset-top,0px)) 20px 24px;background:radial-gradient(120% 160% at 30% -10%,var(--hero-a) 0%,var(--hero-b) 45%,var(--bg) 85%);overflow:hidden;}
   .adm-top::after{content:'';position:absolute;inset:0;background:radial-gradient(60% 50% at 85% 0%,rgba(var(--green-rgb),.18),transparent 70%);pointer-events:none;}
   .adm-top > *{position:relative;z-index:1;}
   .adm-back{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.28);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
@@ -1397,6 +1426,15 @@
       <div class="adm-title">Galaxia</div>
       <div class="adm-sub" id="galAdmSub"></div>
     </div>
+    <details class="th-card gm-colors"><summary>🎨 Colores de la galaxia</summary>
+      <div class="gx-prev"><i></i><i></i><i></i><span class="gx-bar"></span></div>
+      <div class="th-row" data-pk="thG0"><span>Galaxia de Ali<small>su color y brillo</small></span><i class="th-dot"></i></div>
+      <div class="th-row" data-pk="thG1"><span>Galaxia de Axel<small>su color y brillo</small></span><i class="th-dot"></i></div>
+      <div class="th-row" data-pk="thG2"><span>Galaxia de Nosotros<small>su color y brillo</small></span><i class="th-dot"></i></div>
+      <div class="th-row" data-pk="thGB"><span>Cielo<small>el fondo, la pantalla y la barra de carga</small></span><i class="th-dot"></i></div>
+      <div class="th-actions" style="padding-bottom:14px"><button type="button" class="th-btn ghost" id="gmColReset">Colores originales</button></div>
+    </details>
+    <div class="th-seg" id="gmType" style="margin-bottom:12px"><button type="button" data-t="img" class="on">Fotos</button><button type="button" data-t="txt">Frases</button></div>
     <div class="gal-chips" id="gmFilter" style="margin-bottom:14px"><button type="button" data-g="-1" class="on">Todas</button><button type="button" data-g="0">Ali</button><button type="button" data-g="1">Axel</button><button type="button" data-g="2">Nosotros</button></div>
     <button class="alb-play" id="gmNew" type="button" style="width:100%;justify-content:center;margin-bottom:16px"><svg viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>Agregar foto o frase</button>
     <div id="gmList"></div>
@@ -3480,17 +3518,26 @@
   const THEME_DEFAULT = { accent:'#1ed760', bg:'#0a0a0a', surface:'#181818', text:'#ffffff', hero:'#3a1030',
     gal:{ bg:'', c:['','',''] },
     wall:{ mode:'none', c1:'#0d3b22', c2:'#050505', angle:160, dim:35 } };
-  const TH_SO = ['#1ed760','#00b4d8','#a855f7','#ff4d8d','#ff8a3d','#ffd23f','#ff5252','#14b8a6','#6366f1','#e8e8e8'];
-  const TH_PA = ['#a8e6cf','#a0d8ef','#c7b8ff','#ffb3d1','#ffd1a9','#fff0a8','#ffb4a8','#e2c2ff','#b5ead7','#d9d9e8'];
-  const TH_GR = [['#1ed760','#00c2ff'],['#ff4d8d','#ff8a3d'],['#a855f7','#ff4d8d'],['#00c2ff','#a855f7'],['#ffd23f','#ff5252'],['#14b8a6','#6366f1'],['#ffb3d1','#c7b8ff'],['#a8e6cf','#a0d8ef'],['#ffd1a9','#ffb3d1'],['#f6d365','#fda085']];
+  const TH_SO0 = ['#1ed760', '#00b4d8', '#a855f7', '#ff4d8d', '#ff8a3d', '#ffd23f', '#ff5252', '#14b8a6', '#6366f1', '#e8e8e8', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#84cc16', '#10b981', '#0ea5e9', '#2563eb', '#7c3aed', '#c026d3', '#e11d48', '#fb7185', '#fbbf24', '#34d399', '#38bdf8'];
+  const TH_PA0 = ['#a8e6cf', '#a0d8ef', '#c7b8ff', '#ffb3d1', '#ffd1a9', '#fff0a8', '#ffb4a8', '#e2c2ff', '#b5ead7', '#d9d9e8', '#ffc8dd', '#ffafcc', '#bde0fe', '#a2d2ff', '#cdb4db', '#fde2e4', '#fad2e1', '#bee1e6', '#dfe7fd', '#f0efeb', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#ffe5ec', '#e2ece9', '#fffffc'];
+  const TH_GR0 = [['#1ed760', '#00c2ff'],['#ff4d8d', '#ff8a3d'],['#a855f7', '#ff4d8d'],['#00c2ff', '#a855f7'],['#ffd23f', '#ff5252'],['#14b8a6', '#6366f1'],['#ffb3d1', '#c7b8ff'],['#a8e6cf', '#a0d8ef'],['#ffd1a9', '#ffb3d1'],['#f6d365', '#fda085'],['#ff512f', '#dd2476'],['#f093fb', '#f5576c'],['#4facfe', '#00f2fe'],['#43e97b', '#38f9d7'],['#fa709a', '#fee140'],['#667eea', '#764ba2'],['#30cfd0', '#330867'],['#a18cd1', '#fbc2eb'],['#ff9a9e', '#fecfef'],['#0ba360', '#3cba92'],['#ee0979', '#ff6a00'],['#fc466b', '#3f5efb'],['#00c6ff', '#0072ff'],['#f857a6', '#ff5858'],['#7f00ff', '#e100ff'],['#11998e', '#38ef7d'],['#fceabb', '#f8b500'],['#8e2de2', '#4a00e0'],['#ff8008', '#ffc837'],['#e0c3fc', '#8ec5fc']];
   let thTab = null, thTgt = 'a';
   const thHsl = h => { const [r,g,b] = thRgb(h).map(x=>x/255), M = Math.max(r,g,b), m = Math.min(r,g,b), d = M-m; let H = 0; if(d){ H = M==r ? ((g-b)/d)%6 : M==g ? (b-r)/d+2 : (r-g)/d+4; H *= 60; if(H<0) H += 360; } const L = (M+m)/2; return [H, d ? d/(1-Math.abs(2*L-1))*100 : 0, L*100]; };
   const thFromHsl = (h,s,l) => { s/=100; l/=100; const c = (1-Math.abs(2*l-1))*s, x = c*(1-Math.abs((h/60)%2-1)), m = l-c/2; const [r,g,b] = h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]:h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x]; return thToHex([(r+m)*255,(g+m)*255,(b+m)*255]); };
   const TH_SWATCHES = ['#1ed760','#00c2ff','#a855f7','#ff4d8d','#ff8a3d','#ffd23f','#ff5252','#e8e8e8'];
-  const TH_GRADS = [ ['#0d3b22','#050505'], ['#43206b','#e0664b'], ['#0b3a5b','#04121c'], ['#1b1f4b','#05060f'],
+  const TH_GRADS0 = [ ['#141e30', '#243b55'], ['#0f2027', '#2c5364'], ['#232526', '#0f0c29'], ['#41295a', '#2f0743'], ['#1d2b64', '#f8cdda'], ['#3a1c71', '#d76d77'], ['#cb2d3e', '#ef473a'], ['#0575e6', '#021b79'], ['#16222a', '#3a6073'], ['#4b134f', '#c94b4b'], ['#ff6a00', '#ee0979'], ['#00b09b', '#96c93d'], ['#c31432', '#240b36'], ['#1f4037', '#99f2c8'], ['#f12711', '#f5af19'], ['#da4453', '#89216b'], ['#614385', '#516395'], ['#314755', '#26a0da'], ['#ffecd2', '#fcb69f'], ['#e0c3fc', '#8ec5fc'], ['#2b5876', '#4e4376'], ['#ee9ca7', '#ffdde1'], ['#7474bf', '#348ac7'], ['#ff9966', '#ff5e62'], ['#56ab2f', '#a8e063'], ['#d3cce3', '#e9e4f0'], ['#12c2e9', '#c471ed'], ['#f64f59', '#12c2e9'], ['#0d3b22','#050505'], ['#43206b','#e0664b'], ['#0b3a5b','#04121c'], ['#1b1f4b','#05060f'],
                      ['#ff9a9e','#fad0c4'], ['#f6d365','#fda085'], ['#84fab0','#8fd3f4'], ['#a18cd1','#fbc2eb'], ['#fccb90','#d57eeb'], ['#667eea','#764ba2'], ['#f093fb','#f5576c'], ['#4facfe','#00f2fe'], ['#43e97b','#38f9d7'], ['#fa709a','#fee140'], ['#30cfd0','#330867'], ['#0f0c29','#302b63'], ['#232526','#414345'], ['#ff512f','#dd2476'], ['#134e5e','#71b280'], ['#200122','#6f0000'],
                      ['#ffd1dc','#c7b8ff'], ['#a0d8ef','#e2c2ff'], ['#ffe8c2','#ffb3d1'], ['#b5ead7','#a0d8ef'],
                      ['#0f766e','#1e1b4b'], ['#3a3d3b','#0a0a0a'], ['#6b2a45','#14070d'], ['#1f3a1f','#2b2b2b'] ];
+  // Paletas maestras: TODAS las secciones usan estas mismas listas
+  const thUq = a => [...new Set(a)];
+  const thUqG = a => [...new Map(a.map(g => [g.join(), g])).values()];
+  const TH_SO = thUq([...TH_SO0, '#ef4444','#f59e0b','#a3e635','#2dd4bf','#818cf8','#e879f9','#f472b6','#fb923c','#facc15','#4ade80','#22d3ee','#60a5fa','#a78bfa','#00e5ff','#00e676','#76ff03','#ffea00','#ff9100','#ff3d00','#ff1744','#f50057','#d500f9','#651fff','#3d5afe','#2979ff','#00b0ff','#1de9b6','#c6ff00','#ff6e40','#b388ff','#ff80ab','#ff5722','#e91e63','#9c27b0','#673ab7','#3f51b5','#2196f3','#03a9f4','#00bcd4','#009688','#4caf50','#8bc34a','#cddc39','#ffeb3b','#ffc107','#ff9800']);
+  const TH_PA = thUq([...TH_PA0, '#ffcfd2','#fbc4ab','#f8ad9d','#ffe5d9','#d8e2dc','#b8f2e6','#aed9e0','#ffa69e','#faf3dd','#c8e7ff','#d0f4de','#fcf6bd','#e4c1f9','#ff99c8','#a9def9','#e5989b','#b5838d','#cddafd','#eddcd2','#ffdab9','#f1c0e8','#cfbaf0','#90dbf4','#98f5e1','#b9fbc0','#fbf8cc','#fde4cf','#ffcfd2']);
+  const TH_DK = thUq(['#000000','#0a0a0a','#121212','#1f1f1f','#2d2d2d','#1a1a2e','#16213e','#0f2027','#2b0a3d','#3a1030','#0d3b22','#5a1a2b','#0b3a5b','#1b1f4b','#3d0c11','#2c2c54','#0f172a','#1e293b','#111827','#1c1917','#052e16','#042f2e','#172554','#2e1065','#4a044e','#500724','#450a0a','#431407','#422006','#14532d','#134e4a','#1e3a8a','#312e81','#581c87','#701a75','#831843','#7f1d1d','#7c2d12','#334155','#475569','#6b7280','#a7a7a7','#c9c9c9','#e8e8e8','#f5f5f5','#ffffff']);
+  const TH_GR = thUqG([...TH_GR0, ...TH_GRADS0,
+    ['#ff0844','#ffb199'],['#fbc2eb','#a6c1ee'],['#c471f5','#fa71cd'],['#48c6ef','#6f86d6'],['#feada6','#f5efef'],['#a1c4fd','#c2e9fb'],['#d4fc79','#96e6a1'],['#cfd9df','#e2ebf0'],['#6a11cb','#2575fc'],['#fddb92','#d1fdff'],['#9890e3','#b1f4cf'],['#ebc0fd','#d9ded8'],['#96fbc4','#f9f586'],['#2af598','#009efd'],['#b721ff','#21d4fd'],['#08aeea','#2af598'],['#ff9a44','#fc6076'],['#6a85b6','#bac8e0'],['#ff0099','#493240'],['#00d2ff','#3a7bd5'],['#f7971e','#ffd200'],['#8360c3','#2ebf91'],['#667db6','#0082c8'],['#ec008c','#fc6767'],['#cc2b5e','#753a88'],['#2193b0','#6dd5ed'],['#ddd6f3','#faaca8'],['#ff758c','#ff7eb3'],['#4568dc','#b06ab3'],['#e65c00','#f9d423'],['#7b4397','#dc2430'],['#1488cc','#2b32b2'],['#ed4264','#ffedbc'],['#dd5e89','#f7bb97'],['#4b6cb7','#182848'],['#ff5f6d','#ffc371'],['#c33764','#1d2671'],['#93a5cf','#e4efe9'],['#ff6b6b','#feca57'],['#5f2c82','#49a09d'],['#c6ffdd','#fbd786'],['#00c9ff','#92fe9d'],['#f953c6','#b91d73'],['#a8ff78','#78ffd6'],['#bc4e9c','#f80759'],['#3ca55c','#b5ac49'],['#556270','#ff6b6b'],['#1a2980','#26d0ce'],['#fe8c00','#f83600'],['#6441a5','#2a0845'],['#ffafbd','#ffc3a0'],['#2c3e50','#4ca1af'],['#e96443','#904e95'],['#085078','#85d8ce'],['#0b486b','#f56217'],['#780206','#061161'],['#7f7fd5','#91eae4'],['#ff00cc','#333399'],['#fc4a1a','#f7b733'],['#e52d27','#b31217'],['#2980b9','#6dd5fa'],['#5433ff','#20bdff'],['#da22ff','#9733ee'],['#00f260','#0575e6'],['#ff4e50','#f9d423'],['#f2709c','#ff9472'],['#c9d6ff','#e2e2e2'],['#0f0c29','#24243e'],['#000428','#004e92'],['#1d4350','#a43931'],['#f6416c','#ffb88c'],['#ff9a9e','#a18cd1'],['#00cdac','#8ddad5'],['#fa8bff','#2bd2ff'],['#ff3cac','#784ba0'],['#85ffbd','#fffb7d'],['#ffdde1','#ee9ca7'],['#74ebd5','#acb6e5'],['#ff0080','#7928ca'],['#00dbde','#fc00ff'],['#f83600','#f9d423'],['#0093e9','#80d0c7'],['#8ec5fc','#e0c3fc'],['#ffecd2','#ff9a9e'],['#ee5a24','#f79f1f'],['#1e3c72','#2a5298'],['#ff6a88','#ff99ac'],['#d9a7c7','#fffcdc'],['#232526','#1ed760']]);
+  const TH_GRADS = TH_GR;
   let theme = JSON.parse(JSON.stringify(THEME_DEFAULT)), wallPhoto = '', thLastEdit = 0, thSaveT = 0, thPhotoDirty = false;
   const thHex = c => { const m = /^#?([0-9a-f]{6})$/i.exec(c || ''); return m ? '#' + m[1].toLowerCase() : null; };
   const thRgb = h => { const v = parseInt(h.slice(1), 16); return [v >> 16 & 255, v >> 8 & 255, v & 255]; };
@@ -3501,7 +3548,7 @@
     const d = THEME_DEFAULT, o = JSON.parse(JSON.stringify(d)); t = t || {};
     ['accent','bg','surface','text','hero'].forEach(k => { o[k] = thHex(t[k]) || d[k]; });
     const w = t.wall || {};
-    o.accent2 = thHex(t.accent2) || '';
+    o.accent2 = thHex(t.accent2) || ''; o.hero2 = thHex(t.hero2) || '';
     { const g = t.gal || {}; o.gal = { bg: thHex(g.bg) || '', c: [0,1,2].map(i => thHex(g.c && g.c[i]) || '') }; }
     o.wall.mode = ['none','grad','photo'].includes(w.mode) ? w.mode : 'none';
     o.wall.c1 = thHex(w.c1) || d.wall.c1; o.wall.c2 = thHex(w.c2) || d.wall.c2;
@@ -3522,7 +3569,7 @@
     set('--bg', t.bg); set('--bg-rgb', thRgb(t.bg).join(','));
     set('--surface', t.surface); set('--surface-2', thMix(t.surface, '#ffffff', .1)); set('--surface-hover', thMix(t.surface, '#ffffff', .16));
     set('--text', t.text); set('--text-dim', thMix(t.text, t.bg, .4)); set('--divider', 'rgba(' + thRgb(t.text).join(',') + ',.09)');
-    set('--hero-a', t.hero); set('--hero-b', thMix(t.hero, t.bg, .62));
+    set('--hero-a', t.hero); set('--hero-b', t.hero2 || thMix(t.hero, t.bg, .62));
     const w = t.wall, bgc = thRgb(t.bg).join(',');
     let wall = '';
     if(w.mode === 'grad') wall = 'linear-gradient(' + w.angle + 'deg,' + w.c1 + ',' + w.c2 + ')';
@@ -3581,6 +3628,7 @@
     $('thPhotoBox').style.display = t.wall.mode === 'photo' ? '' : 'none';
     ['#ff8fc8','#8fb8ff','#ffd9a0'].forEach((d, i) => { $('thG' + i).value = t.gal.c[i] || d; }); $('thGB').value = t.gal.bg || '#07030d';
     document.querySelectorAll('.th-row[data-pk]').forEach(r => r.querySelector('.th-dot').style.background = $(r.dataset.pk).value);
+    if(t.hero2) document.querySelectorAll('.th-row[data-pk="thHero"] .th-dot').forEach(d => d.style.background = 'linear-gradient(135deg,' + t.hero + ',' + t.hero2 + ')');
     $('thThumb').style.backgroundImage = wallPhoto ? 'url("' + wallPhoto + '")' : 'none';
   }
   function resizeWall(file){
@@ -3639,9 +3687,21 @@
   // selector de color propio (reemplaza el cuadro del navegador)
   (function(){
     const $ = id => document.getElementById(id);
-    const PK = ['#000000','#0a0a0a','#121212','#1f1f1f','#2d2d2d','#1a1a2e','#16213e','#0f2027','#2b0a3d','#3a1030','#0d3b22','#5a1a2b','#ff4d8d','#ff8a3d','#ffd23f','#1ed760','#00c2ff','#a855f7','#ff5252','#6366f1','#14b8a6','#ffb3d1','#ffd1a9','#fff0a8','#a8e6cf','#a0d8ef','#c7b8ff','#e2c2ff','#a7a7a7','#e8e8e8','#f5f5f5','#ffffff'];
     const box = document.createElement('div'); box.className = 'th-pk';
-    box.innerHTML = '<div class="pk-g">' + PK.map(c => '<button type="button" data-c="' + c + '" style="background:' + c + '" aria-label="' + c + '"></button>').join('') + '</div><div class="th-hsl"><label><span>Tono</span><input type="range" id="pkH" min="0" max="360"></label><label><span>Intensidad</span><input type="range" id="pkS" min="0" max="100"></label><label><span>Brillo</span><input type="range" id="pkL" min="0" max="100"></label></div>';
+    box.innerHTML = '<div class="pk-tabs"><button type="button" data-k="viv">Vivos</button><button type="button" data-k="pas">Pasteles</button><button type="button" data-k="dar">Oscuros</button><button type="button" data-k="grd">Degradados</button></div><div class="pk-g"></div><div class="th-hsl"><label><span>Tono</span><input type="range" id="pkH" min="0" max="360"></label><label><span>Intensidad</span><input type="range" id="pkS" min="0" max="100"></label><label><span>Brillo</span><input type="range" id="pkL" min="0" max="100"></label></div>';
+    let pkTab = 'viv';
+    const pkList = k => k === 'pas' ? TH_PA : k === 'dar' ? TH_DK : k === 'grd' ? TH_GR : TH_SO;
+    const pkRender = () => {
+      const hero = cur && cur.id === 'thHero';
+      box.querySelector('[data-k="grd"]').style.display = hero ? '' : 'none';
+      if(pkTab === 'grd' && !hero) pkTab = 'viv';
+      box.querySelectorAll('.pk-tabs button').forEach(b => b.classList.toggle('on', b.dataset.k === pkTab));
+      const g = box.querySelector('.pk-g'); g.scrollTop = 0;
+      g.innerHTML = pkList(pkTab).map(c => Array.isArray(c)
+        ? '<button type="button" data-c="' + c[0] + '" data-b="' + c[1] + '" style="background:linear-gradient(135deg,' + c[0] + ',' + c[1] + ')" aria-label="Degradado"></button>'
+        : '<button type="button" data-c="' + c + '" data-b="" style="background:' + c + '" aria-label="' + c + '"></button>').join('');
+    };
+    box.querySelector('.pk-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; pkTab = b.dataset.k; pkRender(); });
     let cur = null;
     const paint = (h, s, l) => { $('pkS').style.background = 'linear-gradient(90deg,hsl(' + h + ',0%,' + l + '%),hsl(' + h + ',100%,' + l + '%))'; $('pkL').style.background = 'linear-gradient(90deg,#000,hsl(' + h + ',' + s + '%,50%),#fff)'; };
     const fill = () => { const [h, s, l] = thHsl(cur.value); $('pkH').value = h; $('pkS').value = s; $('pkL').value = l; paint(h, s, l); };
@@ -3651,8 +3711,10 @@
       document.querySelectorAll('.th-row.open').forEach(x => x.classList.remove('open'));
       if(r.nextSibling === box){ box.remove(); cur = null; return; }
       r.after(box); r.classList.add('open'); cur = $(r.dataset.pk); fill();
+      { const v = cur.value; pkTab = (cur.id === 'thHero' && theme.hero2) ? 'grd' : TH_PA.includes(v) ? 'pas' : (TH_DK.includes(v) && !TH_SO.includes(v)) ? 'dar' : 'viv'; }
+      pkRender();
     });
-    box.addEventListener('click', e => { const b = e.target.closest('.pk-g button'); if(b){ put(b.dataset.c); fill(); } });
+    box.addEventListener('click', e => { const b = e.target.closest('.pk-g button'); if(b){ if(cur.id === 'thHero') theme.hero2 = b.dataset.b || ''; put(b.dataset.c); fill(); } });
     box.addEventListener('input', e => { if(!e.target.id || e.target.id[0] !== 'p' || !cur) return; const h = +$('pkH').value, s = +$('pkS').value, l = +$('pkL').value; put(thFromHsl(h, s, l)); paint(h, s, l); });
   })();
   // ===== fin apariencia =====
@@ -4734,24 +4796,32 @@
   // ===== Galaxia: administrar (ver, editar, borrar) =====
   (function(){
     const $ = id=>document.getElementById(id), NAMES = ['Ali', 'Axel', 'Nosotros'], list = $('gmList'), modal = $('galEdModal');
-    let flt = -1, ed = null;
+    let flt = -1, ed = null, typ = 'img';
     const thumb = u=>String(u).replace('/image/upload/', '/image/upload/w_160,h_160,c_fill,q_auto/');
+    function probe(t, x, sm, r){
+      const m = x.name.match(/^(.*)\.([^.]+)$/), base = m ? m[1] : x.name, cur = m ? m[2] : '', alts = ['jpeg','jpg','png','gif','webp','JPG','JPEG','PNG','GIF'].filter(e=>e !== cur); let i = 0;
+      t.onload = ()=>{ if(i > 0) sm.textContent += ' · ⚠️ en GitHub se llama ' + base + '.' + alts[i-1] + ' (el código dice ' + x.name + ')'; };
+      t.onerror = ()=>{
+        if(i < alts.length){ t.src = GALAXY_IMG_DIR + x.dir + '/' + encodeURIComponent(base + '.' + alts[i++]); }
+        else { t.onerror = null; t.classList.add('bad'); r.classList.add('warn'); sm.textContent = '⚠️ No existe «' + x.name + '» en la carpeta ' + x.dir + ' (por eso no sale en la galaxia)'; }
+      };
+    }
     function render(){
       const hide = new Set((window.galHide || []).map(h=>h.key)), cus = (window.galItems || []).slice().sort((a,b)=>(b.ts||0)-(a.ts||0)), defs = [];
-      GALAXY_SETS.forEach((set, gi)=>set.files.forEach(n=>defs.push({ def:true, kind:'img', gi, key:'i:' + set.dir + '/' + n, url:GALAXY_IMG_DIR + set.dir + '/' + encodeURIComponent(n) })));
+      GALAXY_SETS.forEach((set, gi)=>set.files.forEach(n=>defs.push({ def:true, kind:'img', gi, key:'i:' + set.dir + '/' + n, url:GALAXY_IMG_DIR + set.dir + '/' + encodeURIComponent(n), dir:set.dir, name:n })));
       GALAXY_WORDS.forEach((w, i)=>defs.push({ def:true, kind:'txt', gi:i % 3, key:'t:' + w, text:w }));
       defs.forEach(d=>{ d.off = hide.has(d.key); });
-      const all = cus.concat(defs.filter(d=>!d.off), defs.filter(d=>d.off)), vis = all.filter(x=>flt < 0 || x.gi === flt);
+      const all = cus.concat(defs.filter(d=>!d.off), defs.filter(d=>d.off)), vis = all.filter(x=>(flt < 0 || x.gi === flt) && (x.kind === 'img') === (typ === 'img'));
       $('galAdmSub').textContent = all.filter(x=>!x.off && x.kind === 'img').length + ' fotos · ' + all.filter(x=>!x.off && x.kind !== 'img').length + ' frases' + (defs.some(d=>d.off) ? ' · ' + defs.filter(d=>d.off).length + ' quitadas' : '');
       list.innerHTML = vis.length ? '' : '<div class="tr-note"><span>Aquí no hay nada todavía.</span></div>';
       vis.forEach(x=>{
-        const r = document.createElement('div'); r.className = 'gm-row'; if(x.def) r.dataset.key = x.key; else r.dataset.id = x.id; if(x.off) r.style.opacity = '.5';
+        const r = document.createElement('div'); r.className = 'gm-row'; if(x.def) r.dataset.key = x.key; else r.dataset.id = x.id; r.dataset.gi = x.gi; if(x.off) r.style.opacity = '.5';
         const t = x.kind === 'img' ? document.createElement('img') : document.createElement('div'); t.className = 'gm-th';
         if(x.kind === 'img'){ t.src = thumb(x.url); t.alt = ''; t.loading = 'lazy'; t.decoding = 'async'; } else t.textContent = '💬';
         const tx = document.createElement('div'); tx.className = 'gm-tx';
-        const b = document.createElement('b'); b.textContent = x.kind === 'img' ? 'Foto' : (x.text || '');
-        const sm = document.createElement('small'); sm.textContent = 'Galaxia de ' + (NAMES[x.gi] || '—') + (x.def ? (x.off ? ' · quitada' : ' · de GitHub') : '');
-        tx.appendChild(b); tx.appendChild(sm); r.append(t, tx);
+        const b = document.createElement('b'); b.textContent = x.kind === 'img' ? (x.def ? x.name : 'Foto') : (x.text || '');
+        const sm = document.createElement('small'), dt = document.createElement('i'), st2 = document.createElement('span'); dt.className = 'gm-dot'; st2.textContent = 'Galaxia de ' + (NAMES[x.gi] || '—') + (x.def ? (x.off ? ' · quitada' : ' · de GitHub') : ''); sm.append(dt, st2);
+        tx.appendChild(b); tx.appendChild(sm); r.append(t, tx); if(x.def && x.kind === 'img') probe(t, x, st2, r);
         const mk = (a, em, lb)=>{ const e = document.createElement('button'); e.className = 'gm-btn'; e.dataset.a = a; e.textContent = em; e.setAttribute('aria-label', lb); r.appendChild(e); };
         if(x.def) mk('h', x.off ? '↩️' : '🗑️', x.off ? 'Restaurar' : 'Quitar'); else { mk('e', '✏️', 'Editar'); mk('d', '🗑️', 'Borrar'); }
         list.appendChild(r);
@@ -4760,8 +4830,13 @@
     window.addEventListener('gal-items', render);
     $('galCfg').addEventListener('click', ()=>{
       history.pushState({ galadm:true }, '', '#galaxia-admin');
-      const v = $('galAdmView'); v.scrollTop = 0; admStack.push(v); admShow(v); render();
+      const v = $('galAdmView'); v.scrollTop = 0; admStack.push(v); admShow(v);
+      const g = theme.gal; ['#ff8fc8','#8fb8ff','#ffd9a0'].forEach((d, i)=>{ $('thG' + i).value = g.c[i] || d; }); $('thGB').value = g.bg || '#07030d';
+      v.querySelectorAll('.th-row[data-pk]').forEach(r=>{ r.querySelector('.th-dot').style.background = $(r.dataset.pk).value; });
+      render();
     });
+    $('gmColReset').addEventListener('click', ()=>$('thGalReset').click());
+    $('gmType').addEventListener('click', e=>{ const b = e.target.closest('button'); if(!b) return; typ = b.dataset.t; $('gmType').querySelectorAll('button').forEach(x=>x.classList.toggle('on', x === b)); render(); });
     $('galAdmBack').addEventListener('click', admBack);
     $('gmNew').addEventListener('click', ()=>$('galAdd').click());
     $('gmFilter').addEventListener('click', e=>{ const b = e.target.closest('button'); if(!b) return; flt = +b.dataset.g; $('gmFilter').querySelectorAll('button').forEach(x=>x.classList.toggle('on', x === b)); render(); });
