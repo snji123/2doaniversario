@@ -1394,13 +1394,9 @@
         <input type="file" id="thFile" accept="image/*" hidden>
       </div>
     </div>
-    <div class="th-card"><div class="th-hd"><b>Galaxia</b><small>Afecta: las galaxias, su cielo, y la pantalla y barra de carga</small></div>
-      <div class="gx-prev"><i></i><i></i><i></i><span class="gx-bar"></span></div>
-      <div class="th-row" data-pk="thG0"><span>Galaxia de Ali<small>su color y brillo</small></span><i class="th-dot"></i><input type="color" id="thG0" hidden></div>
-      <div class="th-row" data-pk="thG1"><span>Galaxia de Axel<small>su color y brillo</small></span><i class="th-dot"></i><input type="color" id="thG1" hidden></div>
-      <div class="th-row" data-pk="thG2"><span>Galaxia de Nosotros<small>su color y brillo</small></span><i class="th-dot"></i><input type="color" id="thG2" hidden></div>
-      <div class="th-row" data-pk="thGB"><span>Cielo<small>el fondo detrás de las galaxias</small></span><i class="th-dot"></i><input type="color" id="thGB" hidden></div>
-      <div class="th-actions"><button type="button" class="th-btn ghost" id="thGalReset">Colores originales de la galaxia</button></div>
+    <div hidden aria-hidden="true">
+      <input type="color" id="thG0"><input type="color" id="thG1"><input type="color" id="thG2"><input type="color" id="thGB">
+      <button type="button" id="thGalReset"></button>
     </div>
     <div class="th-status" id="thStatus"></div>
     <div class="th-actions"><button type="button" class="th-btn ghost" id="thReset">Restablecer colores y fondo</button></div>
