@@ -13,7 +13,11 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600&display=swap" rel="stylesheet"></noscript>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
 <style>
   :root{
     --bg:#0a0a0a;
@@ -869,7 +873,7 @@
   .sheet .big-cover{margin-top:26px;}
   .sp-bottom{padding-bottom:60px;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <script type="module">
   // Firebase conectado directo por CDN (sin npm, funciona tal cual en GitHub Pages)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -910,6 +914,21 @@
 </script>
 </head>
 <body class="locked">
+<style>
+#appSplash{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(70% 50% at 50% 40%,rgba(var(--sp-rgb,30,215,96),.22),transparent 70%),var(--sp-bg,#0a0a0a);transition:opacity .5s ease,visibility 0s linear .5s;font-family:'Poppins',-apple-system,system-ui,sans-serif;}
+#appSplash.done{opacity:0;visibility:hidden;pointer-events:none;}
+#appSplash .sp-h{width:64px;height:64px;background:var(--sp-fill,#1ed760);-webkit-mask:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-7.5-4.8-9.7-9.3C.8 8.6 2.3 5 5.7 5c2.3 0 4.1 1.4 6.3 3.7C14.2 6.4 16 5 18.3 5c3.4 0 4.9 3.6 3.4 6.7C19.5 16.2 12 21 12 21z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-7.5-4.8-9.7-9.3C.8 8.6 2.3 5 5.7 5c2.3 0 4.1 1.4 6.3 3.7C14.2 6.4 16 5 18.3 5c3.4 0 4.9 3.6 3.4 6.7C19.5 16.2 12 21 12 21z'/%3E%3C/svg%3E") center/contain no-repeat;animation:spBeat 1.2s ease-in-out infinite;}
+#appSplash .sp-t{color:#fff;font-weight:700;font-size:20px;}
+#appSplash .sp-bar{width:180px;height:5px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden;}
+#appSplash .sp-bar i{display:block;height:100%;width:100%;transform-origin:left;transform:scaleX(0);background:var(--sp-fill,#1ed760);border-radius:3px;}
+#appSplash .sp-p{color:rgba(255,255,255,.55);font-size:12px;}
+@keyframes spBeat{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
+</style>
+<div id="appSplash"><div class="sp-h"></div><div class="sp-t">Para Ti</div><div class="sp-bar"><i id="spFill"></i></div><div class="sp-p" id="spPct">0%</div></div>
+<script>
+(function(){try{var r=localStorage.getItem('paraTiRole'),j=r&&JSON.parse(localStorage.getItem('paraTi.theme.'+r)||'null'),t=j&&j.t;if(t&&/^#[0-9a-f]{6}$/i.test(t.accent)){var e=document.getElementById('appSplash').style,v=parseInt(t.accent.slice(1),16);e.setProperty('--sp-rgb',(v>>16&255)+','+(v>>8&255)+','+(v&255));e.setProperty('--sp-fill',/^#[0-9a-f]{6}$/i.test(t.accent2)?'linear-gradient(90deg,'+t.accent+','+t.accent2+')':t.accent);if(/^#[0-9a-f]{6}$/i.test(t.bg))e.setProperty('--sp-bg',t.bg);}}catch(x){}})();
+</script>
+
 <div id="appWall" aria-hidden="true"></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="bear" viewBox="0 0 64 60">
@@ -1835,7 +1854,9 @@
     renderInto(box, likedArr);
     if(!likedArr.length) box.innerHTML = '<div class="empty"><span>Aún no hay canciones que te encanten</span>Toca el corazón de una canción para verla aquí.</div>';
   }
-  function renderTracks(){ renderInto(list, songs); renderInto(listMine, mySongs); renderLiked(); if(typeof renderAlbums==='function') renderAlbums(); if(typeof offHeal==='function') offHeal(); }
+  let rtQ = 0;
+  function renderTracks(){ if(rtQ) return; rtQ = requestAnimationFrame(()=>{ rtQ = 0; renderTracksNow(); }); }
+  function renderTracksNow(){ window.__tracksOK = true; renderInto(list, songs); renderInto(listMine, mySongs); renderLiked(); if(typeof renderAlbums==='function') renderAlbums(); if(typeof offHeal==='function') offHeal(); }
   renderTracks();
 
   // ----- Firestore: sincroniza canciones (título/frase/nota/corazón/nota de ella) -----
@@ -4912,6 +4933,25 @@
     const saved = localStorage.getItem('paraTiRole');
     if(saved && USERS[saved]) unlock(saved);
   }catch(e){}
+</script>
+<script>
+(function(){
+  var sp=document.getElementById('appSplash'),fill=document.getElementById('spFill'),pct=document.getElementById('spPct'),t0=Date.now(),shown=0,fonts=0,fb=!!window.fb,gone=0;
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){fonts=1});else fonts=1;
+  window.addEventListener('firebase-ready',function(){fb=true});
+  function finish(){if(gone)return;gone=1;sp.classList.add('done');setTimeout(function(){sp.remove()},700)}
+  function tick(){
+    if(gone)return;
+    fb=fb||!!window.fb;
+    var tgt=.12+(fonts?.28:0)+(fb?.3:0)+(window.__tracksOK?.3:0),el=Date.now()-t0;
+    if(el>4500)tgt=1;
+    shown+=(tgt-shown)*.12; if(tgt>=1)shown=Math.max(shown,Math.min(1,shown+.04));
+    fill.style.transform='scaleX('+shown+')';pct.textContent=Math.round(shown*100)+'%';
+    if(shown>.985&&el>500){fill.style.transform='scaleX(1)';pct.textContent='100%';setTimeout(finish,150);return}
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
 </script>
 </body>
 </html>
