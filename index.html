@@ -403,7 +403,7 @@
   .gate{
     position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;
     padding:calc(24px + env(safe-area-inset-top,0px)) 24px calc(24px + env(safe-area-inset-bottom,0px));
-    background:radial-gradient(120% 90% at 50% -10%, var(--hero-a) 0%, var(--hero-b) 50%, var(--bg) 85%);
+    background:radial-gradient(120% 70% at 50% -10%, rgba(var(--green-rgb),.20) 0%, transparent 65%), var(--wall) center/cover no-repeat, var(--bg);
     transition:opacity .5s ease, visibility .5s;
   }
   .gate{--text:#fff;--text-dim:#a7a7a7;--divider:rgba(255,255,255,0.1);color:#fff;}
@@ -968,6 +968,36 @@
   .sheet .big-cover{margin-top:26px;}
   .sp-bottom{padding-bottom:60px;}
 </style>
+<script>
+/* Colores guardados: se aplican antes del primer dibujo para que el arranque y el login ya salgan con tu apariencia */
+(function(){
+  function rgb(h){var v=parseInt(h.slice(1),16);return[v>>16&255,v>>8&255,v&255];}
+  function hex(a){return'#'+a.map(function(x){x=Math.max(0,Math.min(255,Math.round(x)));return(x<16?'0':'')+x.toString(16);}).join('');}
+  function mix(a,b,t){var A=rgb(a),B=rgb(b);return hex(A.map(function(x,i){return x+(B[i]-x)*t;}));}
+  function lum(h){var c=rgb(h);return(.2126*c[0]+.7152*c[1]+.0722*c[2])/255;}
+  var HX=/^#[0-9a-f]{6}$/i;
+  /* fondo: degradado Color 1 -> Color 2 con reparto ajustable (mix = % de Color 1), o foto oscurecida */
+  window.__thWall=function(t,pbg,photo){
+    var w=t.wall||{},bgc=rgb(pbg).join(',');
+    if(w.mode==='photo'&&photo){var a=((w.dim==null?35:w.dim)/100).toFixed(2);return'linear-gradient(rgba('+bgc+','+a+'),rgba('+bgc+','+a+')),url("'+photo+'")';}
+    var ok=false;try{ok=CSS.supports('background','linear-gradient(in oklab, red, blue)');}catch(e){}
+    var m=Math.max(5,Math.min(95,w.mix==null||isNaN(+w.mix)?50:+w.mix));
+    return'linear-gradient('+(ok?'in oklab ':'')+'180deg,'+t.hero+(m===50?'':','+m+'%')+','+t.bg+')';
+  };
+  try{
+    var r=localStorage.getItem('paraTiRole');
+    var j=JSON.parse((r&&localStorage.getItem('paraTi.theme.'+r))||localStorage.getItem('paraTi.theme.last')||'null'),t=j&&j.t;
+    if(!t||!HX.test(t.accent)||!HX.test(t.bg)||!HX.test(t.hero))return;
+    var st=document.documentElement.style,set=function(k,v){st.setProperty(k,v);};
+    var pbg=lum(t.bg)>.45?mix(t.bg,'#000000',.8):t.bg;
+    set('--green',t.accent);set('--green-dim',mix(t.accent,'#000000',.3));set('--green-rgb',rgb(t.accent).join(','));
+    set('--accent-fill',HX.test(t.accent2)?'linear-gradient(135deg,'+t.accent+','+t.accent2+')':t.accent);
+    set('--bg',pbg);set('--bg-rgb',rgb(pbg).join(','));
+    set('--hero-a',t.hero);set('--hero-b',mix(t.hero,pbg,.55));
+    set('--wall',window.__thWall(t,pbg,j.p||''));
+  }catch(e){}
+})();
+</script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <script type="module">
   // Firebase conectado directo por CDN (sin npm, funciona tal cual en GitHub Pages)
@@ -1015,24 +1045,33 @@
 </head>
 <body class="locked">
 <style>
-#appSplash{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(70% 50% at 50% 40%,rgba(var(--sp-rgb,30,215,96),.22),transparent 70%),var(--sp-bg,#0a0a0a);transition:opacity .5s ease,visibility 0s linear .5s;font-family:'Poppins',-apple-system,system-ui,sans-serif;}
+#appSplash{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(70% 50% at 50% 40%,rgba(var(--sp-rgb,var(--green-rgb)),.22),transparent 70%),var(--wall) center/cover no-repeat,var(--sp-bg,#0a0a0a);transition:opacity .5s ease,visibility 0s linear .5s;font-family:'Poppins',-apple-system,system-ui,sans-serif;}
 #appSplash.done{opacity:0;visibility:hidden;pointer-events:none;}
-#appSplash .sp-h{width:64px;height:64px;background:var(--sp-fill,#1ed760);-webkit-mask:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-7.5-4.8-9.7-9.3C.8 8.6 2.3 5 5.7 5c2.3 0 4.1 1.4 6.3 3.7C14.2 6.4 16 5 18.3 5c3.4 0 4.9 3.6 3.4 6.7C19.5 16.2 12 21 12 21z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-7.5-4.8-9.7-9.3C.8 8.6 2.3 5 5.7 5c2.3 0 4.1 1.4 6.3 3.7C14.2 6.4 16 5 18.3 5c3.4 0 4.9 3.6 3.4 6.7C19.5 16.2 12 21 12 21z'/%3E%3C/svg%3E") center/contain no-repeat;animation:spBeat 1.2s ease-in-out infinite;}
+#appSplash .sp-h{width:64px;height:64px;background:var(--sp-fill,var(--accent-fill));-webkit-mask:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-7.5-4.8-9.7-9.3C.8 8.6 2.3 5 5.7 5c2.3 0 4.1 1.4 6.3 3.7C14.2 6.4 16 5 18.3 5c3.4 0 4.9 3.6 3.4 6.7C19.5 16.2 12 21 12 21z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-7.5-4.8-9.7-9.3C.8 8.6 2.3 5 5.7 5c2.3 0 4.1 1.4 6.3 3.7C14.2 6.4 16 5 18.3 5c3.4 0 4.9 3.6 3.4 6.7C19.5 16.2 12 21 12 21z'/%3E%3C/svg%3E") center/contain no-repeat;animation:spBeat 1.2s ease-in-out infinite;}
 #appSplash .sp-t{color:#fff;font-weight:700;font-size:20px;}
 #appSplash .sp-bar{width:180px;height:5px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden;}
-#appSplash .sp-bar i{display:block;height:100%;width:100%;transform-origin:left;transform:scaleX(0);background:var(--sp-fill,#1ed760);border-radius:3px;}
+#appSplash .sp-bar i{display:block;height:100%;width:100%;transform-origin:left;transform:scaleX(0);background:var(--sp-fill,var(--accent-fill));border-radius:3px;}
 #appSplash .sp-p{color:rgba(255,255,255,.55);font-size:12px;}
-#appBusy{position:fixed;inset:0;z-index:99998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:radial-gradient(70% 50% at 50% 40%,rgba(var(--green-rgb),.22),transparent 70%),rgba(var(--bg-rgb),.97);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease,visibility 0s linear .22s;font-family:var(--font);}
+#appBusy{position:fixed;inset:0;z-index:99998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:radial-gradient(70% 50% at 50% 40%,rgba(var(--green-rgb),.22),transparent 70%),var(--wall) center/cover no-repeat,var(--bg);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease,visibility 0s linear .22s;font-family:var(--font);}
 #appBusy.on{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .15s ease;}
 #appBusy .bz-h{width:54px;height:54px;background:var(--accent-fill);-webkit-mask:var(--heart) center/contain no-repeat;mask:var(--heart) center/contain no-repeat;animation:spBeat 1.2s ease-in-out infinite;}
 #appBusy .bz-l{color:var(--text);font-weight:700;font-size:17px;text-align:center;padding:0 24px;}
 #appBusy .bz-bar{width:190px;height:5px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden;}
 #appBusy .bz-bar i{display:block;height:100%;width:100%;transform-origin:left;transform:scaleX(0);background:var(--accent-fill);border-radius:3px;transition:transform .28s ease;}
 #appBusy .bz-p{color:var(--text-dim);font-size:12px;}
+.th-bar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:80;display:flex;align-items:center;gap:10px;padding:9px 10px 9px 18px;border-radius:999px;background:var(--surface-2);border:1px solid var(--divider);box-shadow:0 10px 30px rgba(0,0,0,.5);transform:translateY(150%);opacity:0;visibility:hidden;transition:transform .3s cubic-bezier(.32,.72,0,1),opacity .2s,visibility 0s linear .3s;font-family:var(--font);}
+.th-bar.show{transform:none;opacity:1;visibility:visible;transition:transform .3s cubic-bezier(.32,.72,0,1),opacity .2s;}
+.th-bar span{flex:1;font:600 13px var(--font);color:var(--text);}
+.th-bar .th-btn{padding:10px 16px;}
+#themeView .adm-wrap::after,#galAdmView .adm-wrap::after{content:'';display:block;height:96px;}
+.gm-colors .th-row[data-gx]{display:none;}
+.gm-colors.gx0 .th-row[data-gx="0"],.gm-colors.gx1 .th-row[data-gx="1"],.gm-colors.gx2 .th-row[data-gx="2"],.gm-colors.gx3 .th-row[data-gx="3"]{display:flex;}
+.th-mix small{display:block;font-weight:500;color:var(--text-dim);font-size:12px;margin-top:2px;}
 @keyframes spBeat{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
 </style>
 <div id="appSplash"><div class="sp-h"></div><div class="sp-t">Para Ti</div><div class="sp-bar"><i id="spFill"></i></div><div class="sp-p" id="spPct">0%</div></div>
 <div id="appBusy" role="status" aria-live="polite"><div class="bz-h"></div><div class="bz-l" id="bzLbl">Cargando…</div><div class="bz-bar"><i id="bzFill"></i></div><div class="bz-p" id="bzPct">0%</div></div>
+<div class="th-bar" id="thBar" role="region" aria-label="Cambios de apariencia"><span>Cambios sin guardar</span><button type="button" class="th-btn ghost" id="thDiscard">Descartar</button><button type="button" class="th-btn" id="thSave">Guardar</button></div>
 <script>
 /* Barra de progreso global: Busy.begin(texto) · Busy.set(0..1, texto) · Busy.end()  + ayudas para esperar a que todo cargue */
 window.Busy=(function(){
@@ -1476,6 +1515,7 @@ window.Busy=(function(){
         <div class="th-grads" id="thGrads"></div>
         <div class="th-row" data-pk="thHero"><span>Color 1<small>arriba</small></span><i class="th-dot"></i><input type="color" id="thHero" hidden></div>
         <div class="th-row" data-pk="thBg"><span>Color 2<small>abajo</small></span><i class="th-dot"></i><input type="color" id="thBg" hidden></div>
+        <label class="th-row th-mix" style="flex-direction:column;align-items:stretch;gap:8px;"><span>Reparto del degradado<small id="thMixLbl">50% Color 1 · 50% Color 2</small></span><input type="range" class="th-range" id="thMix" min="5" max="95" step="1"></label>
       </div>
       <div id="thPhotoBox" style="display:none;">
         <div class="th-thumb" id="thThumb"></div>
@@ -1512,12 +1552,13 @@ window.Busy=(function(){
       <div class="adm-title">Galaxia</div>
       <div class="adm-sub" id="galAdmSub"></div>
     </div>
-    <details class="th-card gm-colors"><summary>🎨 Colores de la galaxia</summary>
+    <details class="th-card gm-colors gx0" id="gmColors"><summary>🎨 Colores de la galaxia</summary>
       <div class="gx-prev"><i></i><i></i><i></i><span class="gx-bar"></span></div>
-      <div class="th-row" data-pk="thG0"><span>Galaxia de Ali<small>su color y brillo</small></span><i class="th-dot"></i></div>
-      <div class="th-row" data-pk="thG1"><span>Galaxia de Axel<small>su color y brillo</small></span><i class="th-dot"></i></div>
-      <div class="th-row" data-pk="thG2"><span>Galaxia de Nosotros<small>su color y brillo</small></span><i class="th-dot"></i></div>
-      <div class="th-row" data-pk="thGB"><span>Cielo<small>el fondo, la pantalla y la barra de carga</small></span><i class="th-dot"></i></div>
+      <div class="th-seg" id="gxSeg"><button type="button" data-k="0" class="on">Ali</button><button type="button" data-k="1">Axel</button><button type="button" data-k="2">Nosotros</button><button type="button" data-k="3">Cielo</button></div>
+      <div class="th-row" data-pk="thG0" data-gx="0"><span>Galaxia de Ali<small>su color y brillo</small></span><i class="th-dot"></i></div>
+      <div class="th-row" data-pk="thG1" data-gx="1"><span>Galaxia de Axel<small>su color y brillo</small></span><i class="th-dot"></i></div>
+      <div class="th-row" data-pk="thG2" data-gx="2"><span>Galaxia de Nosotros<small>su color y brillo</small></span><i class="th-dot"></i></div>
+      <div class="th-row" data-pk="thGB" data-gx="3"><span>Cielo<small>el fondo, la pantalla y la barra de carga</small></span><i class="th-dot"></i></div>
       <div class="th-actions" style="padding-bottom:14px"><button type="button" class="th-btn ghost" id="gmColReset">Colores originales</button></div>
     </details>
     <div class="th-seg" id="gmType" style="margin-bottom:12px"><button type="button" data-t="img" class="on">Fotos</button><button type="button" data-t="txt">Frases</button></div>
@@ -3378,10 +3419,16 @@ window.Busy=(function(){
   const ICO_RESTORE = '<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
   const ICO_TRASH = UI_ICO.trash;
   const admStack = [];
-  function admShow(v){ v.classList.add('open'); v.setAttribute('aria-hidden','false'); }
-  function admHide(v){ v.classList.remove('open'); v.setAttribute('aria-hidden','true'); }
+  function admShow(v){ v.classList.add('open'); v.setAttribute('aria-hidden','false'); try{ thBarUpdate(); }catch(e){} }
+  function admHide(v){ v.classList.remove('open'); v.setAttribute('aria-hidden','true'); try{ thBarUpdate(); }catch(e){} }
   function admPop(){
     const v = admStack.pop(); if(!v) return false;
+    if((v.id === 'themeView' || v.id === 'galAdmView') && thDirty()){
+      admStack.push(v); history.pushState(v.id === 'themeView' ? { theme:true } : { galadm:true }, '', v.id === 'themeView' ? '#apariencia' : '#galaxia-admin');
+      uiDialog({ tone:'danger', title:'¿Salir sin guardar?', message:'Los cambios de apariencia que no guardaste se perderán.', confirmText:'Salir sin guardar', cancelText:'Seguir editando' })
+        .then(ok => { if(ok){ thRevert(); admBack(); } });
+      return true;
+    }
     if(v.id==='songsView' && smSelMode){ admStack.push(v); history.pushState({ songs:true }, '', '#canciones'); exitSelMode(); return true; }
     if(v.id==='albView') albOpen = null;
     admHide(v); return true;
@@ -3603,7 +3650,7 @@ window.Busy=(function(){
   // ===== Apariencia personal: colores y fondo de pantalla (cada perfil guarda los suyos) =====
   const THEME_DEFAULT = { accent:'#1ed760', bg:'#0a0a0a', surface:'#181818', text:'#ffffff', hero:'#3a1030',
     gal:{ bg:'', c:['','',''] },
-    wall:{ mode:'color', dim:35 } };
+    wall:{ mode:'color', dim:35, mix:50 } };
   const TH_SO0 = ['#1ed760', '#00b4d8', '#a855f7', '#ff4d8d', '#ff8a3d', '#ffd23f', '#ff5252', '#14b8a6', '#6366f1', '#e8e8e8', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#84cc16', '#10b981', '#0ea5e9', '#2563eb', '#7c3aed', '#c026d3', '#e11d48', '#fb7185', '#fbbf24', '#34d399', '#38bdf8'];
   const TH_PA0 = ['#a8e6cf', '#a0d8ef', '#c7b8ff', '#ffb3d1', '#ffd1a9', '#fff0a8', '#ffb4a8', '#e2c2ff', '#b5ead7', '#d9d9e8', '#ffc8dd', '#ffafcc', '#bde0fe', '#a2d2ff', '#cdb4db', '#fde2e4', '#fad2e1', '#bee1e6', '#dfe7fd', '#f0efeb', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#ffe5ec', '#e2ece9', '#fffffc'];
   const TH_GR0 = [['#1ed760', '#00c2ff'],['#ff4d8d', '#ff8a3d'],['#a855f7', '#ff4d8d'],['#00c2ff', '#a855f7'],['#ffd23f', '#ff5252'],['#14b8a6', '#6366f1'],['#ffb3d1', '#c7b8ff'],['#a8e6cf', '#a0d8ef'],['#ffd1a9', '#ffb3d1'],['#f6d365', '#fda085'],['#ff512f', '#dd2476'],['#f093fb', '#f5576c'],['#4facfe', '#00f2fe'],['#43e97b', '#38f9d7'],['#fa709a', '#fee140'],['#667eea', '#764ba2'],['#30cfd0', '#330867'],['#a18cd1', '#fbc2eb'],['#ff9a9e', '#fecfef'],['#0ba360', '#3cba92'],['#ee0979', '#ff6a00'],['#fc466b', '#3f5efb'],['#00c6ff', '#0072ff'],['#f857a6', '#ff5858'],['#7f00ff', '#e100ff'],['#11998e', '#38ef7d'],['#fceabb', '#f8b500'],['#8e2de2', '#4a00e0'],['#ff8008', '#ffc837'],['#e0c3fc', '#8ec5fc']];
@@ -3625,7 +3672,15 @@ window.Busy=(function(){
     ['#ff0844','#ffb199'],['#fbc2eb','#a6c1ee'],['#c471f5','#fa71cd'],['#48c6ef','#6f86d6'],['#feada6','#f5efef'],['#a1c4fd','#c2e9fb'],['#d4fc79','#96e6a1'],['#cfd9df','#e2ebf0'],['#6a11cb','#2575fc'],['#fddb92','#d1fdff'],['#9890e3','#b1f4cf'],['#ebc0fd','#d9ded8'],['#96fbc4','#f9f586'],['#2af598','#009efd'],['#b721ff','#21d4fd'],['#08aeea','#2af598'],['#ff9a44','#fc6076'],['#6a85b6','#bac8e0'],['#ff0099','#493240'],['#00d2ff','#3a7bd5'],['#f7971e','#ffd200'],['#8360c3','#2ebf91'],['#667db6','#0082c8'],['#ec008c','#fc6767'],['#cc2b5e','#753a88'],['#2193b0','#6dd5ed'],['#ddd6f3','#faaca8'],['#ff758c','#ff7eb3'],['#4568dc','#b06ab3'],['#e65c00','#f9d423'],['#7b4397','#dc2430'],['#1488cc','#2b32b2'],['#ed4264','#ffedbc'],['#dd5e89','#f7bb97'],['#4b6cb7','#182848'],['#ff5f6d','#ffc371'],['#c33764','#1d2671'],['#93a5cf','#e4efe9'],['#ff6b6b','#feca57'],['#5f2c82','#49a09d'],['#c6ffdd','#fbd786'],['#00c9ff','#92fe9d'],['#f953c6','#b91d73'],['#a8ff78','#78ffd6'],['#bc4e9c','#f80759'],['#3ca55c','#b5ac49'],['#556270','#ff6b6b'],['#1a2980','#26d0ce'],['#fe8c00','#f83600'],['#6441a5','#2a0845'],['#ffafbd','#ffc3a0'],['#2c3e50','#4ca1af'],['#e96443','#904e95'],['#085078','#85d8ce'],['#0b486b','#f56217'],['#780206','#061161'],['#7f7fd5','#91eae4'],['#ff00cc','#333399'],['#fc4a1a','#f7b733'],['#e52d27','#b31217'],['#2980b9','#6dd5fa'],['#5433ff','#20bdff'],['#da22ff','#9733ee'],['#00f260','#0575e6'],['#ff4e50','#f9d423'],['#f2709c','#ff9472'],['#c9d6ff','#e2e2e2'],['#0f0c29','#24243e'],['#000428','#004e92'],['#1d4350','#a43931'],['#f6416c','#ffb88c'],['#ff9a9e','#a18cd1'],['#00cdac','#8ddad5'],['#fa8bff','#2bd2ff'],['#ff3cac','#784ba0'],['#85ffbd','#fffb7d'],['#ffdde1','#ee9ca7'],['#74ebd5','#acb6e5'],['#ff0080','#7928ca'],['#00dbde','#fc00ff'],['#f83600','#f9d423'],['#0093e9','#80d0c7'],['#8ec5fc','#e0c3fc'],['#ffecd2','#ff9a9e'],['#ee5a24','#f79f1f'],['#1e3c72','#2a5298'],['#ff6a88','#ff99ac'],['#d9a7c7','#fffcdc'],['#232526','#1ed760']]);
   const TH_GRADS = TH_GR;
   let theme = JSON.parse(JSON.stringify(THEME_DEFAULT)), wallPhoto = '', thLastEdit = 0, thSaveT = 0, thPhotoDirty = false;
-  let thDown = 0, thBusy = false, thQueued = false, thApplyRaf = 0;
+  let thDown = 0, thBusy = false, thQueued = false, thApplyRaf = 0, thSaved = { t:'', p:'' };
+  // lo guardado vs. lo que estás probando: nada se guarda hasta que toques «Guardar»
+  function thMarkSaved(){ thSaved = { t: JSON.stringify(theme), p: wallPhoto }; try{ thBarUpdate(); }catch(e){} }
+  function thDirty(){ return JSON.stringify(theme) !== thSaved.t || wallPhoto !== thSaved.p; }
+  function thBarUpdate(){
+    const bar = document.getElementById('thBar'); if(!bar) return;
+    const open = ['themeView', 'galAdmView'].some(id => { const v = document.getElementById(id); return v && v.classList.contains('open'); });
+    bar.classList.toggle('show', open && thDirty());
+  }
   const thHex = c => { const m = /^#?([0-9a-f]{6})$/i.exec(c || ''); return m ? '#' + m[1].toLowerCase() : null; };
   const thRgb = h => { const v = parseInt(h.slice(1), 16); return [v >> 16 & 255, v >> 8 & 255, v & 255]; };
   const thToHex = a => '#' + a.map(x => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join('');
@@ -3641,6 +3696,7 @@ window.Busy=(function(){
     if(w.mode === 'grad'){ o.hero = thHex(w.c1) || o.hero; o.bg = thHex(w.c2) || o.bg; }
     o.wall.mode = w.mode === 'photo' ? 'photo' : 'color';
     o.wall.dim = Math.max(0, Math.min(85, Number.isFinite(+w.dim) ? +w.dim : 35));
+    o.wall.mix = Math.max(5, Math.min(95, w.mix == null || !Number.isFinite(+w.mix) ? 50 : +w.mix)); // % de Color 1 en el degradado
     return o;
   }
   function applyTheme(live){
@@ -3659,64 +3715,87 @@ window.Busy=(function(){
     set('--surface', t.surface); set('--surface-2', thMix(t.surface, '#ffffff', .1)); set('--surface-hover', thMix(t.surface, '#ffffff', .16));
     set('--text', t.text); set('--text-dim', thMix(t.text, pbg, .4)); set('--divider', 'rgba(' + thRgb(t.text).join(',') + ',.09)');
     set('--hero-a', t.hero); set('--hero-b', thMix(t.hero, pbg, .55));
-    const w = t.wall, bgc = thRgb(pbg).join(',');
-    let wall = '';
-    if(w.mode === 'photo' && wallPhoto){ const a = (w.dim / 100).toFixed(2); wall = 'linear-gradient(rgba(' + bgc + ',' + a + '),rgba(' + bgc + ',' + a + ')),url("' + wallPhoto + '")'; }
-    else { let ok = false; try{ ok = CSS.supports('background', 'linear-gradient(in oklab, red, blue)'); }catch(e){}
-      wall = 'linear-gradient(' + (ok ? 'in oklab ' : '') + '180deg,' + t.hero + ',' + t.bg + ')'; }  // mezcla suave, sin cortes
-    set('--wall', wall); document.documentElement.classList.add('has-wall');
+    set('--wall', window.__thWall(t, pbg, wallPhoto)); document.documentElement.classList.add('has-wall');
     const mt = document.querySelector('meta[name="theme-color"]'); if(mt) mt.setAttribute('content', t.hero);
   }
   const thKey = r => 'paraTi.theme.' + r;
-  function thCache(){ try{ localStorage.setItem(thKey(myRole), JSON.stringify({ t:theme, p:wallPhoto })); }catch(e){} }
+  function thCache(){ try{ const j = JSON.stringify({ t:theme, p:wallPhoto }); localStorage.setItem(thKey(myRole), j); localStorage.setItem('paraTi.theme.last', j); }catch(e){} }
   function loadThemeLocal(role){
-    try{ const j = JSON.parse(localStorage.getItem(thKey(role)) || 'null'); if(j){ theme = thClean(j.t); wallPhoto = j.p || ''; applyTheme(); return; } }catch(e){}
-    theme = thClean(null); wallPhoto = ''; applyTheme();
+    try{ const j = JSON.parse(localStorage.getItem(thKey(role)) || 'null'); if(j){ theme = thClean(j.t); wallPhoto = j.p || ''; applyTheme(); thMarkSaved(); return; } }catch(e){}
+    theme = thClean(null); wallPhoto = ''; applyTheme(); thMarkSaved();
   }
   function themeFromProfile(){
     if(!myRole || Date.now() - thLastEdit < 4000) return;
     const p = profiles[myRole]; if(!p || !p.theme) return;
     const nt = thClean(p.theme), nw = p.wall || '';
-    if(thBusy || thQueued || (JSON.stringify(nt) === JSON.stringify(theme) && nw === wallPhoto)) return; // nada cambió: no repintes todo
-    theme = nt; wallPhoto = nw; applyTheme(); thCache();
+    if(thBusy || thQueued || thDirty() || (JSON.stringify(nt) === JSON.stringify(theme) && nw === wallPhoto)) return; // nada cambió: no repintes todo
+    theme = nt; wallPhoto = nw; applyTheme(); thCache(); thMarkSaved();
     if(document.getElementById('themeView').classList.contains('open')) thSync();
   }
-  function resetThemeVisual(){ theme = thClean(null); wallPhoto = ''; applyTheme(); }
+  function resetThemeVisual(){ theme = thClean(null); wallPhoto = ''; applyTheme(); thMarkSaved(); }
   function thStatus(msg){ const el = document.getElementById('thStatus'); el.textContent = msg; }
   document.addEventListener('pointerdown', ()=>{ thDown = 1; }, true);
   ['pointerup','pointercancel'].forEach(ev=>document.addEventListener(ev, ()=>{ thDown = 0; if(thQueued) thSchedule(380); }, true));
   function thSchedule(ms){ clearTimeout(thSaveT); thSaveT = setTimeout(thCommit, ms); }
-  // mientras mueves un selector solo se actualizan los colores (ligero, 1 vez por cuadro); al soltar se hace todo con barra de progreso
+  // mientras mueves un selector solo se ven los colores (ligero); al soltar se aplican todos los efectos con barra de progreso. NO se guarda nada.
   function thTouch(fast){
-    thLastEdit = Date.now(); thQueued = true;
+    thQueued = true;
     if(!thApplyRaf) thApplyRaf = requestAnimationFrame(()=>{ thApplyRaf = 0; applyTheme(true); });
-    thStatus('Guardando…');
+    thStatus('Cambios sin guardar · toca «Guardar» cuando termines');
+    thBarUpdate();
     thSchedule(fast === true ? 60 : 450);
   }
   async function thCommit(){
     if(thDown || thBusy){ thSchedule(300); return; }
     thQueued = false; thBusy = true;
     const B = window.Busy;
-    B.begin('Aplicando tus cambios…');
+    B.begin('Aplicando tus colores…');
+    try{
+      B.set(.12, 'Aplicando colores…'); applyTheme(true); await B.frames(2);
+      B.set(.4, 'Afinando la galaxia…'); try{ galaxy.recolor(theme.gal.c); }catch(e){} await B.frames(2);
+      B.set(.65, 'Preparando los efectos…'); await B.settle(3500, p=>B.set(.65 + .33 * p));
+    }catch(e){ console.warn('tema', e); }
+    thBusy = false; B.end(); thBarUpdate();
+    if(thQueued) thSchedule(200);
+  }
+  async function thSave(){
+    if(thBusy){ setTimeout(thSave, 250); return; }
+    clearTimeout(thSaveT); thQueued = false; thBusy = true;
+    const B = window.Busy;
+    B.begin('Guardando tu apariencia…');
     try{
       B.set(.1, 'Aplicando colores…'); applyTheme(true); await B.frames(2);
       B.set(.3, 'Afinando la galaxia…'); try{ galaxy.recolor(theme.gal.c); }catch(e){} await B.frames(2);
-      B.set(.45, 'Guardando en este dispositivo…'); thCache(); await B.frames(1);
+      B.set(.45, 'Guardando en este dispositivo…'); thCache(); thMarkSaved(); await B.frames(1);
       B.set(.55, 'Guardando en tu cuenta…');
+      let cloud = false;
       if(window.fb && myRole){
         const { db, doc, setDoc } = window.fb, data = { theme: JSON.parse(JSON.stringify(theme)) };
         if(thPhotoDirty) data.wall = wallPhoto;
         try{
           await Promise.race([ setDoc(doc(db, 'users', myRole), data, { merge:true }), new Promise((_, rj)=>setTimeout(()=>rj(new Error('t')), 8000)) ]);
           if(data.wall !== undefined && data.wall === wallPhoto) thPhotoDirty = false;
-          thStatus('✓ Guardado en tu cuenta');
-        }catch(e){ thStatus('Guardado en este dispositivo (sin conexión con la nube)'); }
-      }else thStatus('Guardado en este dispositivo');
+          cloud = true;
+        }catch(e){}
+      }
+      thLastEdit = Date.now();
+      thStatus(cloud ? '✓ Guardado en tu cuenta' : 'Guardado en este dispositivo (se subirá a tu cuenta cuando haya conexión)');
       B.set(.7, 'Cargando efectos y datos…'); await B.snaps(300, 2000);
       B.set(.82, 'Verificando que todo fluya…'); await B.settle(4500, p=>B.set(.82 + .16 * p));
     }catch(e){ console.warn('tema', e); }
-    thLastEdit = Date.now(); thBusy = false; B.end();
-    if(thQueued) thSchedule(200);
+    thLastEdit = Date.now(); thBusy = false; B.end(); thBarUpdate();
+    try{ toast('Apariencia guardada', 'Tus colores y fondo ya quedaron guardados ✨', 'ok'); }catch(e){}
+  }
+  function thRevert(){
+    clearTimeout(thSaveT); thQueued = false;
+    try{ theme = thClean(JSON.parse(thSaved.t)); }catch(e){ theme = thClean(null); }
+    wallPhoto = thSaved.p; thPhotoDirty = false;
+    applyTheme(false); thSync(); thStatus(''); thBarUpdate();
+  }
+  async function thDiscard(){
+    const B = window.Busy; B.begin('Volviendo a lo guardado…');
+    try{ B.set(.2, 'Restaurando colores…'); thRevert(); await B.frames(2); B.set(.6, 'Preparando los efectos…'); await B.settle(3000, p=>B.set(.6 + .38 * p)); }catch(e){}
+    B.end();
   }
   let thSyncQ = 0;
   function thSync(){ if(thSyncQ) return; thSyncQ = requestAnimationFrame(()=>{ thSyncQ = 0; thSyncNow(); }); }
@@ -3728,7 +3807,7 @@ window.Busy=(function(){
   function thSyncNow(){
     const t = theme, $ = id => document.getElementById(id);
     $('thBg').value = t.bg; $('thSurface').value = t.surface; $('thText').value = t.text; $('thHero').value = t.hero;
-    $('thDim').value = t.wall.dim;
+    $('thDim').value = t.wall.dim; $('thMix').value = t.wall.mix; $('thMixLbl').textContent = t.wall.mix + '% Color 1 · ' + (100 - t.wall.mix) + '% Color 2';
     if(!thTab) thTab = t.accent2 ? 'grad' : TH_PA.includes(t.accent) ? 'pastel' : 'solid';
     if(thTab !== 'grad') thTgt = 'a';
     document.querySelectorAll('#thTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === thTab));
@@ -3805,6 +3884,9 @@ window.Busy=(function(){
     });
     $('thNoPhoto').addEventListener('click', () => { wallPhoto = ''; thPhotoDirty = true; theme.wall.mode = 'color'; thTouch(true); thSync(); });
     $('thDim').addEventListener('input', e => { theme.wall.dim = +e.target.value; thTouch(); });
+    $('thMix').addEventListener('input', e => { theme.wall.mix = +e.target.value; theme.wall.mode = 'color'; thTouch(); thSync(); });
+    $('thSave').addEventListener('click', () => thSave());
+    $('thDiscard').addEventListener('click', () => thDiscard());
     $('thReset').addEventListener('click', () => { thTab = null; theme = thClean(null); wallPhoto = ''; thPhotoDirty = true; thTouch(true); thSync(); });
     $('thBack').addEventListener('click', admBack);
     $('admTheme').addEventListener('click', () => {
@@ -5650,6 +5732,7 @@ window.Busy=(function(){
       chosenRole = btn.dataset.role;
       document.getElementById('dateTitle').textContent = chosenRole==='bodoca' ? 'Tu fecha de nacimiento, bodoca' : 'Tu fecha de nacimiento, bodoco';
       document.getElementById('gateErr').textContent = '';
+      try{ loadThemeLocal(chosenRole); }catch(e){}
       showStep('stepDate');
       setWheels(1, 1, 2002); // arranque neutro
     });
@@ -5694,6 +5777,19 @@ window.Busy=(function(){
 </script>
 <script>
 /* Al volver a la app (después de salir un rato): barra de progreso hasta que todo cargue y fluya */
+(function(){
+  /* Galaxia: un switch para elegir qué color editar (Ali · Axel · Nosotros · Cielo) */
+  var d=document.getElementById('gmColors'),seg=document.getElementById('gxSeg');if(!d||!seg)return;
+  function pick(k,open){
+    d.className=d.className.replace(/\bgx\d\b/g,'').replace(/\s+/g,' ').trim()+' gx'+k;
+    [].forEach.call(seg.children,function(b){b.classList.toggle('on',b.dataset.k===k);});
+    [].forEach.call(document.querySelectorAll('.th-pk'),function(x){x.remove();});
+    [].forEach.call(d.querySelectorAll('.th-row.open'),function(x){x.classList.remove('open');});
+    if(open){var r=d.querySelector('.th-row[data-gx="'+k+'"]');if(r)r.click();}
+  }
+  seg.addEventListener('click',function(e){var b=e.target.closest('button');if(b)pick(b.dataset.k,true);});
+  d.addEventListener('toggle',function(){if(d.open)pick((seg.querySelector('.on')||seg.children[0]).dataset.k,true);});
+})();
 (function(){
   var hiddenAt=0,busy=0;
   async function resume(){

@@ -1,5 +1,5 @@
 // Service worker de "Para Ti" — paso 1: la página abre sin conexión.
-const VERSION = 'v5';
+const VERSION = 'v6';
 const SHELL = `shell-${VERSION}`;
 const RUNTIME = `runtime-${VERSION}`;
 const SHELL_FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
@@ -25,7 +25,7 @@ async function networkFirst(req, cacheName) {
   try {
     const res = await Promise.race([
       fetch(req, { cache: 'no-cache' }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000))
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), req.mode === 'navigate' ? 1500 : 4000))
     ]);
     if (res && res.ok) cache.put(req, res.clone());
     return res;
