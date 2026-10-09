@@ -5446,7 +5446,10 @@ window.Busy=(function(){
   (function(){
     const v = document.getElementById('galViewer'), fr = document.getElementById('gvFrame'), pic = document.getElementById('gvImg'), xb = document.getElementById('gvX');
     const nav = document.getElementById('gvNav'), prevB = document.getElementById('gvPrev'), nextB = document.getElementById('gvNext'), cnt = document.getElementById('gvCount');
-    let vOpen = false, closing = 0, origin = { x:0, y:0, z:20 }, drag = null, list = [], idx = 0, busy = false;
+    let vOpen = false, closing = 0, origin = { x:0, y:0, z:20 }, drag = null, list = [], idx = 0, busy = false, crispT = 0;
+    // El marco crece desde una escala diminuta y el navegador deja la foto "congelada" a ese tamaño (se ve pixelada).
+    // Al terminar de crecer se le obliga a redibujarla al tamaño real, así queda nítida.
+    function crispLater(ms){ clearTimeout(crispT); crispT = setTimeout(()=>{ if(!vOpen) return; fr.style.willChange = 'auto'; requestAnimationFrame(()=>requestAnimationFrame(()=>{ fr.style.willChange = ''; })); }, ms); }
     const tf = (dx, dy, sc)=>`translate(-50%,-50%) translate(${dx}px,${dy}px) scale(${sc})`;
     function updNav(){ nav.classList.toggle('single', list.length < 2); cnt.textContent = (idx + 1) + ' / ' + list.length; }
     function warmNeighbors(){ if(list.length < 2) return; [1, -1].forEach(d=>{ const i = new Image(); i.src = list[(idx + d + list.length) % list.length]; }); }
@@ -5463,7 +5466,7 @@ window.Busy=(function(){
         fr.style.transform = tf(ox - innerWidth / 2, oy - innerHeight / 2, s0);
         void fr.offsetWidth; fr.style.transition = '';
         requestAnimationFrame(()=>{ v.classList.add('in'); fr.style.opacity = '1'; fr.style.transform = tf(0, 0, 1); });
-        warmNeighbors();
+        warmNeighbors(); crispLater(720);
       };
       pic.onload = go; pic.src = url;
       if(pic.complete && pic.naturalWidth) go();
@@ -5481,7 +5484,7 @@ window.Busy=(function(){
           if(shown) return; shown = true;
           fr.style.transition = 'none'; fr.style.transform = tf(dir * 46, 0, .95); void fr.offsetWidth;
           fr.style.transition = 'transform .45s cubic-bezier(.22,1,.36,1), opacity .3s ease'; fr.style.opacity = '1'; fr.style.transform = tf(0, 0, 1);
-          busy = false; warmNeighbors();
+          busy = false; warmNeighbors(); crispLater(520);
         };
         pic.onload = show; pic.onerror = ()=>{ busy = false; };
         pic.src = list[idx];
@@ -5491,7 +5494,7 @@ window.Busy=(function(){
     prevB.addEventListener('click', e=>{ e.stopPropagation(); step(-1); });
     nextB.addEventListener('click', e=>{ e.stopPropagation(); step(1); });
     function closeViewer(dx, dy){
-      if(!vOpen) return; vOpen = false;
+      if(!vOpen) return; vOpen = false; clearTimeout(crispT);
       fr.style.transition = 'transform .45s cubic-bezier(.4,0,.2,1),opacity .32s ease';
       v.style.background = ''; v.classList.remove('in');
       fr.style.opacity = '0';
