@@ -485,6 +485,14 @@
   .game-page .gm-title{font-size:26px;font-weight:800;letter-spacing:.2px;}
   .game-page .gm-sub{font-size:14px;color:rgba(255,255,255,.6);max-width:280px;line-height:1.5;}
   @keyframes gmFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+  .game-page{justify-content:flex-start;align-items:stretch;gap:10px;text-align:left;padding:calc(env(safe-area-inset-top,0px) + 58px) 12px calc(env(safe-area-inset-bottom,0px) + 14px);}
+  .gm-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .gm-score{font-weight:700;font-size:15px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);}
+  .gm-score b{color:var(--green);font-variant-numeric:tabular-nums;}
+  .gm-x{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.1);display:grid;place-items:center;cursor:pointer;padding:0;}
+  .gm-x svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;}
+  #gmCanvas{display:block;flex:1 1 0;min-height:0;width:100%;border-radius:18px;border:2px solid rgba(255,255,255,.22);background:#0b0f0d center/cover no-repeat;touch-action:none;user-select:none;-webkit-user-select:none;}
+  .gm-hint{font-size:12px;line-height:1.45;color:rgba(255,255,255,.55);text-align:center;padding:0 6px;}
   .topnav.drag .tn-title{transition:none;}
   .gal-page{position:fixed;inset:0;z-index:12;overflow:hidden;touch-action:none;transform:translateX(100%);visibility:hidden;
     background:radial-gradient(70% 50% at 50% 42%,rgba(var(--gx1),.30),transparent 70%),radial-gradient(90% 60% at 50% 90%,rgba(var(--gx2),.26),transparent 70%),var(--gx-bg);
@@ -1106,9 +1114,12 @@
   <button type="button" class="gal-add" id="galAdd" aria-label="Agregar foto o frase a la galaxia"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button><button type="button" class="gal-add" id="galCfg" style="right:58px" aria-label="Administrar la galaxia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
 
 <div class="game-page" id="gameBox" aria-hidden="true">
-  <div class="gm-ico">🎮</div>
-  <div class="gm-title">Juego</div>
-  <div class="gm-sub">Aquí va a vivir nuestro juego. Muy pronto <i class="hrt"></i></div>
+  <div class="gm-bar">
+    <span class="gm-score">Puntos: <b id="gmScore">0</b></span>
+    <button type="button" class="gm-x" id="gmClose" aria-label="Cerrar juego"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <canvas id="gmCanvas"></canvas>
+  <div class="gm-hint">Mantén presionado a la izquierda, derecha, arriba o abajo para moverte. Lleva cada maleta a su contenedor del mismo color.</div>
 </div>
 
 <div class="gal-add-modal" id="galAddModal">
@@ -4649,12 +4660,154 @@
     }
     galPage.setAttribute('aria-hidden', String(!open));
   }
+  // ----- Juego del aeropuerto -----
+  // Las imágenes y la música del juego van en la raíz, junto a este index.html (si algún día las mueves a una carpeta, cambia esto, ej. 'juego/')
+  const JUEGO_BASE = '';
+  const gm = (() => {
+    const cv = document.getElementById('gmCanvas'), cx = cv.getContext('2d'), scoreEl = document.getElementById('gmScore');
+    const COLORES = ['amarillo','verde','rojo','azul'];
+    const HEX = { amarillo:'#ffd23f', verde:'#34d399', rojo:'#ff5252', azul:'#4d9bff' };
+    const F = {
+      reposo: 'reposo.png', derecha: 'corriendoderecha.png', izquierda: 'corriendoizquierda.png',
+      reposoM: { amarillo:'reposo-maletaamarilla.png', verde:'reposo-maletaverde.png', rojo:'reposo-maletaroja.png', azul:'reposo-maletaazul.png' },
+      cargando: {
+        amarillo:{ derecha:'maletaamarilla-corriendo-derecha.png', izquierda:'maletaamarilla-corriendo-izquierda.png' },
+        verde:{ derecha:'maletaverde-corriendo-derecha.png', izquierda:'maletaverde-corriendo-izquierda.png' },
+        rojo:{ derecha:'maletaroja-corriendo-derecha.png', izquierda:'maletaroja-corriendo-izquierda.png' },
+        azul:{ derecha:'maletaazul-corriendo-derecha.png', izquierda:'maletaazul-corriendo-izquierda.png' } },
+      suelo: { amarillo:'maleta-amarilla.png', verde:'maleta-verde.png', rojo:'maleta-roja.png', azul:'maleta-azul.png' },
+      cont: { amarillo:'contenedoramarillo.png', verde:'contenedorverde.png', rojo:'contenedorrojo.png', azul:'contenedorazul.png' }
+    };
+    const cache = {};
+    const img = n => cache[n] || (cache[n] = Object.assign(new Image(), { src: JUEGO_BASE + n }));
+    const ready = im => im.complete && im.naturalWidth > 0;
+    const MAL = 48, SPEED = 300; // px por segundo (≈5 px por cuadro a 60 fps)
+    const player = { x: 20, y: 0, w: 50, h: 80 };
+    let W = 0, H = 0, running = false, raf = 0, last = 0;
+    let dir = 'derecha', carrying = null, points = 0, active = null, keys = {}, objetos = [], zonas = {}, zs = 60;
+    let music = null;
+
+    function layout(){
+      zs = Math.max(36, Math.min(60, (H - 60) / 4.6));
+      const gap = (H - zs * 4) / 5;
+      COLORES.forEach((c, i) => { zonas[c] = { x: W - zs - 14, y: gap * (i + 1) + zs * i, w: zs, h: zs }; });
+    }
+    function resize(){
+      const dpr = window.devicePixelRatio || 1;
+      W = cv.clientWidth; H = cv.clientHeight;
+      if(!W || !H) return;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      layout();
+      player.x = Math.max(0, Math.min(W - player.w, player.x));
+      player.y = Math.max(0, Math.min(H - player.h, player.y || (H / 2 - player.h / 2)));
+    }
+    // las maletas se guardan en fracciones para que se vean bien en cualquier pantalla
+    const pos = o => {
+      const aw = Math.max(0, W - zs - 14 - MAL - 24), ah = Math.max(0, H - MAL - 16);
+      return { x: 10 + o.fx * aw, y: 8 + o.fy * ah };
+    };
+    function spawn(){
+      const lista = [...COLORES, ...COLORES].sort(() => Math.random() - .5);
+      objetos = lista.map(c => ({ color: c, fx: Math.random(), fy: Math.random() }));
+    }
+    const hit = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    const setScore = () => { scoreEl.textContent = points; };
+
+    function update(dt){
+      const k = keys;
+      let dirNow = active;
+      if(!dirNow){ if(k.ArrowLeft) dirNow = 'izquierda'; else if(k.ArrowRight) dirNow = 'derecha'; else if(k.ArrowUp) dirNow = 'arriba'; else if(k.ArrowDown) dirNow = 'abajo'; }
+      update.moving = !!dirNow;
+      const step = SPEED * dt;
+      if(dirNow === 'izquierda'){ player.x = Math.max(0, player.x - step); dir = 'izquierda'; }
+      else if(dirNow === 'derecha'){ player.x = Math.min(W - player.w, player.x + step); dir = 'derecha'; }
+      else if(dirNow === 'arriba'){ player.y = Math.max(0, player.y - step); }
+      else if(dirNow === 'abajo'){ player.y = Math.min(H - player.h, player.y + step); }
+
+      if(!carrying){
+        for(let i = objetos.length - 1; i >= 0; i--){
+          const p = pos(objetos[i]);
+          if(hit(player, { x: p.x, y: p.y, w: MAL, h: MAL })){ carrying = objetos[i].color; objetos.splice(i, 1); break; }
+        }
+      } else if(hit(player, zonas[carrying])){
+        points += 10; carrying = null; setScore();
+        if(!objetos.length) spawn();
+      }
+    }
+    function sprite(){
+      const m = update.moving;
+      if(carrying) return m ? F.cargando[carrying][dir] : F.reposoM[carrying];
+      return m ? F[dir] : F.reposo;
+    }
+    function box(x, y, w, h, c){
+      cx.fillStyle = c; cx.globalAlpha = .85; cx.beginPath(); cx.roundRect(x, y, w, h, 8); cx.fill(); cx.globalAlpha = 1;
+    }
+    function draw(){
+      cx.clearRect(0, 0, W, H);
+      objetos.forEach(o => {
+        const p = pos(o), im = img(F.suelo[o.color]);
+        if(ready(im)) cx.drawImage(im, p.x, p.y, MAL, MAL); else box(p.x, p.y, MAL, MAL, HEX[o.color]);
+      });
+      COLORES.forEach(c => {
+        const z = zonas[c], im = img(F.cont[c]);
+        if(ready(im)) cx.drawImage(im, z.x, z.y, z.w, z.h); else box(z.x, z.y, z.w, z.h, HEX[c]);
+      });
+      const pi = img(sprite());
+      if(ready(pi)) cx.drawImage(pi, player.x, player.y, player.w, player.h);
+      else { box(player.x, player.y, player.w, player.h, '#ffffff'); if(carrying) box(player.x + 10, player.y + 40, 30, 30, HEX[carrying]); }
+    }
+    function loop(t){
+      if(!running) return;
+      const dt = Math.min(.05, last ? (t - last) / 1000 : .016); last = t;
+      update(dt); draw();
+      raf = requestAnimationFrame(loop);
+    }
+
+    // Controles: mantener presionado el tercio izquierdo / derecho / arriba / abajo
+    function dirFrom(e){
+      const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      if(x < 1/3) return 'izquierda';
+      if(x > 2/3) return 'derecha';
+      if(y < 1/3) return 'arriba';
+      if(y > 2/3) return 'abajo';
+      return null;
+    }
+    function playMusic(){
+      if(!music){ music = new Audio(JUEGO_BASE + 'musica-retro.mp3'); music.loop = true; music.volume = .6; }
+      try{ if(!playerA.paused || !playerB.paused) return; }catch(_){} // si suena una canción de la playlist, no la pisa
+      music.play().catch(() => {});
+    }
+    cv.addEventListener('pointerdown', e => { e.preventDefault(); try{ cv.setPointerCapture(e.pointerId); }catch(_){} active = dirFrom(e); playMusic(); });
+    cv.addEventListener('pointermove', e => { if(cv.hasPointerCapture && cv.hasPointerCapture(e.pointerId)) active = dirFrom(e); });
+    ['pointerup','pointercancel','lostpointercapture'].forEach(ev => cv.addEventListener(ev, () => { active = null; }));
+    cv.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('keydown', e => { if(!running || !e.key.startsWith('Arrow')) return; keys[e.key] = true; e.preventDefault(); playMusic(); });
+    document.addEventListener('keyup', e => { delete keys[e.key]; });
+    document.getElementById('gmClose').addEventListener('click', () => closeGame());
+    new ResizeObserver(() => { if(running) resize(); }).observe(cv);
+
+    return {
+      start(){
+        if(running) return;
+        cv.style.backgroundImage = 'url("' + JUEGO_BASE + 'fondo.png")';
+        running = true; resize(); if(!objetos.length) spawn(); setScore();
+        last = 0; raf = requestAnimationFrame(loop);
+      },
+      stop(){
+        running = false; cancelAnimationFrame(raf); active = null; keys = {};
+        if(music) music.pause();
+      }
+    };
+  })();
+
   // ----- Página «Juego» (a la derecha de la galaxia) -----
   const gamePage = document.getElementById('gameBox');
   let gameOpen = false, gameTimer = 0, skipPop = 0;
   function setGame(open){
     gameOpen = open; clearTimeout(gameTimer); gamePage.classList.remove('drag'); topnav.classList.remove('drag');
     gq = open ? 1 : 0; navUpdate(curP, curSide);
+    if(open) gm.start(); else gm.stop();
     if(open){ gamePage.style.transform = ''; gamePage.classList.add('open'); gamePage.classList.remove('vis'); }
     else {
       gamePage.classList.remove('open'); gamePage.classList.add('vis'); gamePage.style.transform = 'translateX(100%)';
@@ -4969,7 +5122,7 @@
     gs.mode = 0;
     if(e.touches.length !== 1 || document.body.classList.contains('locked')) return;
     const t = e.touches[0], tg = e.target;
-    if(gameOpen){ gs.from = 'game'; }
+    if(gameOpen){ if(tg.closest && tg.closest('#gmCanvas')) return; gs.from = 'game'; }
     else if(galOpen){ if(galaxy.isInteractive() || (tg.closest && tg.closest('.gal-add,.gal-add-modal,.gal-viewer'))) return; gs.from = 'open'; }
     else {
       if(overlayOpen() || (tg.closest && tg.closest('.tabs,input,textarea,select,.miniplayer,.cover-menu'))) return;
