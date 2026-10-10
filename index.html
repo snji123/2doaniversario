@@ -517,6 +517,7 @@
     background:radial-gradient(70% 50% at 50% 42%,rgba(var(--gx1),.30),transparent 70%),radial-gradient(90% 60% at 50% 90%,rgba(var(--gx2),.26),transparent 70%),var(--gx-bg);
     transition:transform .38s cubic-bezier(.3,.7,.2,1), visibility 0s linear .38s;}
   .gal-page.open,.gal-page.vis{visibility:visible;transition-delay:0s,0s;}
+  .gal-page,.game-page{will-change:transform;}
   html.cubing{overflow-x:hidden;}
   .gal-page.open{transform:none;}
   .gal-page.drag{transition:none;}
@@ -575,7 +576,7 @@
   .gal-add-card .save-btn:disabled{opacity:.4;}
   .gal-viewer{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:rgba(2,6,12,0);-webkit-backdrop-filter:blur(0);backdrop-filter:blur(0);transition:background .4s ease,backdrop-filter .4s ease,-webkit-backdrop-filter .4s ease;touch-action:none;}
   .gal-viewer.show{display:block;}
-  .gal-viewer.in{background:rgba(2,6,12,.95);}
+  .gal-viewer.in{background:rgba(2,6,12,.9);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
   .gv-frame{position:absolute;left:50%;top:50%;padding:8px;border-radius:26px;background:#10060f;will-change:transform,opacity;transition:transform .55s cubic-bezier(.22,1,.36,1),opacity .35s ease;box-shadow:0 0 34px rgba(255,143,200,.34),0 24px 80px rgba(0,0,0,.7);}
   @property --gva{syntax:'<angle>';initial-value:0deg;inherits:false;}
   .gv-ring{position:absolute;inset:0;border-radius:26px;background:conic-gradient(from var(--gva),#ff8fc8,#ffd9a0,#8fb8ff,#c58bff,#ff8fc8);animation:gvrot 8s linear infinite;}
@@ -3716,7 +3717,6 @@ window.Busy=(function(){
     o.wall.mix = Math.max(5, Math.min(95, w.mix == null || !Number.isFinite(+w.mix) ? 50 : +w.mix)); // % de Color 1 en el degradado
     return o;
   }
-  let thGalT = 0, thGalTm = 0;
   function applyTheme(live){
     const t = theme, st = document.documentElement.style, set = (k, v) => st.setProperty(k, v);
     set('--green', t.accent); set('--green-dim', thMix(t.accent, '#000000', .3)); set('--green-rgb', thRgb(t.accent).join(','));
@@ -3724,12 +3724,7 @@ window.Busy=(function(){
       [0,1,2].forEach(i => set('--gc' + i, g.c[i] || D[i]));
       if(g.bg){ set('--gx-bg', thMix(g.bg, '#000000', .7)); set('--gx1', thRgb(thMix(g.bg, '#ffffff', .1)).join(',')); set('--gx2', thRgb(g.bg).join(',')); }
       else ['--gx-bg','--gx1','--gx2'].forEach(k => st.removeProperty(k));
-      if(!live){ clearTimeout(thGalTm); try{ galaxy.recolor(g.c); }catch(e){} }
-      else { // en vivo: como mucho cada ~80 ms, y siempre se aplica el último color
-        const now = performance.now(); clearTimeout(thGalTm);
-        if(now - thGalT >= 80){ thGalT = now; try{ galaxy.recolor(g.c); }catch(e){} }
-        else thGalTm = setTimeout(()=>{ thGalT = performance.now(); try{ galaxy.recolor(theme.gal.c); }catch(e){} }, 80 - (now - thGalT));
-      } }
+      if(!live){ try{ galaxy.recolor(g.c); }catch(e){} } }
     set('--accent-fill', t.accent2 ? 'linear-gradient(135deg,' + t.accent + ',' + t.accent2 + ')' : t.accent);
     set('--on-accent', thLum(t.accent2 ? thMix(t.accent, t.accent2, .5) : t.accent) > .55 ? '#0a0a0a' : '#ffffff');
     // paneles, menús y hojas siguen oscuros aunque elijas un Color 2 claro (así el texto siempre se lee)
@@ -4501,13 +4496,12 @@ window.Busy=(function(){
       showHint('Toca una galaxia para explorarla');
     }
 
-    let dprCap = weak ? 1.25 : 1.5; // resolución interna máxima del lienzo (los puntitos son suaves: no se nota la diferencia)
-    function resize(force){
+    function resize(){
       // clientWidth/Height = tamaño real de la pantalla, NO se deforma con el giro 3D del cubo (getBoundingClientRect sí, y dejaba la galaxia aplastada)
       const bw = box.clientWidth, bh = box.clientHeight; if(!bw || !bh) return;
-      if(!force && sized && bw === W && bh === H) return; // nada cambió: no reasignes el lienzo (evita parpadeos y trabajo extra)
+      if(sized && bw === W && bh === H) return; // nada cambió: no reasignes el lienzo (evita parpadeos y trabajo extra)
       W = bw; H = bh; K = Math.min(W, H) / 340;
-      dpr = Math.min(window.devicePixelRatio || 1, dprCap, Math.sqrt(2400000 / (W * H)));
+      dpr = Math.min(window.devicePixelRatio || 1, weak ? 1.25 : 1.75, Math.sqrt(2400000 / (W * H)));
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       // zoom inicial: que quepa todo el corazón (3 galaxias) en pantalla
@@ -4578,12 +4572,7 @@ window.Busy=(function(){
       }
       if(warmLeft > 0){ warmLeft--; setProg(.86 + .14 * (1 - warmLeft / 18)); if(warmLeft === 0) reveal(); }
       frames++; acc += dt;
-      if(frames === 90){
-        const avg = acc / 90;
-        if(avg > .026 && dprCap > 1.15){ dprCap = 1.15; resize(true); }      // primero baja un poco la resolución interna (casi imperceptible)
-        else if(avg > .04 && skip < 2) skip++;                                // solo si sigue MUY lento, dibuja menos puntitos
-        frames = 0; acc = 0;
-      } // solo baja si va MUY lento, y nunca vuelve a cambiar (sin parpadeo)
+      if(frames === 90){ if(acc/90 > .04 && skip < 2) skip++; frames = 0; acc = 0; } // solo baja si va MUY lento, y nunca vuelve a cambiar (sin parpadeo)
       clock += dt; drawT += dt;
       const playing = (typeof isPlaying !== 'undefined') && isPlaying;
       phase += dt * (playing ? 7.4 : 4.6);
@@ -4923,7 +4912,7 @@ window.Busy=(function(){
           } else { PALS[gi] = PALS0[gi].slice(); GN[gi].glow = GLOW0[gi]; }
         });
         gal.forEach(p=>{ p.col = PALS[p.gi][p.k % 5]; });
-        for(let gi=0; gi<3; gi++) for(let g=0; g<5; g++) for(let ab=0; ab<3; ab++) kCol[(gi * 5 + g) * 3 + ab] = PALS[gi][g]; // polvo fino: misma regla con la que se construyó (k = (gi*5+g)*3+ab)
+        dust.forEach(p=>{ p.col = PALS[p.gi][Math.floor(p.k / 3) % 5]; kCol[p.k] = p.col; });
         PALS.forEach(p=>p.forEach(dotSprite));
         // libera los sprites de colores que ya no se usan (antes se acumulaban sin parar al mover el selector de color)
         { const live = new Set(['#ffffff', ...PAL_H]); PALS.forEach(p=>p.forEach(c=>live.add(c))); Object.keys(dotCache).forEach(k=>{ if(!live.has(k)) delete dotCache[k]; }); Object.keys(heartCache).forEach(k=>{ if(!live.has(k)) delete heartCache[k]; }); }
@@ -5646,8 +5635,6 @@ window.Busy=(function(){
   // Se cierra con la ✕, tocando el fondo o deslizando; con ‹ › pasas a las demás fotos de ESA galaxia.
   (function(){
     const v = document.getElementById('galViewer'), fr = document.getElementById('gvFrame'), pic = document.getElementById('gvImg'), xb = document.getElementById('gvX');
-    // mientras se ve una foto, la galaxia de atrás no se dibuja (menos tirones); al cerrar, sigue donde estaba
-    new MutationObserver(()=>{ try{ if(v.classList.contains('show')) galaxy.suspend(); else if(!gameOpen) galaxy.resume(); }catch(e){} }).observe(v, { attributes:true, attributeFilter:['class'] });
     const nav = document.getElementById('gvNav'), prevB = document.getElementById('gvPrev'), nextB = document.getElementById('gvNext'), cnt = document.getElementById('gvCount');
     let vOpen = false, closing = 0, origin = { x:0, y:0, z:20 }, drag = null, list = [], idx = 0, busy = false, crispT = 0;
     // El marco crece desde una escala diminuta y el navegador deja la foto "congelada" a ese tamaño (se ve pixelada).
