@@ -1078,11 +1078,12 @@
 /* Barra de progreso global: Busy.begin(texto) · Busy.set(0..1, texto) · Busy.end()  + ayudas para esperar a que todo cargue */
 window.Busy=(function(){
   var el=document.getElementById('appBusy'),fill=document.getElementById('bzFill'),pct=document.getElementById('bzPct'),lbl=document.getElementById('bzLbl');
-  var depth=0,t0=0,hideT=0,cur=0;
+  var depth=0,t0=0,hideT=0,cur=0,dog=0;
+  function arm(){clearTimeout(dog);dog=setTimeout(function(){depth=0;el.classList.remove('on');},25000);}
   function paint(p,txt){cur=Math.max(cur,Math.min(1,p));fill.style.transform='scaleX('+cur+')';pct.textContent=Math.round(cur*100)+'%';if(txt)lbl.textContent=txt;}
-  function begin(txt){depth++;clearTimeout(hideT);if(depth===1){cur=0;t0=Date.now();}paint(.03,txt||'Cargando…');el.classList.add('on');}
+  function begin(txt){depth++;clearTimeout(hideT);if(depth===1){cur=0;t0=Date.now();}paint(.03,txt||'Cargando…');el.classList.add('on');arm();}
   function set(p,txt){if(depth)paint(p,txt);}
-  function end(){if(!depth)return;depth--;if(depth)return;paint(1,'¡Listo!');var w=Math.max(0,450-(Date.now()-t0));hideT=setTimeout(function(){if(!depth)el.classList.remove('on');},w+250);}
+  function end(){if(!depth)return;depth--;if(depth)return;clearTimeout(dog);paint(1,'¡Listo!');var w=Math.max(0,450-(Date.now()-t0));hideT=setTimeout(function(){if(!depth)el.classList.remove('on');},w+250);}
   /* espera a que la app fluya: 12 cuadros seguidos sin tirones (o el tiempo máximo) */
   function settle(max,cb){return new Promise(function(res){
     var last=performance.now(),good=0,need=12,done=0,to;
@@ -2593,6 +2594,7 @@ window.Busy=(function(){
       currentIndex = idx; wantPlay = true; isPlaying = true;
       preSong = null; preIdx = null;
       document.getElementById('sheetTimeDur').textContent = fmtTime(audio.duration || 0);
+      syncProgress();
       setPlayIcons(true); renderTracks(); mini.classList.add('show'); refreshNowPlayingUI(); msUpdate(song);
       if(MS){ try{ MS.playbackState = 'playing'; }catch(e){} }
       clearTimeout(preTimer); preTimer = setTimeout(preloadNext, 900); // espera a que el anterior termine su último instante
@@ -2634,6 +2636,20 @@ window.Busy=(function(){
   mini.addEventListener('click', ()=>{ if(currentIndex!==null) openSheet(currentIndex); });
   document.getElementById('heroPlay').addEventListener('click', togglePlay);
   var seekDrag = false;
+  // Vuelve a pintar la barra de progreso y los tiempos con la posición real del audio (se llama al cambiar de sección o al volver a la app)
+  function syncProgress(){
+    seekDrag = false;
+    try{
+      const d = audio.duration, ok = isFinite(d) && d > 0, pct = ok ? (audio.currentTime / d * 100) + '%' : '0%';
+      document.getElementById('mpProgress').style.width = pct;
+      document.getElementById('sheetProgressFill').style.width = pct;
+      document.getElementById('sheetProgressBar').classList.remove('drag');
+      document.getElementById('sheetTimeCur').textContent = fmtTime(audio.currentTime || 0);
+      document.getElementById('sheetTimeDur').textContent = fmtTime(ok ? d : 0);
+    }catch(e){}
+  }
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) syncProgress(); });
+  window.addEventListener('pageshow', syncProgress);
   onActive('timeupdate', ()=>{
     if(audio.duration > 1 && audio.duration - audio.currentTime < 0.45) crossToNext(); // relevo sin pausa
     if(audio.duration && !seekDrag){
@@ -4479,8 +4495,10 @@ window.Busy=(function(){
     }
 
     function resize(){
-      const r = box.getBoundingClientRect(); if(!r.width || !r.height) return;
-      W = r.width; H = r.height; K = Math.min(W, H) / 340;
+      // clientWidth/Height = tamaño real de la pantalla, NO se deforma con el giro 3D del cubo (getBoundingClientRect sí, y dejaba la galaxia aplastada)
+      const bw = box.clientWidth, bh = box.clientHeight; if(!bw || !bh) return;
+      if(sized && bw === W && bh === H) return; // nada cambió: no reasignes el lienzo (evita parpadeos y trabajo extra)
+      W = bw; H = bh; K = Math.min(W, H) / 340;
       dpr = Math.min(window.devicePixelRatio || 1, weak ? 1.25 : 1.75, Math.sqrt(2400000 / (W * H)));
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -4860,6 +4878,7 @@ window.Busy=(function(){
         running = true;
         if(!ro && window.ResizeObserver){ ro = new ResizeObserver(()=>resize()); ro.observe(box); }
         resize(); last = 0;
+        setTimeout(resize, 700);
         if(ready){
           build(); buildSprites(); pump(); drawT = 0; showHint('Toca una galaxia para explorarla');
           if(!raf && !document.hidden && !suspended) raf = requestAnimationFrame(frame);
@@ -4960,6 +4979,7 @@ window.Busy=(function(){
       cleanTimer = setTimeout(()=>{ if(!galOpen){ galPage.classList.remove('vis'); galPage.style.transform = ''; galaxy.stop(); mainFx.end(); } }, 700);
     }
     galPage.setAttribute('aria-hidden', String(!open));
+    syncProgress();
   }
   // ----- Juego del aeropuerto -----
   // Las imágenes y la música del juego van en la raíz, junto a este index.html (si algún día las mueves a una carpeta, cambia esto, ej. 'juego/')
@@ -5390,6 +5410,7 @@ window.Busy=(function(){
       gameTimer = setTimeout(()=>{ if(!gameOpen){ gamePage.classList.remove('vis'); gamePage.style.transform = ''; if(galOpen) galPage.style.transform = ''; } }, 620);
     }
     gamePage.setAttribute('aria-hidden', String(!open));
+    syncProgress();
   }
   function openGame(){ if(gameOpen || !galOpen) return; history.pushState({ game:true }, '', '#juego'); setGame(true); }
   function closeGame(){ if(!gameOpen) return; setGame(false); if(history.state && history.state.game){ skipPop++; history.back(); } }

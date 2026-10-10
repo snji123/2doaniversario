@@ -1,5 +1,5 @@
 // Service worker de "Para Ti" — paso 1: la página abre sin conexión.
-const VERSION = 'v6';
+const VERSION = 'v7';
 const SHELL = `shell-${VERSION}`;
 const RUNTIME = `runtime-${VERSION}`;
 const SHELL_FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
@@ -8,7 +8,12 @@ const SHELL_FILES = ['./', './index.html', './manifest.json', './icon-192.png', 
 const CACHEABLE_HOSTS = ['www.gstatic.com', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(SHELL).then(c => c.addAll(SHELL_FILES)).then(() => self.skipWaiting()));
+  // Cada archivo por separado: si falta uno (ej. un icono), los demás igual se guardan y el service worker sí se instala
+  e.waitUntil(
+    caches.open(SHELL)
+      .then(c => Promise.all(SHELL_FILES.map(f => c.add(f).catch(() => null))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {
