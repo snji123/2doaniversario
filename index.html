@@ -13,8 +13,8 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600&display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet"></noscript>
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
@@ -479,7 +479,7 @@
   .game-page{position:fixed;inset:0;z-index:12;overflow:hidden;transform:translateX(100%);visibility:hidden;color:#fff;text-align:center;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:0 32px;touch-action:pan-y;
     background:radial-gradient(80% 50% at 50% 35%,rgba(var(--green-rgb),.18),transparent 70%),radial-gradient(90% 60% at 50% 95%,rgba(60,64,62,.5),transparent 70%),#070a08;
-    transition:transform .5s cubic-bezier(.25,.8,.25,1), visibility 0s linear .5s;}
+    transition:transform .38s cubic-bezier(.3,.7,.2,1), visibility 0s linear .38s;}
   .game-page.open,.game-page.vis{visibility:visible;transition-delay:0s,0s;}
   .game-page.open{transform:none;}
   .game-page.drag{transition:none;}
@@ -515,9 +515,9 @@
   .topnav.drag .tn-title{transition:none;}
   .gal-page{position:fixed;inset:0;z-index:12;overflow:hidden;touch-action:none;transform:translateX(100%);visibility:hidden;
     background:radial-gradient(70% 50% at 50% 42%,rgba(var(--gx1),.30),transparent 70%),radial-gradient(90% 60% at 50% 90%,rgba(var(--gx2),.26),transparent 70%),var(--gx-bg);
-    transition:transform .6s cubic-bezier(.25,.8,.25,1), visibility 0s linear .6s;}
+    transition:transform .38s cubic-bezier(.3,.7,.2,1), visibility 0s linear .38s;}
   .gal-page.open,.gal-page.vis{visibility:visible;transition-delay:0s,0s;}
-  .gal-page,.game-page{backface-visibility:hidden;-webkit-backface-visibility:hidden;}
+  .gal-page,.game-page{will-change:transform;}
   html.cubing{overflow-x:hidden;}
   .gal-page.open{transform:none;}
   .gal-page.drag{transition:none;}
@@ -4224,23 +4224,25 @@ window.Busy=(function(){
     let DN = 0, dR, dCa, dSa, dY, dGi, dK; const kCol = [], kAl = [];
     // Corazoncitos que giran dentro de cada galaxia (del color de esa galaxia; se redibujan una sola vez por color)
     const hearts = [], heartCache = {};
-    // «Ali ♥ Axel» dibujado con polvitos, igual que el contorno del corazón
+    // «Ali y Axel» en letra manuscrita, hecho de polvitos que se van escribiendo (como el corazón)
     const nameDots = [];
     function buildNames(){
       if(nameDots.length) return;
-      const cw = 640, ch = 170, c = document.createElement('canvas'); c.width = cw; c.height = ch; const g = c.getContext('2d');
-      g.font = '700 120px Poppins, system-ui, sans-serif'; g.textBaseline = 'middle'; g.textAlign = 'left';
-      const wA = g.measureText('Ali').width, wX = g.measureText('Axel').width, hs = 100, gap = 30, tot = wA + gap + hs + gap + wX, x0 = (cw - tot) / 2, cy = ch / 2 + 6;
-      g.fillStyle = '#fff'; g.fillText('Ali', x0, cy); g.fillText('Axel', x0 + wA + gap + hs + gap, cy);
-      g.fillStyle = '#f00'; g.beginPath();                                   // corazón del medio (rojo en el molde = polvitos rosados)
-      const hx = x0 + wA + gap + hs / 2, k = hs / 36;
-      for(let i=0;i<=48;i++){ const t = i / 48 * 6.2832; const x = hx + 16 * Math.pow(Math.sin(t), 3) * k, y = cy - 2 - (13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t)) * k; i ? g.lineTo(x, y) : g.moveTo(x, y); }
-      g.closePath(); g.fill();
+      const cw = 760, ch = 220, c = document.createElement('canvas'); c.width = cw; c.height = ch; const g = c.getContext('2d');
+      g.font = '700 150px "Dancing Script", "Segoe Script", "Brush Script MT", cursive'; g.textBaseline = 'middle'; g.textAlign = 'left';
+      const txt = 'Ali y Axel', tot = g.measureText(txt).width, x0 = (cw - tot) / 2, cy = ch / 2 + 4;
+      g.fillStyle = '#fff'; g.fillText(txt, x0, cy);
       const d = g.getImageData(0, 0, cw, ch).data, cand = [];
-      for(let y=0;y<ch;y+=3) for(let x=0;x<cw;x+=3){ const q = (y * cw + x) * 4; if(d[q+3] > 150) cand.push([x, y, d[q+1] < 110]); }
+      let xmin = 1e9, xmax = -1e9;
+      for(let y=0;y<ch;y+=2) for(let x=0;x<cw;x+=2){ const q = (y * cw + x) * 4; if(d[q+3] > 150){ cand.push([x, y]); if(x < xmin) xmin = x; if(x > xmax) xmax = x; } }
+      if(!cand.length) return;
       for(let i=cand.length-1;i>0;i--){ const j = Math.floor(Math.random() * (i + 1)); [cand[i], cand[j]] = [cand[j], cand[i]]; }
-      const N = Math.min(cand.length, weak ? 430 : 720), sc = 150 / tot;
-      for(let i=0;i<N;i++){ const [x, y, h] = cand[i]; nameDots.push({ x: (x - cw / 2) * sc + (Math.random() - .5) * .8, y: -18 + (y - ch / 2) * sc + (Math.random() - .5) * .8, z: gauss() * 1.2, s: Math.random() * 1 + .7, ph: Math.random() * 6.28, h }); }
+      const N = Math.min(cand.length, weak ? 560 : 950), sc = 158 / tot, span = Math.max(1, xmax - xmin);
+      for(let i=0;i<N;i++){ const [x, y] = cand[i];
+        // u = orden de escritura: de izquierda a derecha (con un poquito de ondulación para que parezca trazo a mano)
+        const u = clamp((x - xmin) / span + (y - ch / 2) / ch * .03, 0, 1);
+        nameDots.push({ x: (x - cw / 2) * sc + (Math.random() - .5) * .6, y: -18 + (y - ch / 2) * sc + (Math.random() - .5) * .6, z: gauss() * 1.1, s: Math.random() * .9 + .7, ph: Math.random() * 6.28, u });
+      }
     }
     function heartSprite(col){
       if(heartCache[col]) return heartCache[col];
@@ -4339,7 +4341,7 @@ window.Busy=(function(){
         trail.push({ x: hx(t) + gauss() * 5, y: hy(t) + gauss() * 5, z: gauss() * 8, u, s: Math.random() * 1.1 + .7, ph: Math.random() * 6.28, g: i % 3 });
       }
       trail.sort((p,q)=>p.g-q.g);
-      Promise.race([document.fonts && document.fonts.load ? document.fonts.load('700 120px Poppins') : Promise.resolve(), new Promise(r => setTimeout(r, 1800))]).then(buildNames, buildNames);
+      Promise.race([document.fonts && document.fonts.load ? document.fonts.load('700 150px "Dancing Script"') : Promise.resolve(), new Promise(r => setTimeout(r, 1800))]).then(buildNames, buildNames);
       // corazoncitos dentro de cada galaxia, siguiendo sus brazos
       for(let gi=0; gi<3; gi++){
         const dir = GN[gi].dir, NH = weak ? 12 : 20;
@@ -4654,14 +4656,18 @@ window.Busy=(function(){
           const z = clamp(p.s * 2.4 * Math.sqrt(pp) * (1 + head), 2.2, 10); ctx.drawImage(spr, px - z/2, py - z/2, z, z);
         }
       }
-      { // nombres hechos de polvitos: se ven en la vista general y se desvanecen al acercarte a una galaxia
+      { // «Ali y Axel» manuscrito: se escribe despacito y se repite cada 30 s junto con el corazón; se desvanece al acercarte a una galaxia
         const nA = (1 - sstep(1.25, 2.3, r)) * (focused >= 0 ? 0 : 1);
         if(nA > .02 && nameDots.length){
-          const sw = dotSprite('#ffffff'), sp = dotSprite('#ff8fb8'), hb = 1 + .14 * Math.sin(phase);
-          for(let i=0;i<nameDots.length;i+=skip){
-            const q = nameDots[i]; if(!proj(q.x, q.y, q.z)) continue;
-            ctx.globalAlpha = clamp((.6 + .38 * Math.sin(clock * 1.9 + q.ph)) * nA, 0, 1);
-            const z = clamp(q.s * 2.1 * Math.sqrt(pp) * (q.h ? hb : 1), 2, 8); ctx.drawImage(q.h ? sp : sw, px - z/2, py - z/2, z, z);
+          const cyc = drawT < 0 ? drawT : drawT % 30, np = clamp((cyc - .3) / 3.8, 0, 1), ne = np * np * (3 - 2 * np), fade = clamp((30 - cyc) / .8, 0, 1);
+          if(ne > 0){
+            const sw = dotSprite('#ffffff');
+            for(let i=0;i<nameDots.length;i+=skip){
+              const q = nameDots[i]; if(q.u > ne) continue; if(!proj(q.x, q.y, q.z)) continue;
+              const head = ne < 1 ? clamp(1 - (ne - q.u) * 16, 0, 1) : 0; // la punta de la pluma brilla un poco más
+              ctx.globalAlpha = clamp((.62 + .36 * Math.sin(clock * 1.9 + q.ph) + head * .5) * nA * fade, 0, 1);
+              const z = clamp(q.s * 2.1 * Math.sqrt(pp) * (1 + head * .7), 2, 9); ctx.drawImage(sw, px - z/2, py - z/2, z, z);
+            }
           }
         }
       }
@@ -4924,15 +4930,15 @@ window.Busy=(function(){
   let galOpen = false, curP = 0, curSide = 1, outSide = 1, cleanTimer = 0;
   // Cambio de sección en CUBO 3D (el mismo efecto de cuando deslizas para cambiar de canción).
   // p = posición de la cara: 0 centrada, +1 a la derecha, -1 a la izquierda; sigue al dedo y al soltar termina sola.
-  const cubeT = p => { const W = innerWidth; return 'perspective(1100px) translateZ(' + (-W / 2) + 'px) rotateY(' + (p * 90) + 'deg) translateZ(' + (W / 2) + 'px)'; };
+  const cubeT = p => 'translate3d(' + Math.round(p * innerWidth) + 'px,0,0)'; // deslizamiento simple (antes era un cubo 3D); p: 0 centrada, ±1 fuera de pantalla
   const mainFx = (() => {
     const el = document.querySelector('.wrap'); let on = false, t = 0;
-    const clear = () => { clearTimeout(t); on = false; el.style.transition = ''; el.style.transform = ''; el.style.transformOrigin = ''; el.style.backfaceVisibility = ''; document.documentElement.classList.remove('cubing'); };
+    const clear = () => { clearTimeout(t); on = false; el.style.transition = ''; el.style.transform = ''; document.documentElement.classList.remove('cubing'); };
     const api = {
       get on(){ return on; },
-      begin(){ clearTimeout(t); if(on) return; on = true; const oy = (window.scrollY || document.documentElement.scrollTop || 0) + innerHeight / 2; el.style.transformOrigin = '50% ' + oy + 'px'; el.style.backfaceVisibility = 'hidden'; el.style.transition = 'none'; document.documentElement.classList.add('cubing'); },
+      begin(){ clearTimeout(t); if(on) return; on = true; el.style.transition = 'none'; document.documentElement.classList.add('cubing'); },
       set(p){ if(!on) api.begin(); el.style.transition = 'none'; el.style.transform = cubeT(p); },
-      anim(p, ms){ if(!on) api.begin(); void el.offsetWidth; el.style.transition = 'transform ' + (ms / 1000) + 's cubic-bezier(.25,.8,.25,1)'; el.style.transform = cubeT(p); clearTimeout(t); t = setTimeout(clear, ms + 40); },
+      anim(p, ms){ if(!on) api.begin(); void el.offsetWidth; el.style.transition = 'transform ' + (ms / 1000) + 's cubic-bezier(.3,.7,.2,1)'; el.style.transform = cubeT(p); clearTimeout(t); t = setTimeout(clear, ms + 40); },
       end: clear
     };
     return api;
@@ -4947,19 +4953,7 @@ window.Busy=(function(){
     const tt = Math.min(1, sc / 130), f = tt * tt * (3 - 2 * tt) * (1 - p); // se desvanece poco a poco al bajar
     topnav.style.opacity = String(1 - f); topnav.style.transform = `translateY(${-f * 10}px)`;
   }
-  let wakeBusy = 0, gxPauseT = 0;
-  async function galaxyWake(txt){
-    const B = window.Busy; if(!B || wakeBusy) return; wakeBusy = 1;
-    await new Promise(r => setTimeout(r, 640));          // primero se ve el giro del cubo completo; la barra aparece al terminar
-    if(!galOpen || gameOpen){ wakeBusy = 0; return; }
-    B.begin(txt || 'Preparando tu galaxia…');
-    try{
-      B.set(.12, 'Encendiendo las estrellas…'); await B.frames(3);
-      B.set(.35, 'Cargando las fotos y los corazones…'); await B.frames(4);
-      B.set(.55, 'Afinando los efectos…'); await B.settle(4500, p => B.set(.55 + .43 * p));
-    }catch(e){}
-    wakeBusy = 0; B.end();
-  }
+  let gxPauseT = 0;
   function setGalaxy(open, side){
     galOpen = open; clearTimeout(cleanTimer); galPage.classList.remove('drag'); topnav.classList.remove('drag');
     if(open){
@@ -4967,16 +4961,15 @@ window.Busy=(function(){
         galPage.classList.add('drag'); galPage.style.transform = cubeT(curSide); mainFx.set(0); void galPage.offsetWidth; galPage.classList.remove('drag');
       }
       galPage.style.transform = ''; galPage.classList.add('open'); galPage.classList.remove('vis');
-      mainFx.anim(-curSide, 600);
+      mainFx.anim(-curSide, 380);
       navUpdate(1, curSide); galaxy.start();
-      if(galaxy.isReady()) galaxyWake();   // la primera vez ya tiene su propia pantalla de carga
     } else {
       const sd = side || outSide || 1;
       if(!mainFx.on){ mainFx.begin(); mainFx.set(-sd); } // cerrada con un toque: la sección principal gira desde el costado
       galPage.classList.remove('open'); galPage.classList.add('vis'); galPage.style.transform = cubeT(sd);
-      mainFx.anim(0, 600);
+      mainFx.anim(0, 380);
       navUpdate(0, sd); galaxy.exit();
-      cleanTimer = setTimeout(()=>{ if(!galOpen){ galPage.classList.remove('vis'); galPage.style.transform = ''; galaxy.stop(); mainFx.end(); } }, 700);
+      cleanTimer = setTimeout(()=>{ if(!galOpen){ galPage.classList.remove('vis'); galPage.style.transform = ''; galaxy.stop(); mainFx.end(); } }, 440);
     }
     galPage.setAttribute('aria-hidden', String(!open));
     syncProgress();
@@ -5397,7 +5390,7 @@ window.Busy=(function(){
     gameOpen = open; clearTimeout(gameTimer); gamePage.classList.remove('drag'); galPage.classList.remove('drag'); topnav.classList.remove('drag');
     gq = open ? 1 : 0; navUpdate(curP, curSide);
     if(open){ gm.start(); clearTimeout(gxPauseT); gxPauseT = setTimeout(()=>{ if(gameOpen) galaxy.suspend(); }, 560); }
-    else { gm.stop(); clearTimeout(gxPauseT); if(galOpen){ galaxy.resume(); galaxyWake('Volviendo a la galaxia…'); } }
+    else { gm.stop(); clearTimeout(gxPauseT); if(galOpen){ galaxy.resume(); } }
     if(open){
       if(!gamePage.classList.contains('vis') && !gamePage.classList.contains('open')){ // abierto con un toque: el cubo parte desde la derecha
         gamePage.classList.add('drag'); galPage.classList.add('drag'); gamePage.style.transform = cubeT(1); galPage.style.transform = cubeT(0); void gamePage.offsetWidth; gamePage.classList.remove('drag'); galPage.classList.remove('drag');
@@ -5407,7 +5400,7 @@ window.Busy=(function(){
     } else {
       gamePage.classList.remove('open'); gamePage.classList.add('vis'); gamePage.style.transform = cubeT(1);
       if(galOpen) galPage.style.transform = cubeT(0);
-      gameTimer = setTimeout(()=>{ if(!gameOpen){ gamePage.classList.remove('vis'); gamePage.style.transform = ''; if(galOpen) galPage.style.transform = ''; } }, 620);
+      gameTimer = setTimeout(()=>{ if(!gameOpen){ gamePage.classList.remove('vis'); gamePage.style.transform = ''; if(galOpen) galPage.style.transform = ''; } }, 440);
     }
     gamePage.setAttribute('aria-hidden', String(!open));
     syncProgress();
@@ -5790,7 +5783,9 @@ window.Busy=(function(){
     if(gs.mode !== 2){ gs.mode = 0; return; }
     gs.mode = 0;
     const fast = Math.abs(gs.v) > .5;
-    const openIt = gs.from === 'closed' ? (gs.p > .35 || fast) : !(gs.p < .65 || fast);
+    let openIt;
+    if(gs.from === 'closed'){ const ov = gs.sgn * gs.v; openIt = fast ? ov > 0 : gs.p > .35; }          // ov > 0: el dedo va hacia abrir
+    else { const cv_ = (gs.side || 1) * gs.v; openIt = fast ? cv_ < 0 : gs.p >= .65; }                    // cv_ > 0: el dedo va hacia cerrar
     if(openIt){ if(!galOpen) openGalaxy(); else setGalaxy(true); }
     else { if(galOpen) closeGalaxy(gs.side); else setGalaxy(false, gs.side); }
   }
