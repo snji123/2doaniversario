@@ -4886,7 +4886,7 @@ window.Busy=(function(){
       cont: { amarillo:'contenedoramarillo.png', verde:'contenedorverde.png', rojo:'contenedorrojo.png', azul:'contenedorazul.png' }
     };
     // Arriba / abajo (opcionales): si el archivo aún no existe, el juego usa izquierda/derecha y no se rompe nada
-    F.arriba = 'corriendoarriba.png'; F.abajo = 'corriendoabajo.png';
+    F.arriba = 'corriendoarriba.png'; F.abajo = 'corriendoabajo.png'; F.reposoArriba = 'reposoarriba.png';
     COLORES.forEach(c => { ['arriba', 'abajo'].forEach(d => { F.cargando[c][d] = F.cargando[c].derecha.replace('derecha', d); }); });
     const cache = {};
     const img = n => cache[n] || (cache[n] = Object.assign(new Image(), { decoding:'async', src: JUEGO_BASE + n }));
@@ -4991,7 +4991,9 @@ window.Busy=(function(){
     };
     function spawn(){
       const lista = [...COLORES, ...COLORES].sort(() => Math.random() - .5);
-      objetos = lista.map(c => ({ color: c, fx: Math.random(), fy: Math.random() }));
+      // las maletas solo caen en el asfalto (mitad de abajo del mapa), no sobre el edificio ni la pista. Si quieres más arriba/abajo, cambia ZONA_Y0 (0 = todo el mapa, .5 = mitad de abajo)
+      const ZONA_Y0 = .5;
+      objetos = lista.map(c => ({ color: c, fx: Math.random(), fy: ZONA_Y0 + Math.random() * (1 - ZONA_Y0) }));
     }
     function obsSpeed(){ return 55 + level * 14; }
     function addObstacle(){
@@ -5111,6 +5113,7 @@ window.Busy=(function(){
     function sprite(){
       let n = carrying ? (moving ? F.cargando[carrying][dir] : F.reposoM[carrying]) : (moving ? F[dir] : F.reposo);
       if(moving && !ready(img(n))) n = carrying ? F.cargando[carrying][hdir] : F[hdir]; // aún no hay dibujo de arriba/abajo: usa el de izquierda/derecha
+      if(!moving && !carrying && dir === 'arriba' && ready(img(F.reposoArriba))) n = F.reposoArriba; // parada mirando hacia arriba: se ve de espaldas
       return n;
     }
     function box(x, y, w, h, c){ cx.fillStyle = c; cx.globalAlpha = .85; cx.beginPath(); cx.roundRect(x, y, w, h, 8); cx.fill(); cx.globalAlpha = 1; }
@@ -5151,7 +5154,14 @@ window.Busy=(function(){
           const w2 = player.w * k, h2 = player.h * k, x2 = player.x + (player.w - w2) / 2, y2 = player.y + player.h - h2 + bob;
           shadow(player.x + player.w / 2, player.y + player.h - 2, w2 * .36 * (1 + bob / 40), 6 * k, .3);
           const pi = img(sprite());
-          if(ready(pi)) cx.drawImage(pi, x2, y2, w2, h2);
+          if(ready(pi)){
+            // se respeta la proporción real de cada dibujo (antes «reposo» se estiraba a lo ancho)
+            const wf = h2 * (pi.naturalWidth / pi.naturalHeight), cxm = player.x + player.w / 2;
+            // de frente/espalda se alterna el espejo para simular que da un paso con cada pierna
+            const flip = moving && (dir === 'arriba' || dir === 'abajo') && Math.floor(performance.now() / 170) % 2 === 1;
+            if(flip){ cx.save(); cx.translate(cxm, 0); cx.scale(-1, 1); cx.drawImage(pi, -wf / 2, y2, wf, h2); cx.restore(); }
+            else cx.drawImage(pi, cxm - wf / 2, y2, wf, h2);
+          }
           else { box(player.x, player.y, player.w, player.h, '#ffffff'); if(carrying) box(player.x + 10, player.y + 40, 30, 30, HEX[carrying]); }
         }
       }
@@ -5215,7 +5225,7 @@ window.Busy=(function(){
     // ---------- Precarga: todas las imágenes se bajan y se decodifican ANTES de jugar ----------
     const pre = { p:null, d:0, n:0 };
     function allFiles(){
-      const set = new Set(['fondo.png', F.reposo, F.derecha, F.izquierda, F.arriba, F.abajo]);
+      const set = new Set(['fondo.png', F.reposo, F.derecha, F.izquierda, F.arriba, F.abajo, F.reposoArriba]);
       [F.reposoM, F.suelo, F.cont].forEach(o => Object.values(o).forEach(x => set.add(x)));
       Object.values(F.cargando).forEach(o => Object.values(o).forEach(x => set.add(x)));
       return [...set];
