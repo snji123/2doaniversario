@@ -517,6 +517,8 @@
     background:radial-gradient(70% 50% at 50% 42%,rgba(var(--gx1),.30),transparent 70%),radial-gradient(90% 60% at 50% 90%,rgba(var(--gx2),.26),transparent 70%),var(--gx-bg);
     transition:transform .6s cubic-bezier(.25,.8,.25,1), visibility 0s linear .6s;}
   .gal-page.open,.gal-page.vis{visibility:visible;transition-delay:0s,0s;}
+  .gal-page,.game-page{backface-visibility:hidden;-webkit-backface-visibility:hidden;}
+  html.cubing{overflow-x:hidden;}
   .gal-page.open{transform:none;}
   .gal-page.drag{transition:none;}
   .gal-page canvas{width:100%;height:100%;display:block;touch-action:none;}
@@ -4189,7 +4191,7 @@ window.Busy=(function(){
     let Z0 = 1, ZMIN = .7, ZMAX = 5; // se calculan en resize() para que el corazón completo quepa en pantalla
     let W = 0, H = 0, dpr = 1, K = 1, running = false, raf = 0, last = 0, ro = null;
     // ---- pantalla de carga de la primera vez: construye, baja las fotos y "calienta" el dibujo con la galaxia tapada ----
-    let ready = false, warmLeft = 0, loadingP = null;
+    let ready = false, warmLeft = 0, loadingP = null, suspended = false;
     const ld = document.getElementById('galLoader'), ldFill = document.getElementById('glFill'), ldPct = document.getElementById('glPct'), ldSub = document.getElementById('glSub');
     const wait = ms => new Promise(r=>setTimeout(r, ms)), nextFrame = ()=>new Promise(r=>requestAnimationFrame(()=>r()));
     function setProg(p, txt){
@@ -4204,6 +4206,16 @@ window.Busy=(function(){
     let camX = 0, camY = 0, camZ = 0, drawT = 0;
     const gal = [], dust = [], stars = [], trail = [], sprites = [];
     let DN = 0, dR, dCa, dSa, dY, dGi, dK; const kCol = [], kAl = [];
+    // Corazoncitos que giran dentro de cada galaxia (del color de esa galaxia; se redibujan una sola vez por color)
+    const hearts = [], heartCache = {};
+    function heartSprite(col){
+      if(heartCache[col]) return heartCache[col];
+      const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
+      const path = k => { g.beginPath(); for(let i=0;i<=48;i++){ const t = i / 48 * 6.2832; const x = 32 + 16 * Math.pow(Math.sin(t), 3) * k, y = 33 - (13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t)) * k; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); };
+      g.shadowColor = col; g.shadowBlur = 10; g.fillStyle = col; path(1.35); g.fill();
+      g.shadowBlur = 0; g.fillStyle = 'rgba(255,255,255,.55)'; path(.7); g.translate(0, -2); g.fill();
+      return heartCache[col] = c;
+    }
 
     // Forma del corazón: las 3 galaxias están SOBRE su contorno (ali y axel arriba, nosotros en la punta de abajo)
     const GR = 50, HS = 11, YOFF = -32, TL = 1.1; // radio de galaxia, escala del corazón, ajuste vertical, punto del contorno donde van ali/axel
@@ -4293,6 +4305,14 @@ window.Busy=(function(){
         trail.push({ x: hx(t) + gauss() * 5, y: hy(t) + gauss() * 5, z: gauss() * 8, u, s: Math.random() * 1.1 + .7, ph: Math.random() * 6.28, g: i % 3 });
       }
       trail.sort((p,q)=>p.g-q.g);
+      // corazoncitos dentro de cada galaxia, siguiendo sus brazos
+      for(let gi=0; gi<3; gi++){
+        const dir = GN[gi].dir, NH = weak ? 12 : 20;
+        for(let i=0;i<NH;i++){
+          const r0 = Math.pow(Math.random(), .7) * 185 + 28, a = r0 * .034 + (i % 3) * 2.0944 + gauss() * .3;
+          hearts.push({ gi, r: r0 * f, a: a * dir, y: gauss() * 6 * f * 1.6, s: .8 + Math.random() * .9, ph: Math.random() * 6.28, g: 1 + (i % 3) });
+        }
+      }
     }
 
     // Imágenes (de la carpeta del repositorio) y frases repartidas alrededor de cada galaxia
@@ -4566,6 +4586,15 @@ window.Busy=(function(){
         ctx.globalAlpha = Math.min(.9, .4 + pp*.35);
         const z = Math.min(7, Math.max(1.8, p.s * 1.7 * Math.sqrt(pp))); ctx.drawImage(spr, px - z/2, py - z/2, z, z);
       }
+      for(let i=0;i<hearts.length;i++){
+        const p = hearts[i];
+        place(p.gi, p.r, p.y, p.a + spin * GN[p.gi].dir);
+        if(!proj(gx, gy, gz)) continue;
+        const hs = heartSprite(PALS[p.gi][p.g] || '#ff8fb8');
+        ctx.globalAlpha = Math.min(.95, .55 + pp * .3) * (.75 + .25 * Math.sin(clock * 1.7 + p.ph));
+        const z = clamp(p.s * 3.4 * Math.sqrt(pp) * (1 + .18 * Math.sin(clock * 2.2 + p.ph)), 5, 22);
+        ctx.drawImage(hs, px - z/2, py - z/2, z, z);
+      }
       for(const G of GN){
         if(!proj(G.x, G.y, G.z)) continue;
         G.sx = px; G.sy = py; G.sr = GR * G.sc * pp;
@@ -4615,6 +4644,19 @@ window.Busy=(function(){
           if(z >= 6) photoHits.push({ s, x: it.x, y: it.y, z });
         }
       }
+      // «Ali ♥ Axel» en el centro del corazón: se ve en la vista general y se desvanece al acercarte a una galaxia
+      { const nA = (1 - sstep(1.25, 2.3, r)) * (focused >= 0 ? 0 : 1);
+        if(nA > .02 && proj(0, -18, 0)){
+          const fpx = clamp(11 * pp, 11, 46), hsz = fpx * .95, gap = fpx * .3, pu = 1 + .12 * Math.sin(phase);
+          ctx.font = `700 ${fpx}px Poppins, system-ui, sans-serif`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          const w1 = ctx.measureText('Ali').width, w2 = ctx.measureText('Axel').width, tot = w1 + gap + hsz + gap + w2;
+          const x0 = px - tot / 2, y0 = py;
+          ctx.globalAlpha = nA; ctx.shadowBlur = 12;
+          ctx.shadowColor = `rgba(${GN[0].glow},.95)`; ctx.fillStyle = `rgb(${GN[0].glow})`; ctx.fillText('Ali', x0, y0);
+          ctx.shadowBlur = 0; ctx.drawImage(heartSprite('#ff5c8a'), x0 + w1 + gap + hsz / 2 - hsz * pu / 2, y0 - hsz * pu / 2, hsz * pu, hsz * pu);
+          ctx.shadowBlur = 12; ctx.shadowColor = `rgba(${GN[1].glow},.95)`; ctx.fillStyle = `rgb(${GN[1].glow})`; ctx.fillText('Axel', x0 + w1 + gap + hsz + gap, y0);
+          ctx.shadowBlur = 0; ctx.textAlign = 'center';
+        } }
       ctx.globalAlpha = 1;
     }
 
@@ -4793,7 +4835,7 @@ window.Busy=(function(){
 
     document.addEventListener('visibilitychange', ()=>{
       if(document.hidden){ if(raf){ cancelAnimationFrame(raf); raf = 0; } }
-      else if(running && !raf){ last = 0; raf = requestAnimationFrame(frame); }
+      else if(running && !raf && !suspended){ last = 0; raf = requestAnimationFrame(frame); }
     });
     return {
       start(){
@@ -4803,12 +4845,15 @@ window.Busy=(function(){
         resize(); last = 0;
         if(ready){
           build(); buildSprites(); pump(); drawT = 0; showHint('Toca una galaxia para explorarla');
-          if(!raf && !document.hidden) raf = requestAnimationFrame(frame);
+          if(!raf && !document.hidden && !suspended) raf = requestAnimationFrame(frame);
           return;
         }
         loadAll().then(()=>{ if(running) beginWarm(); }); // primera vez: pantalla de carga hasta que todo esté listo
       },
-      stop(){ running = false; if(raf){ cancelAnimationFrame(raf); raf = 0; } },
+      stop(){ running = false; suspended = false; if(raf){ cancelAnimationFrame(raf); raf = 0; } },
+      isReady(){ return ready; },
+      suspend(){ suspended = true; if(raf){ cancelAnimationFrame(raf); raf = 0; } },   // el juego va encima: la galaxia no gasta batería ni le quita fluidez
+      resume(){ if(!suspended) return; suspended = false; if(running && !raf && !document.hidden){ last = 0; raf = requestAnimationFrame(frame); } },
       isInteractive(){ return interactive; },
       focusedIndex(){ return focused; },
       setHidden(arr){
@@ -4828,7 +4873,7 @@ window.Busy=(function(){
         dust.forEach(p=>{ p.col = PALS[p.gi][Math.floor(p.k / 3) % 5]; kCol[p.k] = p.col; });
         PALS.forEach(p=>p.forEach(dotSprite));
         // libera los sprites de colores que ya no se usan (antes se acumulaban sin parar al mover el selector de color)
-        { const live = new Set(['#ffffff', ...PAL_H]); PALS.forEach(p=>p.forEach(c=>live.add(c))); Object.keys(dotCache).forEach(k=>{ if(!live.has(k)) delete dotCache[k]; }); }
+        { const live = new Set(['#ffffff', ...PAL_H]); PALS.forEach(p=>p.forEach(c=>live.add(c))); Object.keys(dotCache).forEach(k=>{ if(!live.has(k)) delete dotCache[k]; }); Object.keys(heartCache).forEach(k=>{ if(!live.has(k)) delete heartCache[k]; }); }
       },
       setCustom(items){ pendingCustom = items; applyCustom(); },
       exit(){ interactive = false; focused = -1; anim = null; gTarget = 0; gt = 0; mTarget = 0; mt = 0; applyGather(); ptrs.clear(); pinch = null; resetView(); syncNav(); },
@@ -4841,6 +4886,21 @@ window.Busy=(function(){
   const tnA = document.getElementById('tnA'), tnB = document.getElementById('tnB'), tnC = document.getElementById('tnC');
   let gq = 0; // 0 = se ve el título Galaxia, 1 = se ve el título Juego
   let galOpen = false, curP = 0, curSide = 1, outSide = 1, cleanTimer = 0;
+  // Cambio de sección en CUBO 3D (el mismo efecto de cuando deslizas para cambiar de canción).
+  // p = posición de la cara: 0 centrada, +1 a la derecha, -1 a la izquierda; sigue al dedo y al soltar termina sola.
+  const cubeT = p => { const W = innerWidth; return 'perspective(1100px) translateZ(' + (-W / 2) + 'px) rotateY(' + (p * 90) + 'deg) translateZ(' + (W / 2) + 'px)'; };
+  const mainFx = (() => {
+    const el = document.querySelector('.wrap'); let on = false, t = 0;
+    const clear = () => { clearTimeout(t); on = false; el.style.transition = ''; el.style.transform = ''; el.style.transformOrigin = ''; el.style.backfaceVisibility = ''; document.documentElement.classList.remove('cubing'); };
+    const api = {
+      get on(){ return on; },
+      begin(){ clearTimeout(t); if(on) return; on = true; const oy = (window.scrollY || document.documentElement.scrollTop || 0) + innerHeight / 2; el.style.transformOrigin = '50% ' + oy + 'px'; el.style.backfaceVisibility = 'hidden'; el.style.transition = 'none'; document.documentElement.classList.add('cubing'); },
+      set(p){ if(!on) api.begin(); el.style.transition = 'none'; el.style.transform = cubeT(p); },
+      anim(p, ms){ if(!on) api.begin(); void el.offsetWidth; el.style.transition = 'transform ' + (ms / 1000) + 's cubic-bezier(.25,.8,.25,1)'; el.style.transform = cubeT(p); clearTimeout(t); t = setTimeout(clear, ms + 40); },
+      end: clear
+    };
+    return api;
+  })();
   // p: 0 = reproductor, 1 = galaxia; side: de qué lado está la galaxia (1 derecha, -1 izquierda)
   function navUpdate(p, side){
     curP = p; if(side) curSide = side;
@@ -4851,16 +4911,36 @@ window.Busy=(function(){
     const tt = Math.min(1, sc / 130), f = tt * tt * (3 - 2 * tt) * (1 - p); // se desvanece poco a poco al bajar
     topnav.style.opacity = String(1 - f); topnav.style.transform = `translateY(${-f * 10}px)`;
   }
+  let wakeBusy = 0, gxPauseT = 0;
+  async function galaxyWake(txt){
+    const B = window.Busy; if(!B || wakeBusy) return; wakeBusy = 1;
+    await new Promise(r => setTimeout(r, 640));          // primero se ve el giro del cubo completo; la barra aparece al terminar
+    if(!galOpen || gameOpen){ wakeBusy = 0; return; }
+    B.begin(txt || 'Preparando tu galaxia…');
+    try{
+      B.set(.12, 'Encendiendo las estrellas…'); await B.frames(3);
+      B.set(.35, 'Cargando las fotos y los corazones…'); await B.frames(4);
+      B.set(.55, 'Afinando los efectos…'); await B.settle(4500, p => B.set(.55 + .43 * p));
+    }catch(e){}
+    wakeBusy = 0; B.end();
+  }
   function setGalaxy(open, side){
     galOpen = open; clearTimeout(cleanTimer); galPage.classList.remove('drag'); topnav.classList.remove('drag');
     if(open){
+      if(!galPage.classList.contains('vis') && !galPage.classList.contains('open')){ // abierta con un toque: el cubo parte desde el costado
+        galPage.classList.add('drag'); galPage.style.transform = cubeT(curSide); mainFx.set(0); void galPage.offsetWidth; galPage.classList.remove('drag');
+      }
       galPage.style.transform = ''; galPage.classList.add('open'); galPage.classList.remove('vis');
+      mainFx.anim(-curSide, 600);
       navUpdate(1, curSide); galaxy.start();
+      if(galaxy.isReady()) galaxyWake();   // la primera vez ya tiene su propia pantalla de carga
     } else {
       const sd = side || outSide || 1;
-      galPage.classList.remove('open'); galPage.classList.add('vis'); galPage.style.transform = `translateX(${sd * 100}%)`;
+      if(!mainFx.on){ mainFx.begin(); mainFx.set(-sd); } // cerrada con un toque: la sección principal gira desde el costado
+      galPage.classList.remove('open'); galPage.classList.add('vis'); galPage.style.transform = cubeT(sd);
+      mainFx.anim(0, 600);
       navUpdate(0, sd); galaxy.exit();
-      cleanTimer = setTimeout(()=>{ if(!galOpen){ galPage.classList.remove('vis'); galPage.style.transform = ''; galaxy.stop(); } }, 700);
+      cleanTimer = setTimeout(()=>{ if(!galOpen){ galPage.classList.remove('vis'); galPage.style.transform = ''; galaxy.stop(); mainFx.end(); } }, 700);
     }
     galPage.setAttribute('aria-hidden', String(!open));
   }
@@ -5277,13 +5357,20 @@ window.Busy=(function(){
   const gamePage = document.getElementById('gameBox');
   let gameOpen = false, gameTimer = 0, skipPop = 0;
   function setGame(open){
-    gameOpen = open; clearTimeout(gameTimer); gamePage.classList.remove('drag'); topnav.classList.remove('drag');
+    gameOpen = open; clearTimeout(gameTimer); gamePage.classList.remove('drag'); galPage.classList.remove('drag'); topnav.classList.remove('drag');
     gq = open ? 1 : 0; navUpdate(curP, curSide);
-    if(open) gm.start(); else gm.stop();
-    if(open){ gamePage.style.transform = ''; gamePage.classList.add('open'); gamePage.classList.remove('vis'); }
-    else {
-      gamePage.classList.remove('open'); gamePage.classList.add('vis'); gamePage.style.transform = 'translateX(100%)';
-      gameTimer = setTimeout(()=>{ if(!gameOpen){ gamePage.classList.remove('vis'); gamePage.style.transform = ''; } }, 600);
+    if(open){ gm.start(); clearTimeout(gxPauseT); gxPauseT = setTimeout(()=>{ if(gameOpen) galaxy.suspend(); }, 560); }
+    else { gm.stop(); clearTimeout(gxPauseT); if(galOpen){ galaxy.resume(); galaxyWake('Volviendo a la galaxia…'); } }
+    if(open){
+      if(!gamePage.classList.contains('vis') && !gamePage.classList.contains('open')){ // abierto con un toque: el cubo parte desde la derecha
+        gamePage.classList.add('drag'); galPage.classList.add('drag'); gamePage.style.transform = cubeT(1); galPage.style.transform = cubeT(0); void gamePage.offsetWidth; gamePage.classList.remove('drag'); galPage.classList.remove('drag');
+      }
+      gamePage.style.transform = ''; gamePage.classList.add('open'); gamePage.classList.remove('vis');
+      galPage.style.transform = cubeT(-1);
+    } else {
+      gamePage.classList.remove('open'); gamePage.classList.add('vis'); gamePage.style.transform = cubeT(1);
+      if(galOpen) galPage.style.transform = cubeT(0);
+      gameTimer = setTimeout(()=>{ if(!gameOpen){ gamePage.classList.remove('vis'); gamePage.style.transform = ''; if(galOpen) galPage.style.transform = ''; } }, 620);
     }
     gamePage.setAttribute('aria-hidden', String(!open));
   }
@@ -5544,17 +5631,18 @@ window.Busy=(function(){
       if(pic.complete && pic.naturalWidth) go();
     };
     // pasar a la foto siguiente / anterior (solo de la misma galaxia)
-    function step(dir){
+    function step(dir, swipe){
       if(!vOpen || busy || list.length < 2) return; busy = true;
       idx = (idx + dir + list.length) % list.length; updNav();
       origin = { x: innerWidth / 2, y: innerHeight / 2, z: 60 };
-      fr.style.transition = 'transform .24s ease, opacity .2s ease'; fr.style.opacity = '0'; fr.style.transform = tf(-dir * 46, 0, .95);
+      const off = swipe ? innerWidth * .55 : 46; // al deslizar con el dedo la foto sale y entra desde el costado
+      fr.style.transition = 'transform .24s ease, opacity .2s ease'; fr.style.opacity = '0'; fr.style.transform = tf(-dir * off, 0, .95);
       setTimeout(()=>{
         if(!vOpen) return;
         let shown = false;
         const show = ()=>{
           if(shown) return; shown = true;
-          fr.style.transition = 'none'; fr.style.transform = tf(dir * 46, 0, .95); void fr.offsetWidth;
+          fr.style.transition = 'none'; fr.style.transform = tf(dir * off, 0, .95); void fr.offsetWidth;
           fr.style.transition = 'transform .45s cubic-bezier(.22,1,.36,1), opacity .3s ease'; fr.style.opacity = '1'; fr.style.transform = tf(0, 0, 1);
           busy = false; warmNeighbors(); crispLater(520);
         };
@@ -5575,18 +5663,29 @@ window.Busy=(function(){
     }
     xb.addEventListener('click', e=>{ e.stopPropagation(); closeViewer(); });
     document.addEventListener('keydown', e=>{ if(!vOpen) return; if(e.key === 'Escape') closeViewer(); else if(e.key === 'ArrowRight') step(1); else if(e.key === 'ArrowLeft') step(-1); });
-    v.addEventListener('pointerdown', e=>{ if(!vOpen || e.target === xb || (e.target.closest && e.target.closest('.gv-nav'))) return; drag = { x:e.clientX, y:e.clientY, dx:0, dy:0, moved:false }; try{ v.setPointerCapture(e.pointerId); }catch(_){} });
+    v.addEventListener('pointerdown', e=>{ if(!vOpen || e.target === xb || (e.target.closest && e.target.closest('.gv-nav'))) return; drag = { x:e.clientX, y:e.clientY, dx:0, dy:0, moved:false, mode:null, vx:0, lx:e.clientX, lt:performance.now() }; try{ v.setPointerCapture(e.pointerId); }catch(_){} });
     v.addEventListener('pointermove', e=>{
       if(!drag) return;
       drag.dx = e.clientX - drag.x; drag.dy = e.clientY - drag.y;
       const d = Math.hypot(drag.dx, drag.dy); if(d > 8) drag.moved = true;
       if(!drag.moved) return;
+      if(!drag.mode) drag.mode = (list.length > 1 && Math.abs(drag.dx) > Math.abs(drag.dy) * 1.2) ? 'h' : 'v';
+      if(drag.mode === 'h'){ // izquierda → siguiente foto, derecha → anterior (igual que las canciones)
+        const now = performance.now(); if(now > drag.lt){ drag.vx = (e.clientX - drag.lx) / (now - drag.lt); drag.lx = e.clientX; drag.lt = now; }
+        const a = Math.min(Math.abs(drag.dx), 320);
+        fr.style.transition = 'none'; fr.style.transform = tf(drag.dx, 0, 1 - a / 3200); fr.style.opacity = String(1 - a / 700);
+        return;
+      }
       fr.style.transition = 'none'; fr.style.transform = tf(drag.dx, drag.dy, 1 - Math.min(d, 400) / 1600);
       v.style.background = `rgba(2,6,12,${.9 * (1 - Math.min(d, 260) / 420)})`;
     });
     function endDrag(){
       if(!drag) return; const d = drag; drag = null;
       const dist = Math.hypot(d.dx, d.dy);
+      if(d.mode === 'h'){
+        if(Math.abs(d.dx) > innerWidth * .2 || (Math.abs(d.vx) > .45 && Math.abs(d.dx) > 30)){ if(navigator.vibrate) navigator.vibrate(8); step(d.dx < 0 ? 1 : -1, true); return; }
+        fr.style.transition = ''; fr.style.opacity = '1'; fr.style.transform = tf(0, 0, 1); return;
+      }
       if(!d.moved || dist > 90){ closeViewer(d.moved ? d.dx : 0, d.moved ? d.dy : 0); return; }
       fr.style.transition = ''; fr.style.transform = tf(0, 0, 1); v.style.background = '';
     }
@@ -5611,12 +5710,12 @@ window.Busy=(function(){
     if(gs.mode === 1){
       if(Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
       if(Math.abs(dx) > Math.abs(dy) * 1.4 && gs.from === 'game'){
-        if(dx > 0){ gs.mode = 4; gamePage.classList.add('drag'); topnav.classList.add('drag'); } else { gs.mode = 0; return; }
+        if(dx > 0){ gs.mode = 4; gamePage.classList.add('drag'); galPage.classList.add('drag'); topnav.classList.add('drag'); } else { gs.mode = 0; return; }
       } else if(Math.abs(dx) > Math.abs(dy) * 1.4 && gs.from === 'open' && dx < 0){
-        gs.mode = 3; gamePage.classList.add('drag', 'vis'); topnav.classList.add('drag');
+        gs.mode = 3; gamePage.classList.add('drag', 'vis'); galPage.classList.add('drag'); topnav.classList.add('drag');
       } else if(Math.abs(dx) > Math.abs(dy) * 1.4){
         clearTimeout(cleanTimer); gs.mode = 2; gs.sgn = dx < 0 ? -1 : 1; gs.side = gs.from === 'closed' ? -gs.sgn : gs.sgn;
-        galPage.classList.add('drag', 'vis'); topnav.classList.add('drag'); galaxy.start();
+        galPage.classList.add('drag', 'vis'); topnav.classList.add('drag'); mainFx.begin(); galaxy.start();
       } else { gs.mode = 0; return; }
     }
     if(gs.mode === 3 || gs.mode === 4){
@@ -5625,7 +5724,7 @@ window.Busy=(function(){
       const tx = gs.mode === 3 ? Math.max(0, Math.min(W, W + dx)) : Math.max(0, Math.min(W, dx));
       gs.p = 1 - tx / W;
       gs.v = (t.clientX - gs.lastX) / Math.max(1, e.timeStamp - gs.lastT); gs.lastX = t.clientX; gs.lastT = e.timeStamp;
-      gamePage.style.transform = `translateX(${tx}px)`; gq = gs.p; navUpdate(curP, curSide);
+      gamePage.style.transform = cubeT(tx / W); galPage.style.transform = cubeT(tx / W - 1); gq = gs.p; navUpdate(curP, curSide);
       return;
     }
     if(gs.mode === 2){
@@ -5636,7 +5735,7 @@ window.Busy=(function(){
       else { tx = Math.max(-W, Math.min(W, dx)); if(tx) gs.side = tx > 0 ? 1 : -1; }
       gs.p = 1 - Math.abs(tx) / W;
       gs.v = (t.clientX - gs.lastX) / Math.max(1, e.timeStamp - gs.lastT); gs.lastX = t.clientX; gs.lastT = e.timeStamp;
-      galPage.style.transform = `translateX(${tx}px)`; navUpdate(gs.p, gs.side);
+      galPage.style.transform = cubeT(tx / W); mainFx.set(tx / W - (gs.side || 1)); navUpdate(gs.p, gs.side);
     }
   }, { passive:false });
   function endSwipe(){
