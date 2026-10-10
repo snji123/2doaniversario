@@ -4885,14 +4885,17 @@ window.Busy=(function(){
       suelo: { amarillo:'maleta-amarilla.png', verde:'maleta-verde.png', rojo:'maleta-roja.png', azul:'maleta-azul.png' },
       cont: { amarillo:'contenedoramarillo.png', verde:'contenedorverde.png', rojo:'contenedorrojo.png', azul:'contenedorazul.png' }
     };
+    // Arriba / abajo (opcionales): si el archivo aún no existe, el juego usa izquierda/derecha y no se rompe nada
+    F.arriba = 'corriendoarriba.png'; F.abajo = 'corriendoabajo.png';
+    COLORES.forEach(c => { ['arriba', 'abajo'].forEach(d => { F.cargando[c][d] = F.cargando[c].derecha.replace('derecha', d); }); });
     const cache = {};
-    const img = n => cache[n] || (cache[n] = Object.assign(new Image(), { src: JUEGO_BASE + n }));
+    const img = n => cache[n] || (cache[n] = Object.assign(new Image(), { decoding:'async', src: JUEGO_BASE + n }));
     const ready = im => im.complete && im.naturalWidth > 0;
     const MAL = 48, SPEED = 300, ROUND = 60, MAXT = 99, JR = 48, COMBO_WIN = 8;
     const player = { x: 20, y: 0, w: 50, h: 80 };
     let W = 0, H = 0, running = false, raf = 0, last = 0;
     let state = 'ready', clock = 0, timeLeft = ROUND, points = 0, level = 1, deliveries = 0, combo = 0, lastDel = -99;
-    let dir = 'derecha', moving = false, carrying = null, invul = 0, shake = 0, lastTick = 0;
+    let dir = 'derecha', hdir = 'derecha', moving = false, carrying = null, invul = 0, shake = 0, lastTick = 0;
     let objetos = [], obstacles = [], floats = [], zonas = {}, zs = 60, keys = {};
     let joy = { on:false, id:null, bx:0, by:0, dx:0, dy:0 };
     let music = null, muted = false, ac = null;
@@ -4973,7 +4976,7 @@ window.Busy=(function(){
       COLORES.forEach((c, i) => { const o = zonas[c] || {}; zonas[c] = { x: W - zs - 14, y: gap * (i + 1) + zs * i, w: zs, h: zs, cd: o.cd || 0, pulse: o.pulse || 0 }; });
     }
     function resize(){
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2); // más de 2x no se nota en un juego de este tamaño y pesa mucho
       W = cv.clientWidth; H = cv.clientHeight;
       if(!W || !H) return;
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
@@ -5055,7 +5058,8 @@ window.Busy=(function(){
       const mag = Math.hypot(vx, vy); if(mag > 1){ vx /= mag; vy /= mag; }
       moving = state === 'playing' && (Math.abs(vx) > .05 || Math.abs(vy) > .05);
       if(state !== 'playing'){ moving = false; return; }
-      if(vx > .15) dir = 'derecha'; else if(vx < -.15) dir = 'izquierda';
+      if(Math.abs(vy) > Math.abs(vx) * 1.2 && Math.abs(vy) > .15) dir = vy < 0 ? 'arriba' : 'abajo';
+      else if(vx > .15){ dir = 'derecha'; hdir = 'derecha'; } else if(vx < -.15){ dir = 'izquierda'; hdir = 'izquierda'; }
       player.x = Math.max(0, Math.min(W - player.w, player.x + vx * SPEED * dt));
       player.y = Math.max(0, Math.min(H - player.h, player.y + vy * SPEED * dt));
 
@@ -5105,28 +5109,51 @@ window.Busy=(function(){
       }
     }
     function sprite(){
-      if(carrying) return moving ? F.cargando[carrying][dir] : F.reposoM[carrying];
-      return moving ? F[dir] : F.reposo;
+      let n = carrying ? (moving ? F.cargando[carrying][dir] : F.reposoM[carrying]) : (moving ? F[dir] : F.reposo);
+      if(moving && !ready(img(n))) n = carrying ? F.cargando[carrying][hdir] : F[hdir]; // aún no hay dibujo de arriba/abajo: usa el de izquierda/derecha
+      return n;
     }
     function box(x, y, w, h, c){ cx.fillStyle = c; cx.globalAlpha = .85; cx.beginPath(); cx.roundRect(x, y, w, h, 8); cx.fill(); cx.globalAlpha = 1; }
+    let cartCv = null;
+    function cartImg(){ // el emoji se dibuja una sola vez (dibujar texto emoji en cada cuadro es lento)
+      if(cartCv) return cartCv;
+      cartCv = document.createElement('canvas'); cartCv.width = cartCv.height = 88;
+      const c = cartCv.getContext('2d'); c.font = '72px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('🛒', 44, 46);
+      return cartCv;
+    }
+    function shadow(x, y, rx, ry, a){ cx.fillStyle = 'rgba(0,0,0,' + (a || .28) + ')'; cx.beginPath(); cx.ellipse(x, y, Math.max(1, rx), Math.max(1, ry), 0, 0, 7); cx.fill(); }
     function draw(){
       cx.clearRect(0, 0, W, H);
       cx.save();
       if(shake > 0) cx.translate((Math.random() - .5) * shake * 16, (Math.random() - .5) * shake * 16);
-      objetos.forEach(o => {
-        const p = pos(o), im = img(F.suelo[o.color]);
-        if(ready(im)) cx.drawImage(im, p.x, p.y, MAL, MAL); else box(p.x, p.y, MAL, MAL, HEX[o.color]);
-      });
       COLORES.forEach(c => {
         const z = zonas[c], im = img(F.cont[c]), k = 1 + z.pulse * .5, w = z.w * k, h = z.h * k, x = z.x - (w - z.w) / 2, y = z.y - (h - z.h) / 2;
         if(ready(im)) cx.drawImage(im, x, y, w, h); else box(x, y, w, h, HEX[c]);
       });
       cx.font = '34px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
-      obstacles.forEach(o => cx.fillText('🛒', o.x + o.w / 2, o.y + o.h / 2));
-      if(!(invul > 0 && Math.floor(invul * 10) % 2)){
-        const pi = img(sprite());
-        if(ready(pi)) cx.drawImage(pi, player.x, player.y, player.w, player.h);
-        else { box(player.x, player.y, player.w, player.h, '#ffffff'); if(carrying) box(player.x + 10, player.y + 40, 30, 30, HEX[carrying]); }
+      // maletas, carritos y personaje se ordenan por altura: lo que está más abajo queda delante (efecto de profundidad)
+      const L = [];
+      objetos.forEach(o => { const p = pos(o); L.push({ y: p.y + MAL, t: 0, o, p }); });
+      obstacles.forEach(o => L.push({ y: o.y + o.h, t: 1, o }));
+      if(!(invul > 0 && Math.floor(invul * 10) % 2)) L.push({ y: player.y + player.h, t: 2 });
+      L.sort((a, b) => a.y - b.y);
+      for(const it of L){
+        if(it.t === 0){
+          const im = img(F.suelo[it.o.color]), p = it.p;
+          shadow(p.x + MAL / 2, p.y + MAL - 3, MAL * .36, 5, .25);
+          if(ready(im)) cx.drawImage(im, p.x, p.y, MAL, MAL); else box(p.x, p.y, MAL, MAL, HEX[it.o.color]);
+        } else if(it.t === 1){
+          const o = it.o; shadow(o.x + o.w / 2, o.y + o.h - 2, o.w * .38, 5, .25);
+          cx.drawImage(cartImg(), o.x - 2, o.y - 2, o.w + 4, o.h + 4);
+        } else {
+          const k = .9 + .2 * Math.max(0, Math.min(1, (player.y + player.h) / H)); // abajo = más cerca = un poco más grande
+          const bob = moving ? -Math.abs(Math.sin(performance.now() / 90)) * 4 : 0; // saltito al caminar
+          const w2 = player.w * k, h2 = player.h * k, x2 = player.x + (player.w - w2) / 2, y2 = player.y + player.h - h2 + bob;
+          shadow(player.x + player.w / 2, player.y + player.h - 2, w2 * .36 * (1 + bob / 40), 6 * k, .3);
+          const pi = img(sprite());
+          if(ready(pi)) cx.drawImage(pi, x2, y2, w2, h2);
+          else { box(player.x, player.y, player.w, player.h, '#ffffff'); if(carrying) box(player.x + 10, player.y + 40, 30, 30, HEX[carrying]); }
+        }
       }
       if(joy.on){
         cx.lineWidth = 2; cx.strokeStyle = 'rgba(255,255,255,.35)'; cx.fillStyle = 'rgba(255,255,255,.08)';
@@ -5185,10 +5212,39 @@ window.Busy=(function(){
     $('gmClose').addEventListener('click', () => closeGame());
     new ResizeObserver(() => { if(running) resize(); }).observe(cv);
 
+    // ---------- Precarga: todas las imágenes se bajan y se decodifican ANTES de jugar ----------
+    const pre = { p:null, d:0, n:0 };
+    function allFiles(){
+      const set = new Set(['fondo.png', F.reposo, F.derecha, F.izquierda, F.arriba, F.abajo]);
+      [F.reposoM, F.suelo, F.cont].forEach(o => Object.values(o).forEach(x => set.add(x)));
+      Object.values(F.cargando).forEach(o => Object.values(o).forEach(x => set.add(x)));
+      return [...set];
+    }
+    const loadOne = n => new Promise(res => {
+      const im = img(n), fin = () => { (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(res); };
+      if(im.complete) fin(); else { im.addEventListener('load', fin, { once:true }); im.addEventListener('error', () => res(), { once:true }); setTimeout(res, 9000); }
+    });
+    function preload(){
+      if(pre.p) return pre.p;
+      const L = allFiles(); pre.n = L.length;
+      pre.p = Promise.all(L.map(n => loadOne(n).then(() => { pre.d++; })));
+      return pre.p;
+    }
     return {
+      preload,
       start(){
         if(running) return;
         subscribe();
+        { // música lista de antemano y barra de progreso mientras bajan las imágenes (solo la primera vez)
+          if(!music){ music = new Audio(JUEGO_BASE + 'musica-retro.mp3'); music.loop = true; music.volume = .45; music.preload = 'auto'; }
+          const pr = preload();
+          if(pre.d < pre.n){
+            const B = window.Busy; el.play.disabled = true;
+            if(B) B.begin('Cargando el juego…');
+            const tm = setInterval(() => { if(B) B.set(.05 + .9 * pre.d / Math.max(1, pre.n)); }, 80);
+            pr.then(() => { clearInterval(tm); el.play.disabled = false; if(B) B.end(); });
+          }
+        }
         cv.style.backgroundImage = 'url("' + JUEGO_BASE + 'fondo.png")';
         running = true; resize(); if(!objetos.length) spawn();
         state = 'ready'; moving = false; hud(true); showOv('ready');
@@ -5202,6 +5258,11 @@ window.Busy=(function(){
   })();
 
   // ----- Página «Juego» (a la derecha de la galaxia) -----
+  (function(){
+    const sd = navigator.connection && navigator.connection.saveData; if(sd) return;
+    const go = ()=>{ try{ gm.preload(); }catch(e){} };
+    window.addEventListener('load', ()=>setTimeout(()=>('requestIdleCallback' in window ? requestIdleCallback(go, { timeout:8000 }) : go()), 3500));
+  })();
   const gamePage = document.getElementById('gameBox');
   let gameOpen = false, gameTimer = 0, skipPop = 0;
   function setGame(open){
