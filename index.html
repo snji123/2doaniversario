@@ -4887,6 +4887,7 @@ window.Busy=(function(){
     };
     // Arriba / abajo (opcionales): si el archivo aún no existe, el juego usa izquierda/derecha y no se rompe nada
     F.arriba = 'corriendoarriba.png'; F.abajo = 'corriendoabajo.png'; F.reposoArriba = 'reposoarriba.png';
+    F.reposoMArriba = {}; COLORES.forEach(c => { F.reposoMArriba[c] = F.reposoM[c].replace('.png', '-arriba.png'); });
     COLORES.forEach(c => { ['arriba', 'abajo'].forEach(d => { F.cargando[c][d] = F.cargando[c].derecha.replace('derecha', d); }); });
     const cache = {};
     const img = n => cache[n] || (cache[n] = Object.assign(new Image(), { decoding:'async', src: JUEGO_BASE + n }));
@@ -5113,7 +5114,7 @@ window.Busy=(function(){
     function sprite(){
       let n = carrying ? (moving ? F.cargando[carrying][dir] : F.reposoM[carrying]) : (moving ? F[dir] : F.reposo);
       if(moving && !ready(img(n))) n = carrying ? F.cargando[carrying][hdir] : F[hdir]; // aún no hay dibujo de arriba/abajo: usa el de izquierda/derecha
-      if(!moving && !carrying && dir === 'arriba' && ready(img(F.reposoArriba))) n = F.reposoArriba; // parada mirando hacia arriba: se ve de espaldas
+      if(!moving && dir === 'arriba'){ const q = carrying ? F.reposoMArriba[carrying] : F.reposoArriba; if(ready(img(q))) n = q; } // parada mirando hacia arriba: se ve de espaldas
       return n;
     }
     function box(x, y, w, h, c){ cx.fillStyle = c; cx.globalAlpha = .85; cx.beginPath(); cx.roundRect(x, y, w, h, 8); cx.fill(); cx.globalAlpha = 1; }
@@ -5226,7 +5227,7 @@ window.Busy=(function(){
     const pre = { p:null, d:0, n:0 };
     function allFiles(){
       const set = new Set(['fondo.png', F.reposo, F.derecha, F.izquierda, F.arriba, F.abajo, F.reposoArriba]);
-      [F.reposoM, F.suelo, F.cont].forEach(o => Object.values(o).forEach(x => set.add(x)));
+      [F.reposoM, F.reposoMArriba, F.suelo, F.cont].forEach(o => Object.values(o).forEach(x => set.add(x)));
       Object.values(F.cargando).forEach(o => Object.values(o).forEach(x => set.add(x)));
       return [...set];
     }
