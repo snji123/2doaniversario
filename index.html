@@ -4208,6 +4208,24 @@ window.Busy=(function(){
     let DN = 0, dR, dCa, dSa, dY, dGi, dK; const kCol = [], kAl = [];
     // Corazoncitos que giran dentro de cada galaxia (del color de esa galaxia; se redibujan una sola vez por color)
     const hearts = [], heartCache = {};
+    // «Ali ♥ Axel» dibujado con polvitos, igual que el contorno del corazón
+    const nameDots = [];
+    function buildNames(){
+      if(nameDots.length) return;
+      const cw = 640, ch = 170, c = document.createElement('canvas'); c.width = cw; c.height = ch; const g = c.getContext('2d');
+      g.font = '700 120px Poppins, system-ui, sans-serif'; g.textBaseline = 'middle'; g.textAlign = 'left';
+      const wA = g.measureText('Ali').width, wX = g.measureText('Axel').width, hs = 100, gap = 30, tot = wA + gap + hs + gap + wX, x0 = (cw - tot) / 2, cy = ch / 2 + 6;
+      g.fillStyle = '#fff'; g.fillText('Ali', x0, cy); g.fillText('Axel', x0 + wA + gap + hs + gap, cy);
+      g.fillStyle = '#f00'; g.beginPath();                                   // corazón del medio (rojo en el molde = polvitos rosados)
+      const hx = x0 + wA + gap + hs / 2, k = hs / 36;
+      for(let i=0;i<=48;i++){ const t = i / 48 * 6.2832; const x = hx + 16 * Math.pow(Math.sin(t), 3) * k, y = cy - 2 - (13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t)) * k; i ? g.lineTo(x, y) : g.moveTo(x, y); }
+      g.closePath(); g.fill();
+      const d = g.getImageData(0, 0, cw, ch).data, cand = [];
+      for(let y=0;y<ch;y+=3) for(let x=0;x<cw;x+=3){ const q = (y * cw + x) * 4; if(d[q+3] > 150) cand.push([x, y, d[q+1] < 110]); }
+      for(let i=cand.length-1;i>0;i--){ const j = Math.floor(Math.random() * (i + 1)); [cand[i], cand[j]] = [cand[j], cand[i]]; }
+      const N = Math.min(cand.length, weak ? 430 : 720), sc = 150 / tot;
+      for(let i=0;i<N;i++){ const [x, y, h] = cand[i]; nameDots.push({ x: (x - cw / 2) * sc + (Math.random() - .5) * .8, y: -18 + (y - ch / 2) * sc + (Math.random() - .5) * .8, z: gauss() * 1.2, s: Math.random() * 1 + .7, ph: Math.random() * 6.28, h }); }
+    }
     function heartSprite(col){
       if(heartCache[col]) return heartCache[col];
       const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
@@ -4305,6 +4323,7 @@ window.Busy=(function(){
         trail.push({ x: hx(t) + gauss() * 5, y: hy(t) + gauss() * 5, z: gauss() * 8, u, s: Math.random() * 1.1 + .7, ph: Math.random() * 6.28, g: i % 3 });
       }
       trail.sort((p,q)=>p.g-q.g);
+      Promise.race([document.fonts && document.fonts.load ? document.fonts.load('700 120px Poppins') : Promise.resolve(), new Promise(r => setTimeout(r, 1800))]).then(buildNames, buildNames);
       // corazoncitos dentro de cada galaxia, siguiendo sus brazos
       for(let gi=0; gi<3; gi++){
         const dir = GN[gi].dir, NH = weak ? 12 : 20;
@@ -4617,6 +4636,17 @@ window.Busy=(function(){
           const z = clamp(p.s * 2.4 * Math.sqrt(pp) * (1 + head), 2.2, 10); ctx.drawImage(spr, px - z/2, py - z/2, z, z);
         }
       }
+      { // nombres hechos de polvitos: se ven en la vista general y se desvanecen al acercarte a una galaxia
+        const nA = (1 - sstep(1.25, 2.3, r)) * (focused >= 0 ? 0 : 1);
+        if(nA > .02 && nameDots.length){
+          const sw = dotSprite('#ffffff'), sp = dotSprite('#ff8fb8'), hb = 1 + .14 * Math.sin(phase);
+          for(let i=0;i<nameDots.length;i+=skip){
+            const q = nameDots[i]; if(!proj(q.x, q.y, q.z)) continue;
+            ctx.globalAlpha = clamp((.6 + .38 * Math.sin(clock * 1.9 + q.ph)) * nA, 0, 1);
+            const z = clamp(q.s * 2.1 * Math.sqrt(pp) * (q.h ? hb : 1), 2, 8); ctx.drawImage(q.h ? sp : sw, px - z/2, py - z/2, z, z);
+          }
+        }
+      }
       ctx.globalCompositeOperation = 'source-over';
       // imágenes y frases: casi invisibles de lejos; al acercarte a una galaxia, las suyas crecen y se vuelven nítidas
       const dsZ = sstep(1.3, 5, r), cap = Math.min(W, H) * .42;
@@ -4644,19 +4674,6 @@ window.Busy=(function(){
           if(z >= 6) photoHits.push({ s, x: it.x, y: it.y, z });
         }
       }
-      // «Ali ♥ Axel» en el centro del corazón: se ve en la vista general y se desvanece al acercarte a una galaxia
-      { const nA = (1 - sstep(1.25, 2.3, r)) * (focused >= 0 ? 0 : 1);
-        if(nA > .02 && proj(0, -18, 0)){
-          const fpx = clamp(11 * pp, 11, 46), hsz = fpx * .95, gap = fpx * .3, pu = 1 + .12 * Math.sin(phase);
-          ctx.font = `700 ${fpx}px Poppins, system-ui, sans-serif`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-          const w1 = ctx.measureText('Ali').width, w2 = ctx.measureText('Axel').width, tot = w1 + gap + hsz + gap + w2;
-          const x0 = px - tot / 2, y0 = py;
-          ctx.globalAlpha = nA; ctx.shadowBlur = 12;
-          ctx.shadowColor = `rgba(${GN[0].glow},.95)`; ctx.fillStyle = `rgb(${GN[0].glow})`; ctx.fillText('Ali', x0, y0);
-          ctx.shadowBlur = 0; ctx.drawImage(heartSprite('#ff5c8a'), x0 + w1 + gap + hsz / 2 - hsz * pu / 2, y0 - hsz * pu / 2, hsz * pu, hsz * pu);
-          ctx.shadowBlur = 12; ctx.shadowColor = `rgba(${GN[1].glow},.95)`; ctx.fillStyle = `rgb(${GN[1].glow})`; ctx.fillText('Axel', x0 + w1 + gap + hsz + gap, y0);
-          ctx.shadowBlur = 0; ctx.textAlign = 'center';
-        } }
       ctx.globalAlpha = 1;
     }
 
