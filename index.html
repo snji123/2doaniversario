@@ -5497,8 +5497,14 @@ window.Busy=(function(){
       abajo: ['bodoco_corriendoabajo.png', 'bodoco_corriendo abajo.png'],
       derecha: ['bodoco_corriendo derecha.png', 'bodoco_corriendoderecha.png'],
       izquierda: ['bodoco_corriendo izquierda.png', 'bodoco_corriendoizquierda.png'],
-      espaldas: ['bodoco_espaldas.png']
+      espaldas: ['bodoco_espaldas.png'],
+      dog0: ['hotdog_pepperoni.png'],
+      dog1: ['hotdog_hawaiano.png'],
+      dog2: ['hotdog_bistec.png']
     };
+    // Bodoco con la bandeja: un dibujo por hot dog (0 pepperoni, 1 hawaiano, 2 bistec) y dirección; de espaldas es el mismo para los 3
+    ['pepperoni', 'hawaiano', 'bistec'].forEach((n, t) => ['abajo', 'izquierda', 'derecha'].forEach(d => { ASSETS['car' + t + '_' + d] = ['bodoco_' + d + '_' + n + '.png']; }));
+    ASSETS.carArriba = ['bodoco_espaldas_charola.png'];
     const holder = {};
     const R = k => { const im = holder[k]; return im && im.naturalWidth > 0 ? im : null; };
     function loadAsset(key){
@@ -5525,7 +5531,13 @@ window.Busy=(function(){
 
     // ---------- Dibujos hechos con código (hot dogs, gente, perrito) ----------
     const dogCache = {};
-    function dogImg(t){
+    function dogImg(t){ return R('dog' + t) || dogDraw(t); }
+    // dibuja el hot dog dentro de una caja (x, y, w, h) sin deformarlo y centrado
+    function drawDog(t, x, y, w, h){
+      const im = dogImg(t), iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, k = Math.min(w / iw, h / ih);
+      cx.drawImage(im, x + (w - iw * k) / 2, y + (h - ih * k) / 2, iw * k, ih * k);
+    }
+    function dogDraw(t){
       if(dogCache[t]) return dogCache[t];
       const c = document.createElement('canvas'); c.width = 112; c.height = 64; const g = c.getContext('2d'); g.scale(2, 2);
       g.fillStyle = '#c98d3f'; g.beginPath(); g.roundRect(1, 12, 54, 18, 9); g.fill();            // pan (atrás)
@@ -5830,7 +5842,12 @@ window.Busy=(function(){
       let key;
       if(!moving) key = dir === 'arriba' ? 'espaldas' : 'reposo';
       else key = dir === 'arriba' ? 'espaldas' : dir;
-      let im = R(key) || R('reposo') || R(hdir);
+      let im = null;
+      if(carried.length){ // con hot dogs en la bandeja: dibujo de Bodoco cargándola (el del primer hot dog que tomó)
+        const ck = dir === 'arriba' ? 'carArriba' : 'car' + carried[0] + '_' + (moving ? dir : 'abajo');
+        im = R(ck) || R('car' + carried[0] + '_' + hdir) || null;
+      }
+      im = im || R(key) || R('reposo') || R(hdir);
       const bob = moving ? -Math.abs(Math.sin(now / 90)) * 7 : 0;
       shadow(P.x, P.y + 4, 34 * k * (1 + bob / 90), 11 * k, .32);
       if(im){
@@ -5843,7 +5860,7 @@ window.Busy=(function(){
       if(carried.length){
         const n = carried.length, w = 52, gap = 6, x0 = P.x - (n * w + (n - 1) * gap) / 2, yy = P.y - PH * k - 34 + bob;
         cx.fillStyle = 'rgba(8,12,24,.7)'; rr(x0 - 8, yy - 8, n * w + (n - 1) * gap + 16, 44, 12); cx.fill();
-        carried.forEach((t, i) => cx.drawImage(dogImg(t), x0 + i * (w + gap), yy, w, w * 32 / 56 + 4));
+        carried.forEach((t, i) => drawDog(t, x0 + i * (w + gap), yy - 2, w, w * 32 / 56 + 8));
       }
     }
     function drawCust(c){
@@ -5864,7 +5881,7 @@ window.Busy=(function(){
         cx.fillStyle = 'rgba(255,255,255,.95)'; rr(c.x - 36, by, 72, 50, 12); cx.fill();
         cx.beginPath(); cx.moveTo(c.x - 8, by + 49); cx.lineTo(c.x + 8, by + 49); cx.lineTo(c.x, by + 60); cx.closePath(); cx.fill();
         cx.lineWidth = 4; cx.strokeStyle = urgent ? '#ff3b3b' : T.col; rr(c.x - 36, by, 72, 50, 12); cx.stroke();
-        cx.drawImage(dogImg(c.type), c.x - 27, by + 7, 54, 31);
+        drawDog(c.type, c.x - 29, by + 3, 58, 36);
         cx.fillStyle = 'rgba(0,0,0,.55)'; rr(c.x - 30, by + 40, 60, 6, 3); cx.fill();
         cx.fillStyle = patCol(f); rr(c.x - 30, by + 40, 60 * f, 6, 3); cx.fill();
         if(c.vip){ cx.font = '26px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText('💖', c.x + 36, by - 4); }
@@ -5885,9 +5902,7 @@ window.Busy=(function(){
         cx.fillStyle = T.col + '33'; cx.beginPath(); cx.ellipse(p.x, p.y, 40 + pulse * 3, 22 + pulse * 2, 0, 0, 7); cx.fill();
         cx.lineWidth = 3; cx.strokeStyle = T.col; cx.beginPath(); cx.ellipse(p.x, p.y, 36, 20, 0, 0, 7); cx.stroke();
         if(prog > 0){ cx.lineWidth = 6; cx.strokeStyle = '#fff'; cx.beginPath(); cx.ellipse(p.x, p.y, 36, 20, 0, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2); cx.stroke(); }
-        cx.fillStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(p.x, p.y - 2, 44, 12, 0, 0, 7); cx.fill();
-        cx.fillStyle = '#f3efe6'; cx.beginPath(); cx.ellipse(p.x, p.y - 6, 43, 11, 0, 0, 7); cx.fill();
-        cx.drawImage(dogImg(p.t), p.x - 40, p.y - 50 - pulse * 3, 80, 45);
+        drawDog(p.t, p.x - 52, p.y - 66 - pulse * 3, 104, 68);
         cx.font = '800 16px sans-serif'; cx.lineWidth = 4; cx.strokeStyle = 'rgba(0,0,0,.7)'; cx.fillStyle = '#fff';
         cx.strokeText(T.n, p.x, p.y + 38); cx.fillText(T.n, p.x, p.y + 38);
       });
@@ -5913,7 +5928,7 @@ window.Busy=(function(){
         const x = 6 + i * (cw + 3), y = 6, f = clamp01(c.pat / c.pm), has = carried.indexOf(c.type) >= 0 && c.state === 'wait';
         cx.fillStyle = 'rgba(8,12,24,.78)'; rr(x, y, cw, ch, 9); cx.fill();
         cx.lineWidth = has ? 3 : 1.5; cx.strokeStyle = has ? '#ffd23f' : 'rgba(255,255,255,.28)'; rr(x, y, cw, ch, 9); cx.stroke();
-        cx.drawImage(dogImg(c.type), x + 5, y + 6, cw - 10, (cw - 10) * 32 / 56);
+        drawDog(c.type, x + 4, y + 3, cw - 8, cw - 8);
         cx.fillStyle = 'rgba(255,255,255,.18)'; cx.fillRect(x + 5, y + ch - 8, cw - 10, 4);
         cx.fillStyle = patCol(f); cx.fillRect(x + 5, y + ch - 8, (cw - 10) * f, 4);
         const scx = c.x * s - camX; cx.font = '700 11px sans-serif'; cx.textBaseline = 'middle';
