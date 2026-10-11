@@ -5463,8 +5463,8 @@ window.Busy=(function(){
     const cv = $('hdCanvas'), cx = cv.getContext('2d');
     const el = { score:$('hdScore'), mult:$('hdMult'), time:$('hdTime'), timePill:$('hdTimePill'), lvl:$('hdLvl'),
       ov:$('hdOv'), ovTitle:$('hdOvTitle'), ovMsg:$('hdOvMsg'), board:$('hdBoard'), play:$('hdPlay'), mute:$('hdMute') };
-    const WS = 1024, ROUND = 60, MAXT = 99, SPEED = 430, JR = 48, COMBO_WIN = 8, CAP = 2, PH = 150;
-    const TIPOS = [ { n:'Pepperoni', col:'#ff4747' }, { n:'Hawaiano', col:'#ffd23f' }, { n:'Bistec', col:'#ff9a3c' } ];
+    const WS = 1024, ROUND = 75, MAXT = 99, SPEED = 480, JR = 48, COMBO_WIN = 10, CAP = 2, PH = 150;
+    const TIPOS = [ { n:'Pepperoni', col:'#ff4747', bg:'#d42b2b' }, { n:'Hawaiano', col:'#ffd23f', bg:'#f5c518' }, { n:'Bistec', col:'#ff9a3c', bg:'#9b6238' } ];
     // los 3 hot dogs del puesto (frente al mostrador de Charly)
     const PADS = [ { t:0, x:300, y:430 }, { t:1, x:380, y:404 }, { t:2, x:460, y:377 } ];
     // lugares donde aparecen los clientes: la plaza de la derecha y (más adelante) la mesita
@@ -5675,7 +5675,7 @@ window.Busy=(function(){
     const multNow = () => Math.min(4, 1 + Math.floor((Math.max(1, combo) - 1) / 2));
     const float = (x, y, txt, col) => floats.push({ x, y, txt, col, t:0 });
     const clamp01 = v => Math.max(0, Math.min(1, v));
-    const dogSpeed = () => 100 + level * 22;
+    const dogSpeed = () => 80 + level * 14;
 
     function camTarget(){
       const mx = WS * s - W, my = WS * s - H;
@@ -5696,7 +5696,7 @@ window.Busy=(function(){
       if(!free.length) return false;
       const i = free[(Math.random() * free.length) | 0], sl = SLOTS[i];
       const vip = level >= 2 && Math.random() < .12 && !custs.some(c => c.vip && c.state !== 'leave');
-      const pm = Math.max(10, 26 - level * 1.8) * (vip ? 1.25 : 1);
+      const pm = Math.max(16, 36 - level * 1.5) * (vip ? 1.25 : 1);
       custs.push({ slot:i, x:1090, y:sl.y, tx:sl.x, type:(Math.random() * TIPOS.length) | 0, state:'arrive', pat:pm, pm, look:(Math.random() * LOOKS) | 0, vip, t:Math.random() * 6, fx:0, nope:0, mood:'' });
       return true;
     }
@@ -5721,7 +5721,7 @@ window.Busy=(function(){
       renderBoard();
       if(kind === 'ready'){
         el.ovTitle.textContent = 'Charly Hotdogs 🌭';
-        el.ovMsg.innerHTML = 'Tienes 60 segundos. Quédate un momentito sobre cada hot dog del puesto (Pepperoni, Hawaiano o Bistec) para tomarlo (cargas hasta 2) y llévaselo al cliente que lo pidió. Entrega rápido y te dan propina 💰; si encadenas entregas el combo multiplica. Si un cliente se cansa de esperar pierdes puntos, ¡y los perritos 🐕 se comen tu bandeja! Si llega Bodoca 💖 paga triple.' + ovMissing();
+        el.ovMsg.innerHTML = 'Tienes 75 segundos. Quédate un momentito sobre cada hot dog del puesto (Pepperoni, Hawaiano o Bistec) para tomarlo (cargas hasta 2) y llévaselo al cliente que lo pidió. Entrega rápido y te dan propina 💰; si encadenas entregas el combo multiplica. Si un cliente se cansa de esperar pierdes puntos, ¡y los perritos 🐕 se comen tu bandeja! Si llega Bodoca 💖 paga triple.' + ovMissing();
         el.play.textContent = 'Jugar';
       } else {
         el.ovTitle.textContent = rec ? '¡Nuevo récord! 🏆' : '¡Se acabó el tiempo!';
@@ -5736,24 +5736,24 @@ window.Busy=(function(){
       saveScore(rec); showOv('over', rec);
     }
     function levelUp(){
-      level = 1 + Math.floor(deliveries / 4);
+      level = 1 + Math.floor(deliveries / 5);
       sfx.level(); float(P.x, P.y - 190, '¡Nivel ' + level + '!', '#ffd23f');
-      while(dogs.length < Math.min(4, level - 1)) addDog();
+      while(dogs.length < Math.min(3, level - 2)) addDog();
       const sp = dogSpeed(); dogs.forEach(d => { d.vx = Math.sign(d.vx) * (d.horiz ? sp : 0); d.vy = Math.sign(d.vy) * (d.horiz ? 0 : sp); });
     }
     function deliver(c){
       combo = (clock - lastDel <= COMBO_WIN && combo > 0) ? combo + 1 : 1; lastDel = clock;
-      const m = multNow(), frac = c.pat / c.pm, tip = frac > .6 ? 5 : frac > .3 ? 2 : 0;
-      const gain = (10 * m + tip) * (c.vip ? 3 : 1), bonus = c.vip ? 6 : 3;
+      const m = multNow(), frac = c.pat / c.pm, tip = frac > .5 ? 5 : frac > .25 ? 2 : 0;
+      const gain = (10 * m + tip) * (c.vip ? 3 : 1), bonus = c.vip ? 8 : 5;
       points += gain; timeLeft = Math.min(MAXT, timeLeft + bonus); deliveries++;
       c.state = 'leave'; c.mood = 'happy'; c.fx = 0; sfx.deliver(m);
       float(c.x, c.y - 150, '+' + gain + (m > 1 ? ' ×' + m : '') + (c.vip ? ' 💖' : ''), '#7dffb0');
       float(c.x, c.y - 125, '+' + bonus + 's' + (tip ? ' · propina +' + tip : ''), '#9bd7ff');
-      if(1 + Math.floor(deliveries / 4) > level) levelUp();
+      if(1 + Math.floor(deliveries / 5) > level) levelUp();
     }
     function hurt(d){
-      const lost = carried.length; carried = []; timeLeft = Math.max(0, timeLeft - 3); combo = 0; invul = 1.3; shake = .35; sfx.hit();
-      float(P.x, P.y - 170, lost ? '🐕 ¡Se comió tu bandeja! -3s' : '🐕 -3s', '#ff7b7b');
+      const lost = carried.length; carried = []; timeLeft = Math.max(0, timeLeft - 2); combo = 0; invul = 2; shake = .35; sfx.hit();
+      float(P.x, P.y - 170, lost ? '🐕 ¡Se comió tu bandeja! -2s' : '🐕 -2s', '#ff7b7b');
       let nx = P.x - d.x, ny = P.y - d.y; const m = Math.hypot(nx, ny) || 1; nx /= m; ny /= m;
       for(let k = 0; k < 6; k++){ const tx = P.x + nx * 12, ty = P.y + ny * 12; if(!blockedAt(tx, ty)){ P.x = tx; P.y = ty; } else break; }
     }
@@ -5784,15 +5784,15 @@ window.Busy=(function(){
       spawnT -= dt;
       const waiting = custs.filter(c => c.state !== 'leave').length;
       if(waiting < 2) spawnT = Math.min(spawnT, .4);
-      if(spawnT <= 0){ spawnT = trySpawn() ? Math.max(1.6, 5 - level * .4) * (.7 + Math.random() * .6) : .8; }
+      if(spawnT <= 0){ spawnT = trySpawn() ? Math.max(2.6, 6.5 - level * .35) * (.7 + Math.random() * .6) : .8; }
       custs.forEach(c => {
         c.t += dt; c.nope = Math.max(0, c.nope - dt);
         if(c.state === 'arrive'){ c.x -= 320 * dt; if(c.x <= c.tx){ c.x = c.tx; c.state = 'wait'; } }
         else if(c.state === 'wait'){
           c.pat -= dt;
           if(c.pat <= 0){
-            c.state = 'leave'; c.mood = 'angry'; c.fx = 0; points = Math.max(0, points - 5); combo = 0; shake = .25; sfx.wrong();
-            float(c.x, c.y - 150, '-5 😠', '#ff7b7b');
+            c.state = 'leave'; c.mood = 'angry'; c.fx = 0; points = Math.max(0, points - 3); combo = 0; shake = .25; sfx.wrong();
+            float(c.x, c.y - 150, '-3 😠', '#ff7b7b');
           }
         } else { c.x += 260 * dt; c.fx = Math.min(1, c.fx + dt * .8); }
       });
@@ -5811,7 +5811,7 @@ window.Busy=(function(){
       PADS.forEach((p, i) => {
         if(Math.hypot(P.x - p.x, (P.y - p.y) * 1.5) < 36){
           dwell[i] += dt;
-          if(dwell[i] >= .26){
+          if(dwell[i] >= .18){
             dwell[i] = 0;
             if(carried.length >= CAP){ carried.shift(); float(p.x, p.y - 110, 'Cambio', '#ffe08a'); }
             carried.push(p.t); sfx.pick(); padCd[i] = .3;
@@ -5858,9 +5858,9 @@ window.Busy=(function(){
       } else { cx.fillStyle = '#fff'; rr(P.x - 28, P.y - 130 + bob, 56, 130, 14); cx.fill(); }
       // la bandeja: los hot dogs que llevas flotan sobre su cabeza
       if(carried.length){
-        const n = carried.length, w = 52, gap = 6, x0 = P.x - (n * w + (n - 1) * gap) / 2, yy = P.y - PH * k - 34 + bob;
-        cx.fillStyle = 'rgba(8,12,24,.7)'; rr(x0 - 8, yy - 8, n * w + (n - 1) * gap + 16, 44, 12); cx.fill();
-        carried.forEach((t, i) => drawDog(t, x0 + i * (w + gap), yy - 2, w, w * 32 / 56 + 8));
+        const n = carried.length, w = 66, hb = 48, gap = 6, x0 = P.x - (n * w + (n - 1) * gap) / 2, yy = P.y - PH * k - hb - 14 + bob;
+        cx.fillStyle = 'rgba(8,12,24,.75)'; rr(x0 - 6, yy - 6, n * w + (n - 1) * gap + 12, hb + 12, 12); cx.fill();
+        carried.forEach((t, i) => { const bx = x0 + i * (w + gap); cx.fillStyle = TIPOS[t].bg; rr(bx, yy, w, hb, 9); cx.fill(); drawDog(t, bx + 3, yy + 2, w - 6, hb - 4); });
       }
     }
     function drawCust(c){
@@ -5877,14 +5877,14 @@ window.Busy=(function(){
       }
       cx.restore();
       if(c.state === 'wait'){
-        const T = TIPOS[c.type], by = y0 - 62, f = clamp01(c.pat / c.pm), urgent = f < .28 && Math.floor(performance.now() / 180) % 2;
-        cx.fillStyle = 'rgba(255,255,255,.95)'; rr(c.x - 36, by, 72, 50, 12); cx.fill();
-        cx.beginPath(); cx.moveTo(c.x - 8, by + 49); cx.lineTo(c.x + 8, by + 49); cx.lineTo(c.x, by + 60); cx.closePath(); cx.fill();
-        cx.lineWidth = 4; cx.strokeStyle = urgent ? '#ff3b3b' : T.col; rr(c.x - 36, by, 72, 50, 12); cx.stroke();
-        drawDog(c.type, c.x - 29, by + 3, 58, 36);
-        cx.fillStyle = 'rgba(0,0,0,.55)'; rr(c.x - 30, by + 40, 60, 6, 3); cx.fill();
-        cx.fillStyle = patCol(f); rr(c.x - 30, by + 40, 60 * f, 6, 3); cx.fill();
-        if(c.vip){ cx.font = '26px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText('💖', c.x + 36, by - 4); }
+        const T = TIPOS[c.type], BW = 124, BH = 84, by = y0 - BH - 14, f = clamp01(c.pat / c.pm), urgent = f < .28 && Math.floor(performance.now() / 180) % 2;
+        cx.fillStyle = T.bg; rr(c.x - BW / 2, by, BW, BH, 14); cx.fill();
+        cx.beginPath(); cx.moveTo(c.x - 10, by + BH - 1); cx.lineTo(c.x + 10, by + BH - 1); cx.lineTo(c.x, by + BH + 12); cx.closePath(); cx.fill();
+        cx.lineWidth = 4; cx.strokeStyle = urgent ? '#111' : '#fff'; rr(c.x - BW / 2, by, BW, BH, 14); cx.stroke();
+        drawDog(c.type, c.x - BW / 2 + 6, by + 4, BW - 12, BH - 22);
+        cx.fillStyle = 'rgba(0,0,0,.55)'; rr(c.x - BW / 2 + 10, by + BH - 14, BW - 20, 8, 4); cx.fill();
+        cx.fillStyle = patCol(f); rr(c.x - BW / 2 + 10, by + BH - 14, (BW - 20) * f, 8, 4); cx.fill();
+        if(c.vip){ cx.font = '26px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText('💖', c.x + BW / 2, by - 4); }
       }
     }
     function draw(){
@@ -5898,7 +5898,7 @@ window.Busy=(function(){
       // hot dogs del puesto
       cx.textAlign = 'center'; cx.textBaseline = 'alphabetic';
       PADS.forEach((p, i) => {
-        const T = TIPOS[p.t], pulse = .5 + .5 * Math.sin(now / 320 + i * 1.3), prog = clamp01(dwell[i] / .26);
+        const T = TIPOS[p.t], pulse = .5 + .5 * Math.sin(now / 320 + i * 1.3), prog = clamp01(dwell[i] / .18);
         cx.fillStyle = T.col + '33'; cx.beginPath(); cx.ellipse(p.x, p.y, 40 + pulse * 3, 22 + pulse * 2, 0, 0, 7); cx.fill();
         cx.lineWidth = 3; cx.strokeStyle = T.col; cx.beginPath(); cx.ellipse(p.x, p.y, 36, 20, 0, 0, 7); cx.stroke();
         if(prog > 0){ cx.lineWidth = 6; cx.strokeStyle = '#fff'; cx.beginPath(); cx.ellipse(p.x, p.y, 36, 20, 0, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2); cx.stroke(); }
@@ -5922,13 +5922,13 @@ window.Busy=(function(){
       cx.restore();
 
       // ----- encima de todo (pantalla): tickets de pedidos, flechas y joystick -----
-      const act = custs.filter(c => c.state === 'wait' || c.state === 'arrive').slice(0, 7);
-      const cw = Math.min(46, (W - 12) / 7 - 3), ch = cw + 6;
+      const act = custs.filter(c => c.state === 'wait' || c.state === 'arrive').slice(0, 6);
+      const cw = Math.min(62, (W - 12) / 6 - 3), ch = cw + 6;
       act.forEach((c, i) => {
         const x = 6 + i * (cw + 3), y = 6, f = clamp01(c.pat / c.pm), has = carried.indexOf(c.type) >= 0 && c.state === 'wait';
-        cx.fillStyle = 'rgba(8,12,24,.78)'; rr(x, y, cw, ch, 9); cx.fill();
-        cx.lineWidth = has ? 3 : 1.5; cx.strokeStyle = has ? '#ffd23f' : 'rgba(255,255,255,.28)'; rr(x, y, cw, ch, 9); cx.stroke();
-        drawDog(c.type, x + 4, y + 3, cw - 8, cw - 8);
+        cx.fillStyle = TIPOS[c.type].bg; cx.globalAlpha = .95; rr(x, y, cw, ch, 9); cx.fill(); cx.globalAlpha = 1;
+        cx.lineWidth = has ? 4 : 2; cx.strokeStyle = has ? '#fff' : 'rgba(0,0,0,.45)'; rr(x, y, cw, ch, 9); cx.stroke();
+        drawDog(c.type, x + 2, y + 3, cw - 4, cw - 10);
         cx.fillStyle = 'rgba(255,255,255,.18)'; cx.fillRect(x + 5, y + ch - 8, cw - 10, 4);
         cx.fillStyle = patCol(f); cx.fillRect(x + 5, y + ch - 8, (cw - 10) * f, 4);
         const scx = c.x * s - camX; cx.font = '700 11px sans-serif'; cx.textBaseline = 'middle';
