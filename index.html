@@ -1248,7 +1248,7 @@ window.Busy=(function(){
       </button>
       <button type="button" class="gm-mcard hd" data-g="hd">
         <span class="gm-mico">🌭</span>
-        <span class="gm-mtx"><b>Charly Hotdogs</b><small>El juego de Bodoco. Arma los hot dogs en el puesto y entrégaselos a los clientes antes de que se cansen.</small><em id="gmBestHd"></em></span>
+        <span class="gm-mtx"><b>Charly Hotdogs</b><small>El juego de Bodoco. Toma los hot dogs del puesto (Pepperoni, Hawaiano y Bistec) y entrégaselos a los clientes antes de que se cansen.</small><em id="gmBestHd"></em></span>
         <span class="gm-mtag" id="gmTagHd"></span>
       </button>
     </div>
@@ -1304,7 +1304,7 @@ window.Busy=(function(){
         </div>
       </div>
     </div>
-    <div class="gm-hint">Arrastra el dedo para moverte. Quédate un momento en cada salsa para armar el hot dog y llévaselo a quien lo pidió 🌭. Cuidado con los perritos 🐕</div>
+    <div class="gm-hint">Arrastra el dedo para moverte. Quédate un momento sobre cada hot dog del puesto para tomarlo y llévaselo a quien lo pidió 🌭. Cuidado con los perritos 🐕</div>
   </div>
 </div>
 
@@ -5464,21 +5464,21 @@ window.Busy=(function(){
     const el = { score:$('hdScore'), mult:$('hdMult'), time:$('hdTime'), timePill:$('hdTimePill'), lvl:$('hdLvl'),
       ov:$('hdOv'), ovTitle:$('hdOvTitle'), ovMsg:$('hdOvMsg'), board:$('hdBoard'), play:$('hdPlay'), mute:$('hdMute') };
     const WS = 1024, ROUND = 60, MAXT = 99, SPEED = 430, JR = 48, COMBO_WIN = 8, CAP = 2, PH = 150;
-    const TIPOS = [ { n:'Catsup', col:'#ff4747' }, { n:'Mostaza', col:'#ffd23f' }, { n:'Jalapeño', col:'#3ddc84' }, { n:'Mayo', col:'#f6f3ea' } ];
-    // las 4 salsas del puesto (frente al mostrador de Charly)
-    const PADS = [ { t:0, x:270, y:440 }, { t:1, x:335, y:418 }, { t:2, x:400, y:396 }, { t:3, x:462, y:374 } ];
+    const TIPOS = [ { n:'Pepperoni', col:'#ff4747' }, { n:'Hawaiano', col:'#ffd23f' }, { n:'Bistec', col:'#ff9a3c' } ];
+    // los 3 hot dogs del puesto (frente al mostrador de Charly)
+    const PADS = [ { t:0, x:300, y:430 }, { t:1, x:380, y:404 }, { t:2, x:460, y:377 } ];
     // lugares donde aparecen los clientes: la plaza de la derecha y (más adelante) la mesita
     const SLOTS = [
       { x:770, y:500, lv:1 }, { x:900, y:585, lv:1 }, { x:700, y:650, lv:1 },
       { x:860, y:710, lv:2 }, { x:760, y:790, lv:2 },
       { x:385, y:590, lv:3 }, { x:470, y:590, lv:4 }
     ];
-    // zonas por las que NO se puede caminar (pies del personaje): mostrador, puestos, mesa, cajas, carritos, fuente y farol
+    // zonas por las que NO se puede caminar (pies del personaje): mostrador, puestos, cajas, carritos, fuente y farol
     const lineY = x => 385 - (x - 240) * .38;
     const BLK = [];
     for(let x = 0; x < 480; x += 20) BLK.push({ x, y:0, w:20, h: x < 240 ? 409 : lineY(x) + 26 });
     BLK.push({ x:470, y:0, w:560, h:200 }, { x:925, y:0, w:100, h:290 }, { x:985, y:380, w:40, h:120 },
-      { x:350, y:430, w:155, h:105 }, { x:15, y:555, w:320, h:240 },
+      { x:15, y:555, w:320, h:240 },
       { x:360, y:690, w:110, h:125 }, { x:435, y:735, w:190, h:140 }, { x:575, y:790, w:130, h:115 },
       { x:670, y:835, w:135, h:100 }, { x:775, y:880, w:165, h:140 });
     const FW = 22, FH = 12;
@@ -5527,12 +5527,32 @@ window.Busy=(function(){
     const dogCache = {};
     function dogImg(t){
       if(dogCache[t]) return dogCache[t];
-      const c = document.createElement('canvas'); c.width = 56; c.height = 32; const g = c.getContext('2d');
+      const c = document.createElement('canvas'); c.width = 112; c.height = 64; const g = c.getContext('2d'); g.scale(2, 2);
       g.fillStyle = '#c98d3f'; g.beginPath(); g.roundRect(1, 12, 54, 18, 9); g.fill();            // pan (atrás)
       g.fillStyle = '#b8402e'; g.beginPath(); g.roundRect(0, 7, 56, 13, 6.5); g.fill();           // salchicha
-      g.fillStyle = '#e0a458'; g.beginPath(); g.roundRect(3, 16, 50, 14, 7); g.fill();            // pan (adelante)
-      g.strokeStyle = TIPOS[t].col; g.lineWidth = 3.2; g.lineCap = 'round'; g.lineJoin = 'round'; // salsa en zigzag
-      g.beginPath(); g.moveTo(7, 12); for(let x = 7, k = 0; x < 50; x += 6, k++) g.lineTo(x + 3, k % 2 ? 9 : 15); g.lineTo(49, 12); g.stroke();
+      g.lineCap = 'round'; g.lineJoin = 'round';
+      if(t === 0){ // PEPPERONI: queso derretido + rodajas de pepperoni
+        g.strokeStyle = '#ffcf4a'; g.lineWidth = 3; g.beginPath(); g.moveTo(5, 13); for(let x = 5, k = 0; x < 52; x += 6, k++) g.lineTo(x + 3, k % 2 ? 11 : 15); g.stroke();
+        [[9, 10], [20, 12], [31, 10], [42, 12], [51, 10]].forEach(([x, y]) => {
+          g.fillStyle = '#d52f26'; g.strokeStyle = '#7a1510'; g.lineWidth = 1; g.beginPath(); g.arc(x, y, 4.3, 0, 7); g.fill(); g.stroke();
+          g.fillStyle = '#f59a7a'; [[-1.6, -1], [1.4, -1.4], [0, 1.6]].forEach(([dx, dy]) => { g.beginPath(); g.arc(x + dx, y + dy, .8, 0, 7); g.fill(); });
+        });
+      } else if(t === 1){ // HAWAIANO: jamón + piña
+        g.fillStyle = '#f4a3ae'; g.strokeStyle = '#c9707e'; g.lineWidth = .8;
+        [[3, 8], [20, 10], [37, 8]].forEach(([x, y]) => { g.beginPath(); g.roundRect(x, y, 15, 5, 2.5); g.fill(); g.stroke(); });
+        [[10, 6.5], [27, 8.5], [44, 6.5]].forEach(([x, y]) => {
+          g.fillStyle = '#ffdc3a'; g.strokeStyle = '#d19a12'; g.lineWidth = 1; g.beginPath(); g.roundRect(x, y, 8, 7, 1.6); g.fill(); g.stroke();
+          g.fillStyle = '#fff3a0'; g.fillRect(x + 1.6, y + 1.4, 3, 1.4);
+        });
+      } else { // BISTEC: tiras de carne + pimiento y cebolla
+        [[4, 8, 15], [20, 10, 16], [37, 8, 15]].forEach(([x, y, w]) => {
+          g.fillStyle = '#6a3a1c'; g.strokeStyle = '#3a1d0c'; g.lineWidth = .9; g.beginPath(); g.roundRect(x, y, w, 6, 3); g.fill(); g.stroke();
+          g.fillStyle = '#a7653a'; g.fillRect(x + 3, y + 1.3, w - 7, 1.4);
+        });
+        g.fillStyle = '#3ddc84'; [[12, 9], [33, 11], [49, 10]].forEach(([x, y]) => g.fillRect(x, y, 4, 3));
+        g.fillStyle = '#f6f3ea'; [[26, 8.5], [45, 8]].forEach(([x, y]) => g.fillRect(x, y, 3.5, 2.5));
+      }
+      g.fillStyle = '#e0a458'; g.beginPath(); g.roundRect(3, 16, 50, 14, 7); g.fill();            // pan (adelante, tapa la base)
       return dogCache[t] = c;
     }
     const SK = ['#f1c27d', '#c68642', '#8d5524', '#e0ac69', '#ffdbac', '#a86b3c'], HR = ['#2b1b0e', '#6b3e1e', '#c9a227', '#111', '#8a2a2a', '#444'];
@@ -5637,7 +5657,7 @@ window.Busy=(function(){
     let W = 0, H = 0, s = 1, camX = 0, camY = 0, running = false, raf = 0, last = 0;
     let state = 'ready', clock = 0, timeLeft = ROUND, points = 0, level = 1, deliveries = 0, combo = 0, lastDel = -99;
     let dir = 'abajo', hdir = 'derecha', moving = false, invul = 0, shake = 0, lastTick = 0, spawnT = 0;
-    let carried = [], custs = [], dogs = [], floats = [], keys = {}, dwell = [0, 0, 0, 0], padCd = [0, 0, 0, 0], standCd = 0;
+    let carried = [], custs = [], dogs = [], floats = [], keys = {}, dwell = PADS.map(() => 0), padCd = PADS.map(() => 0), standCd = 0;
     const P = { x:300, y:500 };
     let joy = { on:false, id:null, bx:0, by:0, dx:0, dy:0 };
     const multNow = () => Math.min(4, 1 + Math.floor((Math.max(1, combo) - 1) / 2));
@@ -5665,7 +5685,7 @@ window.Busy=(function(){
       const i = free[(Math.random() * free.length) | 0], sl = SLOTS[i];
       const vip = level >= 2 && Math.random() < .12 && !custs.some(c => c.vip && c.state !== 'leave');
       const pm = Math.max(10, 26 - level * 1.8) * (vip ? 1.25 : 1);
-      custs.push({ slot:i, x:1090, y:sl.y, tx:sl.x, type:(Math.random() * 4) | 0, state:'arrive', pat:pm, pm, look:(Math.random() * LOOKS) | 0, vip, t:Math.random() * 6, fx:0, nope:0, mood:'' });
+      custs.push({ slot:i, x:1090, y:sl.y, tx:sl.x, type:(Math.random() * TIPOS.length) | 0, state:'arrive', pat:pm, pm, look:(Math.random() * LOOKS) | 0, vip, t:Math.random() * 6, fx:0, nope:0, mood:'' });
       return true;
     }
     function addDog(){
@@ -5678,7 +5698,7 @@ window.Busy=(function(){
     }
     function resetRound(){
       points = 0; level = 1; deliveries = 0; combo = 0; lastDel = -99; clock = 0; timeLeft = ROUND;
-      carried = []; custs = []; dogs = []; floats = []; dwell = [0, 0, 0, 0]; padCd = [0, 0, 0, 0]; standCd = 0;
+      carried = []; custs = []; dogs = []; floats = []; dwell = PADS.map(() => 0); padCd = PADS.map(() => 0); standCd = 0;
       invul = 0; shake = 0; lastTick = 0; spawnT = .3; joy.on = false; dir = 'abajo';
       P.x = 300; P.y = 500; camSnap();
       state = 'playing'; hud(true); el.ov.classList.add('hide');
@@ -5689,7 +5709,7 @@ window.Busy=(function(){
       renderBoard();
       if(kind === 'ready'){
         el.ovTitle.textContent = 'Charly Hotdogs 🌭';
-        el.ovMsg.innerHTML = 'Tienes 60 segundos. Quédate un momentito en cada salsa del puesto para armar un hot dog (cargas hasta 2) y llévaselo al cliente que lo pidió. Entrega rápido y te dan propina 💰; si encadenas entregas el combo multiplica. Si un cliente se cansa de esperar pierdes puntos, ¡y los perritos 🐕 se comen tu bandeja! Si llega Bodoca 💖 paga triple.' + ovMissing();
+        el.ovMsg.innerHTML = 'Tienes 60 segundos. Quédate un momentito sobre cada hot dog del puesto (Pepperoni, Hawaiano o Bistec) para tomarlo (cargas hasta 2) y llévaselo al cliente que lo pidió. Entrega rápido y te dan propina 💰; si encadenas entregas el combo multiplica. Si un cliente se cansa de esperar pierdes puntos, ¡y los perritos 🐕 se comen tu bandeja! Si llega Bodoca 💖 paga triple.' + ovMissing();
         el.play.textContent = 'Jugar';
       } else {
         el.ovTitle.textContent = rec ? '¡Nuevo récord! 🏆' : '¡Se acabó el tiempo!';
@@ -5774,7 +5794,7 @@ window.Busy=(function(){
       });
       if(invul <= 0){ for(const d of dogs){ if(Math.hypot(P.x - d.x, (P.y - d.y) * 1.4) < 44){ hurt(d); break; } } }
 
-      // puesto: quedarte un momento sobre una salsa te arma el hot dog
+      // puesto: quedarte un momento sobre un hot dog lo toma
       padCd = padCd.map(v => Math.max(0, v - dt));
       PADS.forEach((p, i) => {
         if(Math.hypot(P.x - p.x, (P.y - p.y) * 1.5) < 36){
@@ -5858,15 +5878,17 @@ window.Busy=(function(){
       cx.translate(-camX, -camY); cx.scale(s, s);
       const bg = R('fondo');
       if(bg) cx.drawImage(bg, 0, 0, WS, WS); else { cx.fillStyle = '#121a30'; cx.fillRect(0, 0, WS, WS); }
-      // salsas del puesto
+      // hot dogs del puesto
       cx.textAlign = 'center'; cx.textBaseline = 'alphabetic';
       PADS.forEach((p, i) => {
         const T = TIPOS[p.t], pulse = .5 + .5 * Math.sin(now / 320 + i * 1.3), prog = clamp01(dwell[i] / .26);
         cx.fillStyle = T.col + '33'; cx.beginPath(); cx.ellipse(p.x, p.y, 40 + pulse * 3, 22 + pulse * 2, 0, 0, 7); cx.fill();
         cx.lineWidth = 3; cx.strokeStyle = T.col; cx.beginPath(); cx.ellipse(p.x, p.y, 36, 20, 0, 0, 7); cx.stroke();
         if(prog > 0){ cx.lineWidth = 6; cx.strokeStyle = '#fff'; cx.beginPath(); cx.ellipse(p.x, p.y, 36, 20, 0, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2); cx.stroke(); }
-        cx.drawImage(dogImg(p.t), p.x - 24, p.y - 34 - pulse * 3, 48, 27);
-        cx.font = '800 17px sans-serif'; cx.lineWidth = 4; cx.strokeStyle = 'rgba(0,0,0,.7)'; cx.fillStyle = '#fff';
+        cx.fillStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(p.x, p.y - 2, 44, 12, 0, 0, 7); cx.fill();
+        cx.fillStyle = '#f3efe6'; cx.beginPath(); cx.ellipse(p.x, p.y - 6, 43, 11, 0, 0, 7); cx.fill();
+        cx.drawImage(dogImg(p.t), p.x - 40, p.y - 50 - pulse * 3, 80, 45);
+        cx.font = '800 16px sans-serif'; cx.lineWidth = 4; cx.strokeStyle = 'rgba(0,0,0,.7)'; cx.fillStyle = '#fff';
         cx.strokeText(T.n, p.x, p.y + 38); cx.fillText(T.n, p.x, p.y + 38);
       });
       // personas y perritos se ordenan por altura (lo de abajo queda delante)
