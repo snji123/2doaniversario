@@ -1255,12 +1255,23 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 #ov{position:fixed;inset:0;background:rgba(5,6,13,.9);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:14px}
 #ov h1{margin:0;font-size:26px}#ov p{margin:0;max-width:340px;line-height:1.4;opacity:.9}
 #ov button{background:#ff4d6d;color:#fff;border:0;border-radius:24px;padding:13px 28px;font-size:17px;font-weight:700}
+#ob2{background:#3a4a7a!important;font-size:14px!important;padding:10px 20px!important}
+#fc{position:fixed;inset:0;pointer-events:none;display:none}
+.fb{position:absolute;pointer-events:auto;touch-action:none;width:66px;height:66px;border-radius:50%;border:3px solid #fff6;background:rgba(0,0,0,.45);color:#fff;font-size:22px;font-weight:800;opacity:.85;display:flex;align-items:center;justify-content:center;padding:0}
+.fb.on{background:rgba(255,217,61,.7);color:#000}
+#fL{left:calc(14px + env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+#fR{left:calc(92px + env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+#fJ{left:calc(53px + env(safe-area-inset-left,0px));bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+#fP{right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px));width:82px;height:82px;font-size:30px;background:rgba(217,54,43,.75)}
+#fB{right:calc(108px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+#fS{right:calc(30px + env(safe-area-inset-right,0px));bottom:calc(120px + env(safe-area-inset-bottom,0px));background:rgba(199,154,0,.7)}
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="hud"><span id="hl"></span><span id="hc"></span></div>
 <div id="toast"></div>
+<div id="fc"><button class="fb" id="fL" data-k="left">◀</button><button class="fb" id="fR" data-k="right">▶</button><button class="fb" id="fJ" data-k="jump">▲</button><button class="fb" id="fB" data-k="block">🛡</button><button class="fb" id="fP" data-k="punch">👊</button><button class="fb" id="fS" data-k="special">⚡</button></div>
 <div id="dlg"><b id="ds"></b><p id="dt"></p><i>toca para seguir ▸</i></div>
-<div id="ov"><h1 id="oh"></h1><p id="op"></p><button id="ob"></button></div>
+<div id="ov"><h1 id="oh"></h1><p id="op"></p><button id="ob"></button><button id="ob2" style="display:none"></button></div>
 <script>
 (() => {
 // Uso: historia.html?p=bodoca  (ella rescata a Bodoco)  |  historia.html?p=bodoco  (él rescata a Bodoca)
@@ -1271,6 +1282,8 @@ const WS = 1024, PH = 150, SPEED = 300, START = { x:300, y:500 };
 
 // ---------- imágenes (carpeta Ncontenido/ o la raíz) ----------
 const ASSETS = { bg:['fondo2.jpg'], gF:['guardia_frente.png'], gE:['guardia_espaldas.png'], gP:['guardia_perfil.png'],
+  fI:['guardia1-bodoco.png'], fB:['guardia-bodoco.png'], fP:['golpe-bodoco.png'], fJ:['salto-bodoco.png'], fW:['victoria-bodoco.png'],
+  fbg:['fondo.jpg', '1791919636127_fondo.jpg'], gD:['guardia_derecha.png', 'guardia_perfil.png'], gI:['guardia_izquierda.png'],
   ...(ROL === 'bodoca'
     ? { rep:['reposo.png'], abajo:['corriendoabajo.png'], arriba:['corriendoarriba.png'], derecha:['corriendoderecha.png'], izquierda:['corriendoizquierda.png'] }
     : { rep:['bodoco_reposo.png'], abajo:['bodoco_corriendoabajo.png', 'bodoco_corriendo abajo.png'], arriba:['bodoco_espaldas.png'],
@@ -1310,12 +1323,12 @@ function hud(){ const n = NIVELES[li]; $('hl').textContent = 'Nivel ' + (li + 1)
 function say(lines, cb){ queue = lines.slice(); after = cb; mode = 'dlg'; adv(); }
 function adv(){ if(mode !== 'dlg') return; const l = queue.shift(), d = $('dlg');
   if(!l){ d.style.display = 'none'; const f = after; after = null; if(f) f(); return; }
-  d.style.display = 'block'; $('ds').textContent = l[0]; $('ds').style.color = l[0] === 'Psique' || l[0] === '???' ? '#ff5d5d' : l[0] === 'Guía' ? '#ffd23f' : '#9be7ff'; $('dt').textContent = l[1]; }
+  d.style.display = 'block'; $('ds').textContent = l[0]; $('ds').style.color = l[0] === 'Psique' || l[0] === '???' ? '#ff5d5d' : l[0] === 'Guía' ? '#ffd23f' : l[0] === 'Guardia' ? '#ffb347' : '#9be7ff'; $('dt').textContent = l[1]; }
 $('dlg').addEventListener('pointerdown', e => { e.stopPropagation(); adv(); });
 
-function overlay(h, p, b, fn){ $('oh').textContent = h; $('op').textContent = p; $('ob').textContent = b; $('ov').style.display = 'flex'; $('ob').onclick = () => { $('ov').style.display = 'none'; fn(); }; }
+function overlay(h, p, b, fn){ $('ob2').style.display = 'none'; $('oh').textContent = h; $('op').textContent = p; $('ob').textContent = b; $('ov').style.display = 'flex'; $('ob').onclick = () => { $('ov').style.display = 'none'; fn(); }; }
 
-function start(i){ li = i; const n = NIVELES[li]; P = { ...START, dir:'abajo', mv:false }; got = 0; ojos = 0;
+function start(i){ inFight = false; $('hud').style.display = ''; li = i; const n = NIVELES[li]; P = { ...START, dir:'abajo', mv:false }; got = 0; ojos = 0;
   items = n.items.map(([x, y]) => ({ x, y, got:false }));
   guards = n.guardias.map(r => ({ r, x:r[0][0], y:r[0][1], i:1, fx:1, fy:0 })); hud(); say(n.intro, () => { mode = 'play'; }); }
 function win(){ const n = NIVELES[li]; mode = 'dlg'; if(n.ojos) ojos = .01;
@@ -1371,12 +1384,164 @@ function draw(){
   if(ojos > 0){ cx.globalAlpha = ojos; const ex = 520, ey = 330; cx.fillStyle = '#ff2b2b'; cx.shadowColor = '#ff2b2b'; cx.shadowBlur = 24;
     [-16, 16].forEach(o => { cx.beginPath(); cx.ellipse(ex + o, ey + Math.sin(t * 2) * 2, 7, 4, 0, 0, 7); cx.fill(); }); cx.shadowBlur = 0; cx.globalAlpha = 1; }
 }
-function loop(ms){ const dt = Math.min(.05, (ms - last) / 1000 || 0); last = ms; t += dt; update(dt); draw(); requestAnimationFrame(loop); }
+// ---------- CAPÍTULO 1: Bodoco contra el guardia (sistema de pelea) ----------
+// Para cambiar la trama de este capítulo, edita los textos de CAP1 (intro y outro).
+const COARSE = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
+const FWD = 1024, FHT = 768, FGR = 690, FS = .78, FGRAV = 2600, FJV = 980;
+const CAP1 = { t:'El guardia',
+  intro:[['Bodoco', 'Su rastro llega hasta esta puerta… Bodoca tuvo que pasar por aquí.'], ['Guardia', 'Zona restringida. Da media vuelta.'], ['Bodoco', 'No me voy sin ella.'],
+    ['Guía', COARSE ? 'Botones: ◀ ▶ mover · ▲ saltar · 🛡 bloquear · 👊 golpear. El ⚡ se carga al pegar. Juega con el celular en horizontal.' : 'A/D mover · W saltar · S bloquear · F golpear · G súper (se carga al pegar). Las flechas, L y K también sirven.']],
+  outro:[['Guardia', 'Vaya… tienes más agallas de lo que creí.'], ['Bodoco', 'Necesito pasar. ¿Por dónde se fue?'], ['Guardia', 'Por la puerta de la derecha. Ya no te detengo.'], ['Psique', 'Un miedo menos. Pero el camino apenas empieza…']] };
+const FA = { pl:{ dur:.42, a0:.1, a1:.26, reach:125, dmg:8, kb:300 }, sp:{ dur:.55, a0:.06, a1:.32, reach:140, dmg:16, kb:600 }, gd:{ dur:.8, a0:.3, a1:.44, reach:135, dmg:9, kb:320 } };
+const fAtk = f => f.state === 'special' ? FA.sp : (f.kind === 'gd' ? FA.gd : FA.pl);
+let inFight = false, F = {}, fHeld = {}, fPend = {};
+const fMk = kind => ({ kind, x:0, h:0, vy:0, vx:0, face:1, hp:100, meter:0, state:'idle', timer:0, hit:false, walk:false, flash:0, ai:{ t:0, inp:{ left:0, right:0, block:0, punch:0 } } });
+function fReset(){ F = { pl:fMk('pl'), gd:fMk('gd'), st:'fight', t:0, stop:0, shake:0, sparks:[], clock:0 }; F.pl.x = 300; F.gd.x = FWD - 300; F.gd.face = -1; fHeld = {}; fPend = {}; }
+
+// ----- entrada -----
+const FKEY = { w:'jump', arrowup:'jump', f:'punch', l:'punch', ' ':'punch', g:'special', k:'special' };
+addEventListener('keydown', e => { if(!inFight || e.repeat) return; const a = FKEY[e.key.toLowerCase()]; if(a){ fPend[a] = 1; if(e.key.startsWith('Arrow') || e.key === ' ') e.preventDefault(); } });
+document.querySelectorAll('.fb').forEach(b => { const k = b.dataset.k;
+  b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); b.classList.add('on'); fHeld[k] = 1; if(k === 'jump' || k === 'punch' || k === 'special') fPend[k] = 1; });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, () => { b.classList.remove('on'); fHeld[k] = 0; })); });
+function fPlayerIn(){ const k = keys, h = fHeld;
+  const I = { left:(k.arrowleft || k.a || h.left) ? 1 : 0, right:(k.arrowright || k.d || h.right) ? 1 : 0, block:(k.arrowdown || k.s || h.block) ? 1 : 0, jump:fPend.jump ? 1 : 0, punch:fPend.punch ? 1 : 0, special:fPend.special ? 1 : 0 };
+  fPend = {}; return I; }
+function fAI(g, p, dt){ const a = g.ai, inp = a.inp; a.t -= dt; inp.punch = 0;
+  if(a.t <= 0){ a.t = .3 * (.7 + Math.random() * .6); inp.left = inp.right = inp.block = 0;
+    const dx = p.x - g.x, dist = Math.abs(dx), toward = dx > 0 ? 'right' : 'left', away = dx > 0 ? 'left' : 'right';
+    if((p.state === 'punch' || p.state === 'special') && dist < 200 && Math.random() < .4){ inp.block = 1; a.t = .4; }
+    else if(dist > 150) inp[toward] = 1;
+    else { const r = Math.random(); if(r < .55) inp.punch = 1; else if(r < .75) inp[away] = 1; } }
+  return inp; }
+
+// ----- lógica -----
+function fPhys(f, dt){
+  if(f.h > 0 || f.vy > 0){ f.vy -= FGRAV * dt; f.h += f.vy * dt; if(f.h <= 0){ f.h = 0; f.vy = 0; } }
+  f.x += f.vx * dt;
+  if(f.state !== 'special'){ const d = 2200 * dt; f.vx = Math.abs(f.vx) <= d ? 0 : f.vx - Math.sign(f.vx) * d; }
+  f.x = Math.max(70, Math.min(FWD - 70, f.x)); }
+function fUpd(f, o, inp, dt){
+  f.flash = Math.max(0, f.flash - dt); fPhys(f, dt);
+  const ground = f.h <= 0;
+  if(f.state === 'hurt'){ f.timer -= dt; if(f.timer <= 0) f.state = 'idle'; return; }
+  if(f.state === 'punch' || f.state === 'special'){
+    f.timer += dt; const A = fAtk(f);
+    if(f.state === 'special') f.vx = f.face * ((f.timer > .06 && f.timer < .3) ? 640 : 0);
+    else if(f.kind === 'gd') f.vx = f.face * ((f.timer > A.a0 - .04 && f.timer < A.a1) ? 300 : 0);
+    if(f.timer >= A.dur){ f.state = 'idle'; f.timer = 0; f.vx = 0; }
+    return; }
+  if(ground) f.face = o.x >= f.x ? 1 : -1;
+  f.walk = false;
+  if(ground && inp.block) f.state = 'block'; else if(f.state === 'block') f.state = 'idle';
+  if(f.state === 'block') return;
+  const dir = (inp.right ? 1 : 0) - (inp.left ? 1 : 0), spd = f.kind === 'gd' ? 215 : 310;
+  if(dir){ f.x += dir * spd * dt; f.walk = ground; }
+  if(inp.jump && ground) f.vy = FJV;
+  if(inp.special && f.meter >= 100){ f.meter = 0; f.state = 'special'; f.timer = 0; f.hit = false; }
+  else if(inp.punch){ f.state = 'punch'; f.timer = 0; f.hit = false; } }
+function fHits(a, d){
+  if(!(a.state === 'punch' || a.state === 'special') || a.hit || d.state === 'ko' || d.state === 'win') return;
+  const A = fAtk(a); if(!(a.timer > A.a0 && a.timer < A.a1)) return;
+  const x1 = a.x + a.face * 30, x2 = a.x + a.face * A.reach;
+  if(Math.max(x1, x2) < d.x - 36 || Math.min(x1, x2) > d.x + 36 || Math.abs(a.h - d.h) > 110) return;
+  a.hit = true; const sy = FGR - d.h - 170, sp = a.state === 'special';
+  if(d.state === 'block' && d.h <= 0 && d.face === -a.face){
+    d.hp = Math.max(1, d.hp - (sp ? 3 : 1)); d.vx = a.face * A.kb * .45; if(d.kind === 'pl') d.meter = Math.min(100, d.meter + 6);
+    F.sparks.push({ x:d.x - d.face * 20, y:sy, t:0, c:'#6ec6ff' });
+  } else {
+    d.hp = Math.max(0, d.hp - A.dmg); d.state = 'hurt'; d.timer = sp ? .5 : .32; d.vx = a.face * A.kb; d.flash = .25;
+    if(a.kind === 'pl' && !sp) a.meter = Math.min(100, a.meter + 18); if(d.kind === 'pl') d.meter = Math.min(100, d.meter + 8);
+    F.stop = .07; F.shake = .18; F.sparks.push({ x:d.x, y:sy, t:0, c:'#ffd93d' }); } }
+function fUpdate(dt){
+  const land = W >= H_ * 1.05, on = inFight && mode === 'fight' && land && COARSE;
+  if(on !== fUpdate.on){ fUpdate.on = on; $('fc').style.display = on ? 'block' : 'none'; }
+  if(mode !== 'fight') fPend = {};
+  if(F.stop > 0){ F.stop -= dt; return; }
+  F.clock += dt; F.shake = Math.max(0, F.shake - dt); F.sparks = F.sparks.filter(s => (s.t += dt) < .18);
+  const p = F.pl, g = F.gd;
+  if(mode === 'fight'){
+    if(!land) return;   // en vertical se pausa y pide girar el celular
+    fUpd(p, g, fPlayerIn(), dt); fUpd(g, p, fAI(g, p, dt), dt);
+    if(Math.abs(p.x - g.x) < 70 && p.h < 100 && g.h < 100){ const push = (70 - Math.abs(p.x - g.x)) / 2, s = p.x <= g.x ? 1 : -1; p.x -= s * push; g.x += s * push; }
+    fHits(p, g); fHits(g, p);
+    if(g.hp <= 0){ F.st = 'won'; F.t = 0; mode = 'fx'; g.state = 'ko'; g.timer = 0; p.state = 'win'; p.vx = 0; }
+    else if(p.hp <= 0){ F.st = 'lost'; F.t = 0; mode = 'fx'; p.state = 'ko'; p.timer = 0; g.state = 'idle'; g.vx = 0; }
+  } else if(mode === 'fx'){
+    F.t += dt; fPhys(p, dt); fPhys(g, dt); if(p.state === 'ko') p.timer += dt; if(g.state === 'ko') g.timer += dt;
+    if(F.t > 1.8){ mode = 'dlg';
+      if(F.st === 'won') say(CAP1.outro, () => overlay('Capítulo 1 completado', 'Derrotaste al guardia y la puerta quedó libre. Aquí seguirá la historia.', 'Continuar', menuCap));
+      else overlay('Derrotado', 'El guardia te detuvo. ¡Inténtalo otra vez!', 'Reintentar', () => { fReset(); mode = 'fight'; }); } } }
+
+// ----- dibujo -----
+function fSprite(f){
+  const bob = f.walk ? Math.abs(Math.sin(F.clock * 14)) * 5 : 0;
+  let im, h, ax = .5, nf = 1, rot = 0, ox = 0, alpha = 1, lean = 0;
+  if(f.kind === 'pl'){
+    let key = 'fI';
+    if(f.state === 'block') key = 'fB'; else if(f.state === 'win') key = 'fW'; else if(f.state === 'special') key = 'fP';
+    else if(f.state === 'punch') key = (f.timer > .05 && f.timer < .34) ? 'fP' : 'fI';
+    if(f.h > 0 && (f.state === 'idle' || f.state === 'block')) key = 'fJ';
+    im = IM[key]; ax = key === 'fP' ? .46 : .5; h = im ? im.height * FS : 255;
+  } else {
+    if(f.face === 1){ im = IM.gD || IM.gI; nf = IM.gD ? 1 : -1; } else { im = IM.gI || IM.gD; nf = IM.gI ? -1 : 1; }
+    h = 270;
+    if(f.state === 'punch'){ const A = FA.gd; lean = f.timer < A.a0 ? -f.face * .1 * (f.timer / A.a0) : f.face * .12; }
+  }
+  if(f.state === 'hurt') ox = -f.face * 10;
+  if(f.state === 'ko') rot = -f.face * Math.min(1, f.timer / .45) * Math.PI / 2;
+  if(f.flash > 0 && ((f.flash * 40) | 0) % 2) alpha = .55;
+  cx.save(); cx.translate(f.x + ox, FGR - f.h - bob); cx.rotate(rot + lean); cx.scale(f.face * nf, 1); cx.globalAlpha = alpha;
+  if(im){ const w = im.width * h / im.height; if(f.state === 'special') for(let k = 3; k >= 1; k--){ cx.globalAlpha = .44 / k; cx.drawImage(im, -w * ax - k * 36, -h, w, h); }
+    cx.globalAlpha = alpha; cx.drawImage(im, -w * ax, -h, w, h); }
+  else { cx.fillStyle = f.kind === 'pl' ? '#3a6ea5' : '#27408b'; cx.fillRect(-40, -h, 80, h); cx.fillStyle = '#fff'; cx.font = '16px sans-serif'; cx.textAlign = 'center'; cx.fillText(f.kind === 'pl' ? 'Bodoco' : 'Guardia', 0, -h / 2); }
+  cx.restore();
+  if(f.kind === 'gd'){
+    if(f.state === 'punch' && f.timer < FA.gd.a0){ cx.fillStyle = '#ff3b3b'; cx.font = '900 64px Impact,sans-serif'; cx.textAlign = 'center'; cx.fillText('!', f.x, FGR - f.h - 290); }
+    if(f.state === 'punch' && f.timer >= FA.gd.a0 && f.timer < FA.gd.a1 + .08){ cx.save(); cx.translate(f.x, FGR - f.h - 150); cx.scale(f.face, 1); cx.strokeStyle = 'rgba(255,255,255,.75)'; cx.lineWidth = 12; cx.beginPath(); cx.arc(30, 0, 100, -1, 1); cx.stroke(); cx.restore(); }
+    if(f.state === 'block'){ cx.save(); cx.translate(f.x, FGR - f.h - 150); cx.scale(f.face, 1); cx.strokeStyle = 'rgba(110,198,255,.8)'; cx.lineWidth = 10; cx.beginPath(); cx.arc(20, 0, 110, -1.1, 1.1); cx.stroke(); cx.restore(); } }
+}
+function fBar(x, y, w, f, label, right){
+  cx.fillStyle = 'rgba(0,0,0,.6)'; cx.fillRect(x - 4, y - 4, w + 8, f.kind === 'pl' ? 46 : 34);
+  cx.fillStyle = '#4a1010'; cx.fillRect(x, y, w, 26);
+  const p = Math.max(0, f.hp) / 100; cx.fillStyle = p > .35 ? '#3ddc5a' : '#ff4a3a'; cx.fillRect(right ? x + w * (1 - p) : x, y, w * p, 26);
+  if(f.kind === 'pl'){ cx.fillStyle = '#222'; cx.fillRect(x, y + 30, w, 8); cx.fillStyle = f.meter >= 100 ? ((F.clock * 6 | 0) % 2 ? '#fff' : '#ffd93d') : '#3da0ff'; cx.fillRect(x, y + 30, w * f.meter / 100, 8); }
+  cx.fillStyle = '#fff'; cx.font = '900 20px Impact,"Arial Black",sans-serif'; cx.textAlign = right ? 'right' : 'left'; cx.lineWidth = 4; cx.strokeStyle = '#000';
+  const tx = right ? x + w : x; cx.strokeText(label, tx, y - 10); cx.fillText(label, tx, y - 10); }
+function fBig(t, y, size, color){ cx.font = '900 ' + size + 'px Impact,"Arial Black",sans-serif'; cx.textAlign = 'center'; cx.lineWidth = size / 8; cx.strokeStyle = '#000'; cx.strokeText(t, FWD / 2, y); cx.fillStyle = color; cx.fillText(t, FWD / 2, y); }
+function fDraw(){
+  cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.fillStyle = '#05060d'; cx.fillRect(0, 0, W, H_);
+  const s = Math.min(W / FWD, H_ / FHT), ox = (W - FWD * s) / 2, oy = (H_ - FHT * s) / 2;
+  cx.setTransform(dpr * s, 0, 0, dpr * s, ox * dpr, oy * dpr);
+  cx.save(); cx.beginPath(); cx.rect(0, 0, FWD, FHT); cx.clip();
+  if(F.shake > 0) cx.translate((Math.random() - .5) * 10, (Math.random() - .5) * 10);
+  if(IM.fbg) cx.drawImage(IM.fbg, 0, 0, FWD, FHT); else { cx.fillStyle = '#2a2540'; cx.fillRect(0, 0, FWD, FHT); cx.fillStyle = '#3d3560'; cx.fillRect(0, FGR, FWD, FHT - FGR); }
+  for(const f of [F.pl, F.gd]){ cx.fillStyle = 'rgba(0,0,0,.3)'; const k = Math.max(.4, 1 - f.h / 400); cx.beginPath(); cx.ellipse(f.x, FGR + 3, 62 * k, 11 * k, 0, 0, 7); cx.fill(); }
+  cx.imageSmoothingEnabled = false;
+  [F.pl, F.gd].sort((a, b) => (a.state === 'hurt') - (b.state === 'hurt')).forEach(fSprite);
+  cx.imageSmoothingEnabled = true;
+  for(const sp of F.sparks){ const k = sp.t / .18, r = 18 + k * 40; cx.strokeStyle = sp.c; cx.lineWidth = 5 * (1 - k) + 1;
+    for(let i = 0; i < 8; i++){ const an = i * Math.PI / 4 + .3; cx.beginPath(); cx.moveTo(sp.x + Math.cos(an) * r * .5, sp.y + Math.sin(an) * r * .5); cx.lineTo(sp.x + Math.cos(an) * r, sp.y + Math.sin(an) * r); cx.stroke(); } }
+  cx.restore();
+  cx.save(); cx.beginPath(); cx.rect(0, 0, FWD, FHT); cx.clip();
+  fBar(40, 40, 420, F.pl, 'BODOCO', false); fBar(FWD - 460, 40, 420, F.gd, 'GUARDIA', true);
+  if(F.st === 'won') fBig('¡VENCIDO!', 340, 110, '#ffd93d'); else if(F.st === 'lost') fBig('K.O.', 340, 120, '#ff4a3a');
+  cx.restore();
+  if(W < H_ * 1.05){ cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.fillStyle = 'rgba(5,6,13,.88)'; cx.fillRect(0, 0, W, H_); cx.fillStyle = '#fff'; cx.font = '700 20px system-ui,sans-serif'; cx.textAlign = 'center'; cx.fillText('Gira tu celular en horizontal 📱', W / 2, H_ / 2); }
+}
+
+// ----- menú de capítulos -----
+function menuCap(){ inFight = false; fUpdate.on = false; $('fc').style.display = 'none'; $('hud').style.display = ''; mode = 'menu';
+  overlay('Bodoco y Bodoca', ROL === 'bodoca' ? 'Bodoco desapareció. Esta vez te toca a ti encontrarlo.' : 'Bodoca desapareció. Esta vez te toca a ti encontrarla.', 'Capítulo 1 · ' + CAP1.t, startCap1);
+  const b2 = $('ob2'); b2.style.display = ''; b2.textContent = 'Prototipo anterior (niveles 1 y 2)'; b2.onclick = () => { $('ov').style.display = 'none'; start(0); }; }
+function startCap1(){ inFight = true; fReset(); $('hud').style.display = 'none'; mode = 'dlg'; say(CAP1.intro, () => { fPend = {}; mode = 'fight'; }); }
+
+function loop(ms){ const dt = Math.min(.05, (ms - last) / 1000 || 0); last = ms; t += dt; if(inFight){ fUpdate(dt); fDraw(); } else { update(dt); draw(); } requestAnimationFrame(loop); }
 function resize(){ dpr = Math.min(devicePixelRatio || 1, 2.5); W = innerWidth; H_ = innerHeight; cv.width = W * dpr; cv.height = H_ * dpr; sc = Math.max(W / 620, H_ / WS); }
 addEventListener('resize', resize); resize();
 
 Promise.all(Object.keys(ASSETS).map(load)).then(() => { requestAnimationFrame(loop);
-  overlay('Bodoco y Bodoca', ROL === 'bodoca' ? 'Bodoco desapareció. Esta vez te toca a ti encontrarlo.' : 'Bodoca desapareció. Esta vez te toca a ti encontrarla.', 'Empezar', () => start(0)); });
+  menuCap(); });
 })();
 <\/script></body></html>
 </script>
