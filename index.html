@@ -6417,7 +6417,12 @@ Promise.all(Object.keys(ASSETS).map(load)).then(() => { requestAnimationFrame(lo
   }
   // La historia (historia.html) se abre a pantalla completa encima del menú, con su propia ✕ para volver
   const storyOv = document.getElementById('storyOv'), storyFr = document.getElementById('storyFr');
-  function openStory(){ let r = ''; try{ r = myRole || ''; }catch(_){} const src = document.getElementById('storySrc').textContent.replace(/<\\\/script>/g, '<\/script>'); storyFr.srcdoc = src.replace('<head>', '<head><script>window.STORY_ROL="' + (r === 'bodoco' ? 'bodoco' : 'bodoca') + '"<\/script>'); storyOv.style.display = 'block'; }
+  function openStory(){ let r = ''; try{ r = myRole || ''; }catch(_){} const src = document.getElementById('storySrc').textContent.replace(/<\\\/script>/g, '<\/script>'); storyFr.srcdoc = src.replace('<head>', '<head><script>window.STORY_ROL="' + (r === 'bodoco' ? 'bodoco' : 'bodoca') + '"<\/script>'); storyOv.style.display = 'block'; fitStory(); }
+  // Si el celular está en vertical (o la app tiene bloqueado el giro), el juego se gira solo 90° para jugarse en horizontal
+  function fitStory(){ const W = innerWidth, H = innerHeight, st = storyFr.style;
+    if(H > W){ st.width = H + 'px'; st.height = W + 'px'; st.top = '0'; st.left = '0'; st.right = 'auto'; st.bottom = 'auto'; st.transformOrigin = '0 0'; st.transform = 'translateX(' + W + 'px) rotate(90deg)'; }
+    else { st.width = '100%'; st.height = '100%'; st.top = '0'; st.left = '0'; st.transformOrigin = ''; st.transform = 'none'; } }
+  addEventListener('resize', () => { if(storyOv.style.display === 'block') fitStory(); }); addEventListener('orientationchange', () => setTimeout(() => { if(storyOv.style.display === 'block') fitStory(); }, 250));
   document.getElementById('storyX').addEventListener('click', () => { storyOv.style.display = 'none'; storyFr.srcdoc = ''; });
   function pickGame(g){ if(g === 'story'){ openStory(); return; } showSec(g); (g === 'air' ? gm : hd).start(); }
   document.querySelectorAll('.gm-mcard').forEach(b => b.addEventListener('click', () => pickGame(b.dataset.g)));
