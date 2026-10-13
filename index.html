@@ -5899,9 +5899,10 @@ window.Busy=(function(){
       cx.textAlign = 'center'; cx.textBaseline = 'alphabetic';
       PADS.forEach((p, i) => {
         const T = TIPOS[p.t], pulse = .5 + .5 * Math.sin(now / 320 + i * 1.3), prog = clamp01(dwell[i] / .18);
-        cx.fillStyle = T.col + '33'; cx.beginPath(); cx.ellipse(p.x, p.y, 40 + pulse * 3, 22 + pulse * 2, 0, 0, 7); cx.fill();
-        cx.lineWidth = 3; cx.strokeStyle = T.col; cx.beginPath(); cx.ellipse(p.x, p.y, 36, 20, 0, 0, 7); cx.stroke();
-        if(prog > 0){ cx.lineWidth = 6; cx.strokeStyle = '#fff'; cx.beginPath(); cx.ellipse(p.x, p.y, 36, 20, 0, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2); cx.stroke(); }
+        const rx = 44 + pulse * 2, ry = 24 + pulse;
+        cx.fillStyle = T.bg; cx.beginPath(); cx.ellipse(p.x, p.y, rx, ry, 0, 0, 7); cx.fill();
+        cx.lineWidth = 4; cx.strokeStyle = '#fff'; cx.beginPath(); cx.ellipse(p.x, p.y, rx, ry, 0, 0, 7); cx.stroke();
+        if(prog > 0){ cx.lineWidth = 6; cx.strokeStyle = '#111'; cx.beginPath(); cx.ellipse(p.x, p.y, rx, ry, 0, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2); cx.stroke(); }
         drawDog(p.t, p.x - 52, p.y - 66 - pulse * 3, 104, 68);
         cx.font = '800 16px sans-serif'; cx.lineWidth = 4; cx.strokeStyle = 'rgba(0,0,0,.7)'; cx.fillStyle = '#fff';
         cx.strokeText(T.n, p.x, p.y + 38); cx.fillText(T.n, p.x, p.y + 38);
