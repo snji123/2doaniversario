@@ -519,6 +519,10 @@
   .gm-mcard:active{transform:scale(.97);}
   .gm-mcard.air{background:linear-gradient(135deg,rgba(77,155,255,.28),rgba(52,211,153,.12));border-color:rgba(120,190,255,.45);}
   .gm-mcard.hd{background:linear-gradient(135deg,rgba(255,140,40,.30),rgba(255,70,70,.14));border-color:rgba(255,170,80,.5);}
+  .gm-mcard.story{background:linear-gradient(135deg,rgba(160,90,255,.30),rgba(255,60,90,.16));border-color:rgba(190,130,255,.5);}
+  #storyOv{position:fixed;inset:0;z-index:40;background:#05060d;display:none;}
+  #storyOv iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+  #storyX{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:10px;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(8,12,24,.8);color:#fff;font-size:18px;line-height:1;cursor:pointer;}
   .gm-mico{font-size:46px;line-height:1;flex:none;filter:drop-shadow(0 4px 14px rgba(0,0,0,.45));}
   .gm-mtx{display:flex;flex-direction:column;gap:4px;min-width:0;}
   .gm-mtx b{font-size:19px;font-weight:800;}
@@ -1234,6 +1238,149 @@ window.Busy=(function(){
   </div><div class="gal-loader" id="galLoader" aria-live="polite"><div class="gl-orb"><i></i><i></i><i></i><b></b></div><div class="gl-title">Preparando tu galaxia</div><div class="gl-sub" id="glSub">Encendiendo el cielo…</div><div class="gl-track"><div class="gl-fill" id="glFill"></div></div><div class="gl-pct" id="glPct">0%</div></div>
   <button type="button" class="gal-add" id="galAdd" aria-label="Agregar foto o frase a la galaxia"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button><button type="button" class="gal-add" id="galCfg" style="right:58px" aria-label="Administrar la galaxia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
 
+<script type="text/plain" id="storySrc"><!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Historia · Bodoco y Bodoca</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#05060d;overflow:hidden;font-family:system-ui,sans-serif;color:#fff;touch-action:none}
+canvas{position:fixed;inset:0;width:100%;height:100%}
+#hud{position:fixed;top:env(safe-area-inset-top,0);left:0;right:0;display:flex;gap:8px;padding:10px;pointer-events:none;font-weight:700;font-size:15px}
+#hud span{background:rgba(8,12,24,.78);border-radius:20px;padding:7px 14px}
+#toast{position:fixed;top:30%;left:0;right:0;text-align:center;font-size:22px;font-weight:800;text-shadow:0 2px 8px #000;opacity:0;transition:opacity .3s;pointer-events:none}
+#dlg{position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);background:rgba(8,12,24,.93);border:2px solid #fff3;border-radius:16px;padding:14px 16px 26px;display:none;min-height:100px}
+#dlg b{display:block;margin-bottom:4px;font-size:15px}#dlg p{margin:0;font-size:17px;line-height:1.35}
+#dlg i{position:absolute;right:14px;bottom:8px;opacity:.6;font-size:13px;font-style:normal}
+#ov{position:fixed;inset:0;background:rgba(5,6,13,.9);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:14px}
+#ov h1{margin:0;font-size:26px}#ov p{margin:0;max-width:340px;line-height:1.4;opacity:.9}
+#ov button{background:#ff4d6d;color:#fff;border:0;border-radius:24px;padding:13px 28px;font-size:17px;font-weight:700}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="hud"><span id="hl"></span><span id="hc"></span></div>
+<div id="toast"></div>
+<div id="dlg"><b id="ds"></b><p id="dt"></p><i>toca para seguir ▸</i></div>
+<div id="ov"><h1 id="oh"></h1><p id="op"></p><button id="ob"></button></div>
+<script>
+(() => {
+// Uso: historia.html?p=bodoca  (ella rescata a Bodoco)  |  historia.html?p=bodoco  (él rescata a Bodoca)
+const ROL = (window.STORY_ROL || new URLSearchParams(location.search).get('p')) === 'bodoco' ? 'bodoco' : 'bodoca';
+const H = ROL === 'bodoca' ? 'Bodoca' : 'Bodoco', O = ROL === 'bodoca' ? 'Bodoco' : 'Bodoca', lo = ROL === 'bodoca' ? 'lo' : 'la';
+const $ = id => document.getElementById(id), cv = $('c'), cx = cv.getContext('2d');
+const WS = 1024, PH = 150, SPEED = 300, START = { x:300, y:500 };
+
+// ---------- imágenes (carpeta Ncontenido/ o la raíz) ----------
+const ASSETS = { bg:['fondo2.jpg'], gF:['guardia_frente.png'], gE:['guardia_espaldas.png'], gP:['guardia_perfil.png'],
+  ...(ROL === 'bodoca'
+    ? { rep:['reposo.png'], abajo:['corriendoabajo.png'], arriba:['corriendoarriba.png'], derecha:['corriendoderecha.png'], izquierda:['corriendoizquierda.png'] }
+    : { rep:['bodoco_reposo.png'], abajo:['bodoco_corriendoabajo.png', 'bodoco_corriendo abajo.png'], arriba:['bodoco_espaldas.png'],
+        derecha:['bodoco_corriendo derecha.png', 'bodoco_corriendoderecha.png'], izquierda:['bodoco_corriendo izquierda.png', 'bodoco_corriendoizquierda.png'] }) };
+const IM = {};
+const load = k => new Promise(res => {
+  const list = []; ['Ncontenido/', ''].forEach(f => ASSETS[k].forEach(n => list.push(encodeURI(f + n)))); let i = 0;
+  const next = () => { if(i >= list.length) return res(); const im = new Image(); im.onload = () => { IM[k] = im; res(); }; im.onerror = next; im.src = list[i++]; };
+  next();
+});
+
+// ---------- zonas por donde NO se puede caminar (Night Market) ----------
+const lineY = x => 385 - (x - 240) * .38, BLK = [];
+for(let x = 0; x < 480; x += 20) BLK.push({ x, y:0, w:20, h: x < 240 ? 409 : lineY(x) + 26 });
+BLK.push({ x:470, y:0, w:560, h:200 }, { x:925, y:0, w:100, h:290 }, { x:985, y:380, w:40, h:120 }, { x:15, y:555, w:320, h:240 },
+  { x:360, y:690, w:110, h:125 }, { x:435, y:735, w:190, h:140 }, { x:575, y:790, w:130, h:115 }, { x:670, y:835, w:135, h:100 }, { x:775, y:880, w:165, h:140 });
+const blocked = (x, y) => { if(x < 24 || x > 1000 || y < 150 || y > 1000) return true;
+  for(const r of BLK) if(x + 22 > r.x && x - 22 < r.x + r.w && y + 12 > r.y && y - 12 < r.y + r.h) return true; return false; };
+
+// ---------- niveles (cada nivel es solo una ficha de datos) ----------
+const NIVELES = [
+  { t:'Ausencia', icono:'✉️', txt:'pistas', items:[[600,560],[780,430],[820,720]], guardias:[],
+    intro:[[H, '¿' + O + '? Su lugar está vacío…'], ['???', 'Mejor quédate. Esto es demasiado para ti.'], [H, 'Voy a encontrar' + lo + '. Aunque me dé miedo.'],
+           ['Guía', 'Arrastra el dedo para moverte y reúne las 3 pistas ✉️.']],
+    outro:[[H, 'Son sus cosas… estuvo aquí hace poco.'], ['???', 'Nadie espera para siempre.'], [H, 'Entonces tendré que darme prisa.']] },
+  { t:'El primer miedo', icono:'🎵', txt:'recuerdos', items:[[640,640],[870,560],[860,790]], guardias:[[[380,600],[900,600]]],
+    intro:[[H, 'Un guardia patrulla el lugar… No me va a dejar pasar.'], ['Guía', 'Si su luz roja te alcanza, vuelves al inicio. Reúne los 3 recuerdos 🎵.']],
+    outro:[[H, 'Esta canción… es de nosotros.'], ['Psique', 'Cada miedo que superas… ya lo conocías, ¿verdad?'], ['Psique', 'Sabes quién soy. Sabes lo que viene.'], [H, 'No voy a rendirme. Voy a encontrar' + lo + '.']], ojos:true }
+];
+
+// ---------- estado ----------
+let li = 0, mode = 'load', P = { ...START, dir:'abajo', mv:false }, items = [], guards = [], got = 0, lock = 0, ojos = 0, queue = [], after = null, W = 0, H_ = 0, sc = 1, dpr = 1, t = 0, last = 0;
+const toast = m => { const e = $('toast'); e.textContent = m; e.style.opacity = 1; clearTimeout(toast.k); toast.k = setTimeout(() => e.style.opacity = 0, 1300); };
+function hud(){ const n = NIVELES[li]; $('hl').textContent = 'Nivel ' + (li + 1) + ' · ' + n.t; $('hc').textContent = n.icono + ' ' + got + '/' + n.items.length; }
+
+// ---------- diálogos ----------
+function say(lines, cb){ queue = lines.slice(); after = cb; mode = 'dlg'; adv(); }
+function adv(){ if(mode !== 'dlg') return; const l = queue.shift(), d = $('dlg');
+  if(!l){ d.style.display = 'none'; const f = after; after = null; if(f) f(); return; }
+  d.style.display = 'block'; $('ds').textContent = l[0]; $('ds').style.color = l[0] === 'Psique' || l[0] === '???' ? '#ff5d5d' : l[0] === 'Guía' ? '#ffd23f' : '#9be7ff'; $('dt').textContent = l[1]; }
+$('dlg').addEventListener('pointerdown', e => { e.stopPropagation(); adv(); });
+
+function overlay(h, p, b, fn){ $('oh').textContent = h; $('op').textContent = p; $('ob').textContent = b; $('ov').style.display = 'flex'; $('ob').onclick = () => { $('ov').style.display = 'none'; fn(); }; }
+
+function start(i){ li = i; const n = NIVELES[li]; P = { ...START, dir:'abajo', mv:false }; got = 0; ojos = 0;
+  items = n.items.map(([x, y]) => ({ x, y, got:false }));
+  guards = n.guardias.map(r => ({ r, x:r[0][0], y:r[0][1], i:1, fx:1, fy:0 })); hud(); say(n.intro, () => { mode = 'play'; }); }
+function win(){ const n = NIVELES[li]; mode = 'dlg'; if(n.ojos) ojos = .01;
+  say(n.outro, () => { if(li + 1 < NIVELES.length) start(li + 1); else { mode = 'end'; overlay('¡Prototipo completado!', 'Superaste los niveles 1 y 2. Aquí es donde seguiría la historia: más escenarios, más miedos y el encuentro con ' + O + '.', 'Jugar otra vez', () => start(0)); } }); }
+
+// ---------- controles ----------
+let joy = null; const keys = {};
+cv.addEventListener('pointerdown', e => { if(mode === 'dlg'){ adv(); return; } joy = { x:e.clientX, y:e.clientY, dx:0, dy:0 }; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', e => { if(!joy) return; let dx = e.clientX - joy.x, dy = e.clientY - joy.y; const d = Math.hypot(dx, dy);
+  if(d > 60){ joy.x += dx / d * (d - 60); joy.y += dy / d * (d - 60); dx = dx / d * 60; dy = dy / d * 60; } joy.dx = dx; joy.dy = dy; });
+const rel = () => { joy = null; }; cv.addEventListener('pointerup', rel); cv.addEventListener('pointercancel', rel);
+addEventListener('keydown', e => { keys[e.key.toLowerCase()] = 1; if(mode === 'dlg' && (e.key === ' ' || e.key === 'Enter')) adv(); }); addEventListener('keyup', e => { keys[e.key.toLowerCase()] = 0; });
+function input(){ let x = 0, y = 0;
+  if(joy && Math.hypot(joy.dx, joy.dy) > 8){ x = joy.dx / 60; y = joy.dy / 60; }
+  else { x = (keys.arrowright || keys.d ? 1 : 0) - (keys.arrowleft || keys.a ? 1 : 0); y = (keys.arrowdown || keys.s ? 1 : 0) - (keys.arrowup || keys.w ? 1 : 0); }
+  const m = Math.hypot(x, y); return m > 1 ? [x / m, y / m] : [x, y]; }
+
+// ---------- lógica ----------
+function update(dt){
+  if(ojos > 0 && ojos < 1) ojos = Math.min(1, ojos + dt * .6);
+  if(mode !== 'play') return;
+  if(lock > 0){ lock -= dt; return; }
+  const [ix, iy] = input(), mv = Math.hypot(ix, iy) > .05; P.mv = mv;
+  if(mv){ const dx = ix * SPEED * dt, dy = iy * SPEED * dt;
+    if(!blocked(P.x + dx, P.y)) P.x += dx; if(!blocked(P.x, P.y + dy)) P.y += dy;
+    P.dir = Math.abs(ix) > Math.abs(iy) ? (ix > 0 ? 'derecha' : 'izquierda') : (iy > 0 ? 'abajo' : 'arriba'); }
+  for(const it of items) if(!it.got && Math.hypot(it.x - P.x, it.y - P.y) < 42){ it.got = true; got++; hud(); toast(NIVELES[li].icono + ' ' + got + '/' + items.length); }
+  for(const g of guards){ const tg = g.r[g.i], dx = tg[0] - g.x, dy = tg[1] - g.y, d = Math.hypot(dx, dy);
+    if(d < 4) g.i = (g.i + 1) % g.r.length; else { g.fx = dx / d; g.fy = dy / d; g.x += g.fx * 105 * dt; g.y += g.fy * 105 * dt; }
+    const hx = P.x - g.x, hy = P.y - g.y, hd = Math.hypot(hx, hy);
+    if(hd < 48 || (hd < 200 && (hx * g.fx + hy * g.fy) / hd > .8)){ P.x = START.x; P.y = START.y; lock = .9; toast('¡Te vio! Vuelves al inicio'); } }
+  if(got === items.length) win();
+}
+
+// ---------- dibujo ----------
+function spr(im, x, y, h, flip){ if(!im) return false; const w = im.width * h / im.height; cx.save(); cx.translate(x, y + 10); if(flip) cx.scale(-1, 1); cx.drawImage(im, -w / 2, -h, w, h); cx.restore(); return true; }
+function draw(){
+  cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.fillStyle = '#05060d'; cx.fillRect(0, 0, W, H_);
+  const vw = W / sc, vh = H_ / sc, camX = Math.max(0, Math.min(WS - vw, P.x - vw / 2)), camY = Math.max(0, Math.min(WS - vh, P.y - vh / 2));
+  cx.setTransform(dpr * sc, 0, 0, dpr * sc, -camX * dpr * sc, -camY * dpr * sc);
+  if(IM.bg) cx.drawImage(IM.bg, 0, 0, WS, WS);
+  const pu = 1 + Math.sin(t * 4) * .12;
+  for(const it of items) if(!it.got){ cx.fillStyle = 'rgba(255,210,63,.28)'; cx.beginPath(); cx.arc(it.x, it.y, 34 * pu, 0, 7); cx.fill();
+    cx.font = '34px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillStyle = '#fff'; cx.fillText(NIVELES[li].icono, it.x, it.y - 4 + Math.sin(t * 3) * 3); }
+  for(const g of guards){ const a = Math.atan2(g.fy, g.fx); cx.fillStyle = 'rgba(255,60,60,.25)'; cx.beginPath(); cx.moveTo(g.x, g.y - 40); cx.arc(g.x, g.y - 40, 200, a - .65, a + .65); cx.closePath(); cx.fill(); }
+  const ents = [{ y:P.y, f:() => { const bob = P.mv ? Math.abs(Math.sin(t * 12)) * 5 : 0, vert = P.dir === 'abajo' || P.dir === 'arriba', fl = P.mv && vert && Math.floor(t * 6) % 2;
+      cx.fillStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(P.x, P.y + 6, 28, 9, 0, 0, 7); cx.fill();
+      const im = !P.mv ? (P.dir === 'arriba' ? IM.arriba : IM.rep) : IM[P.dir];
+      if(!spr(im || IM.rep, P.x, P.y - bob, PH, fl)){ cx.fillStyle = '#9be7ff'; cx.beginPath(); cx.arc(P.x, P.y - 60, 30, 0, 7); cx.fill(); } } }];
+  for(const g of guards) ents.push({ y:g.y, f:() => { const side = Math.abs(g.fx) > Math.abs(g.fy), im = side ? IM.gP : (g.fy > 0 ? IM.gF : IM.gE);
+      cx.fillStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(g.x, g.y + 6, 30, 10, 0, 0, 7); cx.fill(); spr(im, g.x, g.y, PH * 1.02, side && g.fx < 0); } });
+  ents.sort((a, b) => a.y - b.y).forEach(e => e.f());
+  if(ojos > 0){ cx.globalAlpha = ojos; const ex = 520, ey = 330; cx.fillStyle = '#ff2b2b'; cx.shadowColor = '#ff2b2b'; cx.shadowBlur = 24;
+    [-16, 16].forEach(o => { cx.beginPath(); cx.ellipse(ex + o, ey + Math.sin(t * 2) * 2, 7, 4, 0, 0, 7); cx.fill(); }); cx.shadowBlur = 0; cx.globalAlpha = 1; }
+}
+function loop(ms){ const dt = Math.min(.05, (ms - last) / 1000 || 0); last = ms; t += dt; update(dt); draw(); requestAnimationFrame(loop); }
+function resize(){ dpr = Math.min(devicePixelRatio || 1, 2.5); W = innerWidth; H_ = innerHeight; cv.width = W * dpr; cv.height = H_ * dpr; sc = Math.max(W / 620, H_ / WS); }
+addEventListener('resize', resize); resize();
+
+Promise.all(Object.keys(ASSETS).map(load)).then(() => { requestAnimationFrame(loop);
+  overlay('Bodoco y Bodoca', ROL === 'bodoca' ? 'Bodoco desapareció. Esta vez te toca a ti encontrarlo.' : 'Bodoca desapareció. Esta vez te toca a ti encontrarla.', 'Empezar', () => start(0)); });
+})();
+<\/script></body></html>
+</script>
+<div id="storyOv"><iframe id="storyFr" title="La historia de Bodoco y Bodoca" allow="autoplay"></iframe><button type="button" id="storyX" aria-label="Cerrar">✕</button></div>
 <div class="game-page" id="gameBox" aria-hidden="true">
   <div class="gm-sec" id="gmMenuSec">
     <div class="gm-bar">
@@ -1250,6 +1397,11 @@ window.Busy=(function(){
         <span class="gm-mico">🌭</span>
         <span class="gm-mtx"><b>Charly Hotdogs</b><small>El juego de Bodoco. Toma los hot dogs del puesto (Pepperoni, Hawaiano y Bistec) y entrégaselos a los clientes antes de que se cansen.</small><em id="gmBestHd"></em></span>
         <span class="gm-mtag" id="gmTagHd"></span>
+      </button>
+      <button type="button" class="gm-mcard story" data-g="story">
+        <span class="gm-mico">💫</span>
+        <span class="gm-mtx"><b>La historia de Bodoco y Bodoca</b><small>Psique los separó. Atraviesa tus miedos para encontrar al otro. Prototipo: niveles 1 y 2.</small></span>
+        <span class="gm-mtag">Nuevo</span>
       </button>
     </div>
     <div class="gm-hint">Desliza hacia la derecha para volver a la galaxia</div>
@@ -6039,7 +6191,11 @@ window.Busy=(function(){
     put('gmTagAir', role === 'bodoca' ? 'Tu juego' : ''); put('gmTagHd', role === 'bodoco' ? 'Tu juego' : '');
     try{ hd.preload(); }catch(_){}
   }
-  function pickGame(g){ showSec(g); (g === 'air' ? gm : hd).start(); }
+  // La historia (historia.html) se abre a pantalla completa encima del menú, con su propia ✕ para volver
+  const storyOv = document.getElementById('storyOv'), storyFr = document.getElementById('storyFr');
+  function openStory(){ let r = ''; try{ r = myRole || ''; }catch(_){} const src = document.getElementById('storySrc').textContent.replace(/<\\\/script>/g, '<\/script>'); storyFr.srcdoc = src.replace('<head>', '<head><script>window.STORY_ROL="' + (r === 'bodoco' ? 'bodoco' : 'bodoca') + '"<\/script>'); storyOv.style.display = 'block'; }
+  document.getElementById('storyX').addEventListener('click', () => { storyOv.style.display = 'none'; storyFr.srcdoc = ''; });
+  function pickGame(g){ if(g === 'story'){ openStory(); return; } showSec(g); (g === 'air' ? gm : hd).start(); }
   document.querySelectorAll('.gm-mcard').forEach(b => b.addEventListener('click', () => pickGame(b.dataset.g)));
   document.getElementById('gmMenuClose').addEventListener('click', () => closeGame());
   document.getElementById('gmBack').addEventListener('click', gameMenu);
