@@ -1386,8 +1386,8 @@ function draw(){
 // ---------- CAPÍTULO 1: Bodoco contra los guardias (vista desde arriba) ----------
 // Para cambiar la trama de este capítulo, edita los textos de CAP1 (intro y outro) y el número de guardias por oleada (waves).
 const COARSE = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
-const CW = 1024, CHT = 768, AREA = { x0:40, x1:984, y0:470, y1:745 };
-const hOf = y => Math.max(70, Math.min(235, 40 + (y - 330) * .43));   // alto del personaje según la profundidad (perspectiva del fondo)
+const CW = 1024, CHT = 768, AREA = { x0:30, x1:994, y0:420, y1:755 };
+const hOf = y => Math.max(55, Math.min(175, 28 + (y - 330) * .32));   // alto del personaje según la profundidad (perspectiva del fondo)
 const uOf = y => hOf(y) / 200;
 const CAP1 = { t:'Los guardias', waves:[3, 4],
   intro:[['Bodoco', 'Su rastro llega hasta esta puerta… Bodoca tuvo que pasar por aquí.'], ['Guardia', '¡Alto! Zona restringida. ¡Atrápenlo!'], ['Bodoco', 'No me voy sin ella.'],
@@ -1562,7 +1562,7 @@ function cDrawG(g){
 function cBig(t, y, size, color){ cx.font = '900 ' + size + 'px Impact,"Arial Black",sans-serif'; cx.textAlign = 'center'; cx.lineWidth = size / 8; cx.strokeStyle = '#000'; cx.strokeText(t, W / 2, y); cx.fillStyle = color; cx.fillText(t, W / 2, y); }
 function fDraw(){
   cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.fillStyle = '#05060d'; cx.fillRect(0, 0, W, H_);
-  const z = Math.max(W / CW, H_ / CHT) * 1.3, vw = W / z, vh = H_ / z, p = CS.pl;
+  const z = Math.max(W / CW, H_ / CHT) * 1.0, vw = W / z, vh = H_ / z, p = CS.pl;
   let camX = Math.max(0, Math.min(CW - vw, p.x - vw / 2)), camY = Math.max(0, Math.min(CHT - vh, p.y - 70 - vh / 2));
   if(CS.shake > 0){ camX += (Math.random() - .5) * 8; camY += (Math.random() - .5) * 8; }
   cx.setTransform(dpr * z, 0, 0, dpr * z, -camX * dpr * z, -camY * dpr * z);
