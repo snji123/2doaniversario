@@ -1255,7 +1255,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 #ov{position:fixed;inset:0;background:rgba(5,6,13,.9);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:14px}
 #ov h1{margin:0;font-size:26px}#ov p{margin:0;max-width:340px;line-height:1.4;opacity:.9}
 #ov button{background:#ff4d6d;color:#fff;border:0;border-radius:24px;padding:13px 28px;font-size:17px;font-weight:700}
-#ob2{background:#3a4a7a!important;font-size:14px!important;padding:10px 20px!important}
+#ob2,#ob3{background:#3a4a7a!important;font-size:14px!important;padding:10px 20px!important}
 #fc{position:fixed;inset:0;pointer-events:none;display:none}
 .fb{position:absolute;pointer-events:auto;touch-action:none;width:66px;height:66px;border-radius:50%;border:3px solid #fff6;background:rgba(0,0,0,.45);color:#fff;font-size:22px;font-weight:800;opacity:.85;display:flex;align-items:center;justify-content:center;padding:0}
 .fb.on{background:rgba(255,217,61,.7);color:#000}
@@ -1269,7 +1269,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 <div id="toast"></div>
 <div id="fc"><button class="fb" id="fJ" data-k="jump">⤴</button><button class="fb" id="fB" data-k="block">🛡</button><button class="fb" id="fP" data-k="punch">👊</button><button class="fb" id="fS" data-k="special">⚡</button></div>
 <div id="dlg"><b id="ds"></b><p id="dt"></p><i>toca para seguir ▸</i></div>
-<div id="ov"><h1 id="oh"></h1><p id="op"></p><button id="ob"></button><button id="ob2" style="display:none"></button></div>
+<div id="ov"><h1 id="oh"></h1><p id="op"></p><button id="ob"></button><button id="ob2" style="display:none"></button><button id="ob3" style="display:none"></button></div>
 <script>
 (() => {
 // Uso: historia.html?p=bodoca  (ella rescata a Bodoco)  |  historia.html?p=bodoco  (él rescata a Bodoca)
@@ -1282,7 +1282,8 @@ const WS = 1024, PH = 150, SPEED = 300, START = { x:300, y:500 };
 const ASSETS = { bg:['fondo2.jpg'], gF:['guardia_frente.png'], gE:['guardia_espaldas.png'], gP:['guardia_perfil.png'],
   fI:['guardia1-bodoco.png'], fB:['guardia-bodoco.png'], fP:['golpe-bodoco.png'], fJ:['salto-bodoco.png'], fW:['victoria-bodoco.png'],
   cR:['bodoco_reposo.png'], cA:['bodoco_corriendoabajo.png', 'bodoco_corriendo abajo.png'], cU:['bodoco_espaldas.png'], cD:['bodoco_corriendo derecha.png', 'bodoco_corriendoderecha.png'], cL:['bodoco_corriendo izquierda.png', 'bodoco_corriendoizquierda.png'],
-  fbg:['fondo3.jpg', '1791919636127_fondo3.jpg'], gD:['guardia_derecha.png', 'guardia_perfil.png'], gI:['guardia_izquierda.png'],
+  fbg:['fondo3.jpg', '1791919636127_fondo3.jpg'], fbg4:['fondo4.jpg', '1791919636127_fondo4.jpg'],
+  fP2:['golpe-brazo-derecho-bodoco.png'], kF:['patada-bodoco-frente.png'], kB:['patada-bodoco-espaldas.png'], gD:['guardia_derecha.png', 'guardia_perfil.png'], gI:['guardia_izquierda.png'],
   ...(ROL === 'bodoca'
     ? { rep:['reposo.png'], abajo:['corriendoabajo.png'], arriba:['corriendoarriba.png'], derecha:['corriendoderecha.png'], izquierda:['corriendoizquierda.png'] }
     : { rep:['bodoco_reposo.png'], abajo:['bodoco_corriendoabajo.png', 'bodoco_corriendo abajo.png'], arriba:['bodoco_espaldas.png'],
@@ -1325,7 +1326,7 @@ function adv(){ if(mode !== 'dlg') return; const l = queue.shift(), d = $('dlg')
   d.style.display = 'block'; $('ds').textContent = l[0]; $('ds').style.color = l[0] === 'Psique' || l[0] === '???' ? '#ff5d5d' : l[0] === 'Guía' ? '#ffd23f' : l[0] === 'Guardia' ? '#ffb347' : '#9be7ff'; $('dt').textContent = l[1]; }
 $('dlg').addEventListener('pointerdown', e => { e.stopPropagation(); adv(); });
 
-function overlay(h, p, b, fn){ $('ob2').style.display = 'none'; $('oh').textContent = h; $('op').textContent = p; $('ob').textContent = b; $('ov').style.display = 'flex'; $('ob').onclick = () => { $('ov').style.display = 'none'; fn(); }; }
+function overlay(h, p, b, fn){ $('ob2').style.display = 'none'; $('ob3').style.display = 'none'; $('oh').textContent = h; $('op').textContent = p; $('ob').textContent = b; $('ov').style.display = 'flex'; $('ob').onclick = () => { $('ov').style.display = 'none'; fn(); }; }
 
 function start(i){ inFight = false; $('hud').style.display = ''; li = i; const n = NIVELES[li]; P = { ...START, dir:'abajo', mv:false }; got = 0; ojos = 0;
   items = n.items.map(([x, y]) => ({ x, y, got:false }));
@@ -1384,15 +1385,24 @@ function draw(){
     [-16, 16].forEach(o => { cx.beginPath(); cx.ellipse(ex + o, ey + Math.sin(t * 2) * 2, 7, 4, 0, 0, 7); cx.fill(); }); cx.shadowBlur = 0; cx.globalAlpha = 1; }
 }
 // ---------- CAPÍTULO 1: Bodoco contra los guardias (vista desde arriba) ----------
-// Para cambiar la trama de este capítulo, edita los textos de CAP1 (intro y outro) y el número de guardias por oleada (waves).
+// Para cambiar la trama de este capítulo, edita CAPS (intro, outro y waves).
 const COARSE = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 const CW = 1024, CHT = 768, AREA = { x0:30, x1:994, y0:420, y1:755 };
 const hOf = y => Math.max(55, Math.min(175, 28 + (y - 330) * .32));   // alto del personaje según la profundidad (perspectiva del fondo)
 const uOf = y => hOf(y) / 200;
-const CAP1 = { t:'Los guardias', waves:[3, 4],
-  intro:[['Bodoco', 'Su rastro llega hasta esta puerta… Bodoca tuvo que pasar por aquí.'], ['Guardia', '¡Alto! Zona restringida. ¡Atrápenlo!'], ['Bodoco', 'No me voy sin ella.'],
-    ['Guía', COARSE ? 'Joystick a la izquierda para moverte. A la derecha: ⤴ saltar · 🛡 bloquear · 👊 golpear · ⚡ súper (se carga al pegar). Juega con el celular en horizontal.' : 'WASD o flechas: mover · F golpear · Espacio saltar · E bloquear · G súper (se carga al pegar).']],
-  outro:[['Guardia', 'Vaya… tienes más agallas de lo que creí.'], ['Bodoco', 'Necesito pasar. ¿Por dónde se fue?'], ['Guardia', 'Por la puerta de la derecha. Ya no te detengo.'], ['Psique', 'Un miedo menos. Pero el camino apenas empieza…']] };
+const GUIDE = COARSE ? 'Joystick a la izquierda para moverte. A la derecha: ⤴ saltar · 🛡 bloquear · 👊 golpear · ⚡ súper (se carga al pegar). Juega con el celular en horizontal.' : 'WASD o flechas: mover · F golpear · Espacio saltar · E bloquear · G súper (se carga al pegar).';
+// Cada capítulo: fondo (bg), guardias por oleada (waves, máximo 4 oleadas) y textos. Para cambiar la trama edita intro, outro y fin.
+const CAPS = [
+  { t:'Los guardias', bg:'fbg4', waves:[2, 3, 3, 4],
+    intro:[['Bodoco', 'Su rastro llega hasta esta puerta… Bodoca tuvo que pasar por aquí.'], ['Guardia', '¡Alto! Zona restringida. ¡Atrápenlo!'], ['Bodoco', 'No me voy sin ella.'], ['Guía', GUIDE]],
+    outro:[['Guardia', 'Vaya… tienes más agallas de lo que creí.'], ['Bodoco', 'Necesito pasar. ¿Por dónde se fue?'], ['Guardia', 'Por la puerta de la derecha. Ya no te detengo.'], ['Psique', 'Un miedo menos. Pero el camino apenas empieza…']],
+    fin:'Derrotaste a los guardias y la puerta quedó libre.' },
+  { t:'Más adentro', bg:'fbg', waves:[3, 4, 4, 5],
+    intro:[['Bodoco', 'Otra zona… y más guardias.'], ['Guardia', '¡Refuerzos! ¡No lo dejen avanzar!'], ['Bodoco', 'Que vengan todos.']],
+    outro:[['Guardia', 'Imposible… ¿quién eres?'], ['Bodoco', 'Alguien que no piensa rendirse.'], ['Psique', 'Cada paso lo acerca más a ella…']],
+    fin:'Despejaste la zona. Aquí seguirá la historia.' }
+];
+let CAP = CAPS[0], capI = 0;
 let inFight = false, CS = {}, fHeld = {}, fPend = {};
 
 // ----- sonido (todo sintetizado, no necesita archivos) -----
@@ -1424,10 +1434,10 @@ const SFX = {
 // ----- estado -----
 function cInit(){ CS = { pl:{ x:512, y:620, h:0, vh:0, fx:0, fy:1, face:1, dir:'abajo', hp:100, meter:0, st:'idle', t:0, flash:0, inv:0, hitDone:false, walk:false, kx:0, ky:0 },
   gs:[], sparks:[], rings:[], clock:0, stop:0, shake:0, wave:-1, wait:0, banner:'', bt:0, st:'fight', t:0, wt:0 }; fHeld = {}; fPend = {}; }
-function cStartWave(i){ CS.wave = i; CS.wait = 0; const n = CAP1.waves[i];
+function cStartWave(i){ CS.wave = i; CS.wait = 0; const n = CAP.waves[i];
   for(let k = 0; k < n; k++){ const edge = Math.random() < .5, x = edge ? (Math.random() < .5 ? AREA.x0 + 10 : AREA.x1 - 10) : AREA.x0 + 60 + Math.random() * (AREA.x1 - AREA.x0 - 120), y = edge ? AREA.y0 + Math.random() * (AREA.y1 - AREA.y0) : AREA.y0 + 4;
     CS.gs.push({ x, y, hp:30, st:'chase', t:0, cd:1.2 + Math.random() * 1.2, flash:0, face:1, dir:'abajo', spd:100 + Math.random() * 30, hitDone:false, kx:0, ky:0 }); }
-  CS.banner = CAP1.waves.length > 1 ? 'OLEADA ' + (i + 1) + '/' + CAP1.waves.length : '¡GUARDIAS!'; CS.bt = 1.6; SFX.wave(); }
+  CS.banner = CAP.waves.length > 1 ? 'OLEADA ' + (i + 1) + '/' + CAP.waves.length : '¡GUARDIAS!'; CS.bt = 1.6; SFX.wave(); }
 
 // ----- entrada -----
 const FKEY = { f:'punch', j:'punch', ' ':'jump', l:'jump', g:'special', k:'special' };
@@ -1446,8 +1456,8 @@ function cDamage(g, dmg, dx, dy, kb){
   cSpark(g.x, g.y - hOf(g.y) * .55, '#ffd93d'); SFX.hit(); }
 function cPunch(){ const p = CS.pl, u = uOf(p.y); let any = false;
   for(const g of CS.gs){ if(g.st === 'ko') continue;
-    const vx = (g.x - p.x) / (100 * u), vy = (g.y - p.y) / (62 * u), d2 = vx * vx + vy * vy;
-    if(d2 <= 1 && (vx * p.fx + vy * p.fy > .1 || d2 < .12)){ cDamage(g, 10, p.fx || (g.x - p.x), p.fy || (g.y - p.y), 260); any = true; } }
+    const vx = (g.x - p.x) / ((p.kick ? 125 : 100) * u), vy = (g.y - p.y) / ((p.kick ? 72 : 62) * u), d2 = vx * vx + vy * vy;
+    if(d2 <= 1 && (vx * p.fx + vy * p.fy > .1 || d2 < .12)){ cDamage(g, p.kick ? 14 : 10, p.fx || (g.x - p.x), p.fy || (g.y - p.y), 260); any = true; } }
   if(any){ CS.stop = .05; p.meter = Math.min(100, p.meter + 18); } }
 function cBlast(){ const p = CS.pl, u = uOf(p.y); CS.shake = .22; CS.stop = .08;
   for(const g of CS.gs){ if(g.st === 'ko') continue; const vx = (g.x - p.x) / (170 * u), vy = (g.y - p.y) / (105 * u);
@@ -1469,9 +1479,9 @@ function cPlayer(dt){
   if(p.st === 'hurt'){ p.t -= dt; if(p.t <= 0) p.st = 'idle'; cKnock(p, dt); cClamp(p); fPend = {}; return; }
   if(p.st === 'punch' || p.st === 'special'){
     p.t += dt;
-    if(p.st === 'punch' && !p.hitDone && p.t >= .09){ p.hitDone = true; cPunch(); }
+    if(p.st === 'punch' && !p.hitDone && p.t >= (p.kick ? .13 : .09)){ p.hitDone = true; cPunch(); }
     if(p.st === 'special' && !p.hitDone && p.t >= .14){ p.hitDone = true; cBlast(); }
-    if(p.t >= (p.st === 'punch' ? .3 : .5)){ p.st = 'idle'; p.t = 0; }
+    if(p.t >= (p.st === 'punch' ? (p.kick ? .36 : .3) : .5)){ p.st = 'idle'; p.t = 0; }
     cKnock(p, dt); cClamp(p); return; }
   if(mv){ if(Math.abs(ix) > Math.abs(iy)){ p.dir = ix > 0 ? 'derecha' : 'izquierda'; p.fx = Math.sign(ix); p.fy = 0; p.face = p.fx; } else { p.dir = iy > 0 ? 'abajo' : 'arriba'; p.fx = 0; p.fy = Math.sign(iy); } }
   if((fHeld.block || keys.e || keys.shift) && ground){ p.st = 'block'; p.walk = false; cKnock(p, dt); cClamp(p); fPend = {}; return; }
@@ -1481,7 +1491,7 @@ function cPlayer(dt){
   cKnock(p, dt); cClamp(p);
   if(fPend.jump && ground){ p.vh = 560; SFX.jump(); }
   if(fPend.special && p.meter >= 100){ p.meter = 0; p.st = 'special'; p.t = 0; p.hitDone = false; CS.rings.push({ x:p.x, y:p.y, t:0 }); SFX.special(); }
-  else if(fPend.punch || fHeld.punch){ p.st = 'punch'; p.t = 0; p.hitDone = false; SFX.punch(); }
+  else if(fPend.punch || fHeld.punch){ p.st = 'punch'; p.t = 0; p.hitDone = false; p.kick = p.dir === 'abajo' || p.dir === 'arriba'; p.mv = p.kick ? (p.dir === 'abajo' ? 'kF' : 'kB') : ((p.alt = !p.alt) ? 'fP2' : 'fP'); SFX.punch(); }
   fPend = {}; }
 function cGuards(dt){ const p = CS.pl;
   for(const g of CS.gs){
@@ -1517,12 +1527,12 @@ function fUpdate(dt){
     CS.gs = CS.gs.filter(g => g.st !== 'ko' || g.t < .8);
     if(p.hp <= 0){ CS.st = 'lost'; CS.t = 0; mode = 'fx'; p.st = 'ko'; p.t = 0; SFX.lose(); }
     else if(alive === 0 && CS.wave >= 0){
-      if(CS.wave + 1 < CAP1.waves.length){ if(!CS.wait){ CS.wait = 1.4; CS.banner = '¡LIBRE!'; CS.bt = 1.1; } CS.wait -= dt; if(CS.wait <= 0){ CS.wait = 0; p.hp = Math.min(100, p.hp + 30); cStartWave(CS.wave + 1); } }
+      if(CS.wave + 1 < CAP.waves.length){ if(!CS.wait){ CS.wait = 1.4; CS.banner = '¡LIBRE!'; CS.bt = 1.1; } CS.wait -= dt; if(CS.wait <= 0){ CS.wait = 0; p.hp = Math.min(100, p.hp + 30); cStartWave(CS.wave + 1); } }
       else { CS.st = 'won'; CS.t = 0; mode = 'fx'; p.st = 'win'; SFX.win(); } }
   } else if(mode === 'fx'){
     CS.t += dt; if(p.st === 'ko') p.t += dt; for(const g of CS.gs) if(g.st === 'ko') g.t += dt;
     if(CS.t > 1.8){ mode = 'dlg';
-      if(CS.st === 'won') say(CAP1.outro, () => overlay('Capítulo 1 completado', 'Derrotaste a los guardias y la puerta quedó libre. Aquí seguirá la historia.', 'Continuar', menuCap));
+      if(CS.st === 'won') say(CAP.outro, () => { const more = capI + 1 < CAPS.length; overlay('Capítulo ' + (capI + 1) + ' completado', CAP.fin, more ? 'Capítulo ' + (capI + 2) + ' · ' + CAPS[capI + 1].t : 'Continuar', more ? () => startCap(capI + 1) : menuCap); if(more){ const b2 = $('ob2'); b2.style.display = ''; b2.textContent = 'Menú'; b2.onclick = () => { $('ov').style.display = 'none'; menuCap(); }; } });
       else overlay('Derrotado', 'Los guardias te detuvieron. ¡Inténtalo otra vez!', 'Reintentar', () => { cInit(); mode = 'fight'; cStartWave(0); }); } } }
 
 // ----- dibujo -----
@@ -1531,10 +1541,11 @@ function cImg(im, x, y, ht, flip, rot, alpha, ax){ const w = im.width * ht / im.
 function cShadow(x, y, u, k){ cx.fillStyle = 'rgba(0,0,0,.3)'; cx.beginPath(); cx.ellipse(x, y + 3, 34 * u * k, 9 * u * k, 0, 0, 7); cx.fill(); }
 function cDrawPl(){
   const p = CS.pl, hh = hOf(p.y), u = uOf(p.y), k = hh / 327; let im, ht = hh, ax = .5, fl = false, rot = 0, alpha = 1;
-  const pose = key => { im = IM[key]; ht = im ? im.height * k : hh; };
+  const pose = key => { im = IM[key]; ht = im ? im.height * (key === 'fP2' || key === 'kF' || key === 'kB' ? hh / 1086 : k) : hh; };
   if(p.st === 'win') pose('fW');
   else if(p.st === 'ko'){ pose('fI'); fl = p.face < 0; rot = -p.face * Math.min(1, p.t / .45) * Math.PI / 2; }
   else if(p.st === 'block'){ pose('fB'); fl = p.face < 0; }
+  else if(p.st === 'punch' && IM[p.mv]){ pose(p.mv); ax = p.mv === 'fP' ? .46 : (p.mv === 'fP2' ? .4 : .34); fl = p.face < 0; }
   else if(p.st === 'punch' || p.st === 'special'){ pose('fP'); ax = .46; fl = p.face < 0; }
   else if(p.h > 0){ pose('fJ'); fl = p.face < 0; }
   else if(p.st === 'hurt'){ pose('fI'); fl = p.face < 0; }
@@ -1566,7 +1577,7 @@ function fDraw(){
   let camX = Math.max(0, Math.min(CW - vw, p.x - vw / 2)), camY = Math.max(0, Math.min(CHT - vh, p.y - 70 - vh / 2));
   if(CS.shake > 0){ camX += (Math.random() - .5) * 8; camY += (Math.random() - .5) * 8; }
   cx.setTransform(dpr * z, 0, 0, dpr * z, -camX * dpr * z, -camY * dpr * z);
-  if(IM.fbg) cx.drawImage(IM.fbg, 0, 0, CW, CHT); else { cx.fillStyle = '#2a2540'; cx.fillRect(0, 0, CW, CHT); cx.fillStyle = '#3d3560'; cx.fillRect(0, AREA.y0 - 30, CW, CHT - AREA.y0 + 30); }
+  const bgI = IM[CAP.bg] || IM.fbg; if(bgI){ const r = bgI.width / bgI.height; if(Math.abs(r - CW / CHT) < .06) cx.drawImage(bgI, 0, 0, CW, CHT); else { const k = Math.max(CW / bgI.width, CHT / bgI.height), dw = bgI.width * k, dh = bgI.height * k; cx.drawImage(bgI, (CW - dw) / 2, (CHT - dh) / 2, dw, dh); } } else { cx.fillStyle = '#2a2540'; cx.fillRect(0, 0, CW, CHT); cx.fillStyle = '#3d3560'; cx.fillRect(0, AREA.y0 - 30, CW, CHT - AREA.y0 + 30); }
   cx.imageSmoothingEnabled = false;
   const ents = [{ y:p.y, f:cDrawPl }]; for(const g of CS.gs) ents.push({ y:g.y, f:() => cDrawG(g) });
   ents.sort((a, b) => a.y - b.y).forEach(e => e.f());
@@ -1591,9 +1602,10 @@ function fDraw(){
 
 // ----- menú de capítulos -----
 function menuCap(){ inFight = false; fUpdate.on = false; $('fc').style.display = 'none'; $('hud').style.display = ''; mode = 'menu';
-  overlay('Bodoco y Bodoca', ROL === 'bodoca' ? 'Bodoco desapareció. Esta vez te toca a ti encontrarlo.' : 'Bodoca desapareció. Esta vez te toca a ti encontrarla.', 'Capítulo 1 · ' + CAP1.t, startCap1);
-  const b2 = $('ob2'); b2.style.display = ''; b2.textContent = 'Prototipo anterior (niveles 1 y 2)'; b2.onclick = () => { $('ov').style.display = 'none'; start(0); }; }
-function startCap1(){ audio(); inFight = true; cInit(); $('hud').style.display = 'none'; mode = 'dlg'; say(CAP1.intro, () => { fPend = {}; mode = 'fight'; cStartWave(0); }); }
+  overlay('Bodoco y Bodoca', ROL === 'bodoca' ? 'Bodoco desapareció. Esta vez te toca a ti encontrarlo.' : 'Bodoca desapareció. Esta vez te toca a ti encontrarla.', 'Capítulo 1 · ' + CAPS[0].t, () => startCap(0));
+  const b2 = $('ob2'); b2.style.display = ''; b2.textContent = 'Capítulo 2 · ' + CAPS[1].t; b2.onclick = () => { $('ov').style.display = 'none'; startCap(1); };
+  const b3 = $('ob3'); b3.style.display = ''; b3.textContent = 'Prototipo anterior (niveles 1 y 2)'; b3.onclick = () => { $('ov').style.display = 'none'; start(0); }; }
+function startCap(i){ capI = i; CAP = CAPS[i]; audio(); inFight = true; cInit(); $('hud').style.display = 'none'; mode = 'dlg'; say(CAP.intro, () => { fPend = {}; mode = 'fight'; cStartWave(0); }); }
 
 function loop(ms){ const dt = Math.min(.05, (ms - last) / 1000 || 0); last = ms; t += dt; if(inFight){ fUpdate(dt); fDraw(); } else { update(dt); draw(); } requestAnimationFrame(loop); }
 function resize(){ dpr = Math.min(devicePixelRatio || 1, 2.5); W = innerWidth; H_ = innerHeight; cv.width = W * dpr; cv.height = H_ * dpr; sc = Math.max(W / 620, H_ / WS); }
