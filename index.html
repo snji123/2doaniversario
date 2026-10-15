@@ -523,6 +523,21 @@
   #storyOv{position:fixed;inset:0;z-index:40;background:#05060d;display:none;}
   #storyOv::before{content:'Cargando historia…';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fffa;font:700 16px system-ui,sans-serif}
   #storyOv iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+  #storyPick{position:fixed;inset:0;z-index:41;background:rgba(5,6,13,.9);display:none;align-items:center;justify-content:center;padding:20px;}
+  #storyPick.on{display:flex;}
+  .sp-card{width:min(420px,100%);max-height:100%;overflow:auto;border-radius:26px;border:1px solid rgba(190,130,255,.45);background:linear-gradient(160deg,rgba(60,30,100,.96),rgba(14,10,28,.98));padding:20px 18px 16px;box-shadow:0 20px 60px rgba(0,0,0,.6);color:#fff;font-family:var(--font);text-align:center;}
+  .sp-card h3{margin:0 0 4px;font-size:20px;font-weight:800;}
+  .sp-card > p{margin:0 0 14px;font-size:13px;line-height:1.4;color:rgba(255,255,255,.75);}
+  .sp-opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .sp-opt{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 8px 14px;border-radius:20px;border:2px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#fff;font:inherit;cursor:pointer;}
+  .sp-opt:active{transform:scale(.96);}
+  .sp-opt .sp-ph{width:100px;height:140px;display:flex;align-items:flex-end;justify-content:center;font-size:64px;line-height:1;}
+  .sp-opt .sp-ph img{max-width:100%;max-height:100%;image-rendering:pixelated;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5));}
+  .sp-opt b{font-size:17px;font-weight:800;}
+  .sp-opt small{font-size:11.5px;line-height:1.3;color:rgba(255,255,255,.7);}
+  .sp-opt.me{border-color:rgba(var(--green-rgb),.85);}
+  .sp-tag{position:absolute;top:8px;right:8px;font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--accent-fill,var(--green));color:var(--on-accent,#000);}
+  .sp-cancel{display:block;margin:14px auto 0;background:none;border:0;color:rgba(255,255,255,.7);font:600 13px var(--font);padding:8px 14px;cursor:pointer;}
   #storyX{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:10px;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(8,12,24,.8);color:#fff;font-size:18px;line-height:1;cursor:pointer;}
   .gm-mico{font-size:46px;line-height:1;flex:none;filter:drop-shadow(0 4px 14px rgba(0,0,0,.45));}
   .gm-mtx{display:flex;flex-direction:column;gap:4px;min-width:0;}
@@ -1281,6 +1296,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 // Uso: historia.html?p=bodoca  (ella rescata a Bodoco)  |  historia.html?p=bodoco  (él rescata a Bodoca)
 const ROL = (window.STORY_ROL || new URLSearchParams(location.search).get('p')) === 'bodoco' ? 'bodoco' : 'bodoca';
 const H = ROL === 'bodoca' ? 'Bodoca' : 'Bodoco', O = ROL === 'bodoca' ? 'Bodoco' : 'Bodoca', lo = ROL === 'bodoca' ? 'lo' : 'la';
+const OEL = ROL === 'bodoca' ? 'él' : 'ella', MEP = ROL === 'bodoca' ? 'la' : 'lo';   // pronombres según quién juega
 const $ = id => document.getElementById(id), cv = $('c'), cx = cv.getContext('2d');
 const WS = 1024, PH = 150, SPEED = 300, START = { x:300, y:500 };
 
@@ -1294,6 +1310,11 @@ const ASSETS = { bg:['fondo2.jpg'], gF:['guardia_frente.png'], gE:['guardia_espa
     ? { rep:['reposo.png'], abajo:['corriendoabajo.png'], arriba:['corriendoarriba.png'], derecha:['corriendoderecha.png'], izquierda:['corriendoizquierda.png'] }
     : { rep:['bodoco_reposo.png'], abajo:['bodoco_corriendoabajo.png', 'bodoco_corriendo abajo.png'], arriba:['bodoco_espaldas.png'],
         derecha:['bodoco_corriendo derecha.png', 'bodoco_corriendoderecha.png'], izquierda:['bodoco_corriendo izquierda.png', 'bodoco_corriendoizquierda.png'] }) };
+// Los sprites de combate y de caminata dependen del personaje elegido. Si falta alguno de Bodoca se usa el de Bodoco.
+ASSETS.cR = ASSETS.rep; ASSETS.cA = ASSETS.abajo; ASSETS.cU = ASSETS.arriba; ASSETS.cD = ASSETS.derecha; ASSETS.cL = ASSETS.izquierda;
+if(ROL === 'bodoca') ['fI', 'fB', 'fP', 'fJ', 'fW', 'fP2', 'kF', 'kB'].forEach(k => { const n = ASSETS[k][0]; ASSETS[k] = [n.replace('bodoco', 'bodoca'), n]; });
+// Guardia mujer (gf*) y poses de golpe de los guardias (gH = guardia, gfH = guardia mujer)
+Object.assign(ASSETS, { gfF:['guardiaf_frente.png'], gfE:['guardiaf_espaldas.png'], gfW:['guardiaf_caminando_derecha.png'], gfH:['guardiaf_golpe_derecha.png'], gH:['guardia_golpe_derecha.png'] });
 const IM = {};
 const load = k => new Promise(res => {
   const list = []; ['Ncontenido/', ''].forEach(f => ASSETS[k].forEach(n => list.push(encodeURI(f + n)))); let i = 0;
@@ -1394,7 +1415,7 @@ function draw(){
   if(ojos > 0){ cx.globalAlpha = ojos; const ex = 520, ey = 330; cx.fillStyle = '#ff2b2b'; cx.shadowColor = '#ff2b2b'; cx.shadowBlur = 24;
     [-16, 16].forEach(o => { cx.beginPath(); cx.ellipse(ex + o, ey + Math.sin(t * 2) * 2, 7, 4, 0, 0, 7); cx.fill(); }); cx.shadowBlur = 0; cx.globalAlpha = 1; }
 }
-// ---------- CAPÍTULO 1: Bodoco contra los guardias (vista desde arriba) ----------
+// ---------- CAPÍTULO 1: quien juega contra los guardias (vista desde arriba) ----------
 // Para cambiar la trama de este capítulo, edita CAPS (intro, outro y waves).
 const COARSE = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 const CW = 1024, CHT = 768, AREA = { x0:30, x1:994, y0:420, y1:755 };
@@ -1404,12 +1425,12 @@ const GUIDE = COARSE ? 'Joystick a la izquierda para moverte. A la derecha: ⤴ 
 // Cada capítulo: fondo (bg), guardias por oleada (waves, máximo 4 oleadas) y textos. Para cambiar la trama edita intro, outro y fin.
 const CAPS = [
   { t:'Los guardias', bg:'fbg4', waves:[2, 3, 3, 4],
-    intro:[['Bodoco', 'Su rastro llega hasta esta puerta… Bodoca tuvo que pasar por aquí.'], ['Guardia', '¡Alto! Zona restringida. ¡Atrápenlo!'], ['Bodoco', 'No me voy sin ella.'], ['Guía', GUIDE]],
-    outro:[['Guardia', 'Vaya… tienes más agallas de lo que creí.'], ['Bodoco', 'Necesito pasar. ¿Por dónde se fue?'], ['Guardia', 'Por la puerta de la derecha. Ya no te detengo.'], ['Psique', 'Un miedo menos. Pero el camino apenas empieza…']],
+    intro:[[H, 'Su rastro llega hasta esta puerta… ' + O + ' tuvo que pasar por aquí.'], ['Guardia', '¡Alto! Zona restringida. ¡Atrápen' + MEP + '!'], [H, 'No me voy sin ' + OEL + '.'], ['Guía', GUIDE]],
+    outro:[['Guardia', 'Vaya… tienes más agallas de lo que creí.'], [H, 'Necesito pasar. ¿Por dónde se fue?'], ['Guardia', 'Por la puerta de la derecha. Ya no te detengo.'], ['Psique', 'Un miedo menos. Pero el camino apenas empieza…']],
     fin:'Derrotaste a los guardias y la puerta quedó libre.' },
   { t:'Más adentro', bg:'fbg', waves:[3, 4, 4, 5],
-    intro:[['Bodoco', 'Otra zona… y más guardias.'], ['Guardia', '¡Refuerzos! ¡No lo dejen avanzar!'], ['Bodoco', 'Que vengan todos.']],
-    outro:[['Guardia', 'Imposible… ¿quién eres?'], ['Bodoco', 'Alguien que no piensa rendirse.'], ['Psique', 'Cada paso lo acerca más a ella…']],
+    intro:[[H, 'Otra zona… y más guardias.'], ['Guardia', '¡Refuerzos! ¡No ' + MEP + ' dejen avanzar!'], [H, 'Que vengan todos.']],
+    outro:[['Guardia', 'Imposible… ¿quién eres?'], [H, 'Alguien que no piensa rendirse.'], ['Psique', 'Cada paso ' + MEP + ' acerca más a ' + OEL + '…']],
     fin:'Despejaste la zona. Aquí seguirá la historia.' }
 ];
 let CAP = CAPS[0], capI = 0;
@@ -1446,7 +1467,7 @@ function cInit(){ CS = { pl:{ x:512, y:620, h:0, vh:0, fx:0, fy:1, face:1, dir:'
   gs:[], sparks:[], rings:[], clock:0, stop:0, shake:0, wave:-1, wait:0, banner:'', bt:0, st:'fight', t:0, wt:0 }; fHeld = {}; fPend = {}; }
 function cStartWave(i){ CS.wave = i; CS.wait = 0; const n = CAP.waves[i];
   for(let k = 0; k < n; k++){ const edge = Math.random() < .5, x = edge ? (Math.random() < .5 ? AREA.x0 + 10 : AREA.x1 - 10) : AREA.x0 + 60 + Math.random() * (AREA.x1 - AREA.x0 - 120), y = edge ? AREA.y0 + Math.random() * (AREA.y1 - AREA.y0) : AREA.y0 + 4;
-    CS.gs.push({ x, y, hp:30, st:'chase', t:0, cd:1.2 + Math.random() * 1.2, flash:0, face:1, dir:'abajo', spd:100 + Math.random() * 30, hitDone:false, kx:0, ky:0 }); }
+    CS.gs.push({ fem:(k + i) % 2 === 1, x, y, hp:30, st:'chase', t:0, cd:1.2 + Math.random() * 1.2, flash:0, face:1, dir:'abajo', spd:100 + Math.random() * 30, hitDone:false, kx:0, ky:0 }); }
   CS.banner = CAP.waves.length > 1 ? 'OLEADA ' + (i + 1) + '/' + CAP.waves.length : '¡GUARDIAS!'; CS.bt = 1.6; SFX.wave(); }
 
 // ----- entrada -----
@@ -1576,9 +1597,11 @@ function cDrawPl(){
 }
 function cDrawG(g){
   const hh = hOf(g.y) * 1.06, u = uOf(g.y); let im, fl = false, rot = 0, alpha = 1;
-  if(g.dir === 'derecha') im = IM.gD || IM.gP; else if(g.dir === 'izquierda'){ im = IM.gI; if(!im){ im = IM.gP; fl = true; } } else if(g.dir === 'abajo') im = IM.gF || IM.gP; else im = IM.gE || IM.gP;
+  const side = g.dir === 'derecha' || g.dir === 'izquierda', hit = g.st === 'strike' && side;
+  if(g.fem){ if(hit && IM.gfH){ im = IM.gfH; fl = g.dir === 'izquierda'; } else if(side && IM.gfW){ im = IM.gfW; fl = g.dir === 'izquierda'; } else if(g.dir === 'abajo' && IM.gfF) im = IM.gfF; else if(g.dir === 'arriba' && IM.gfE) im = IM.gfE; }
+  if(!im){ if(hit && IM.gH){ im = IM.gH; fl = g.dir === 'izquierda'; } else if(g.dir === 'derecha') im = IM.gD || IM.gP; else if(g.dir === 'izquierda'){ im = IM.gI; if(!im){ im = IM.gP; fl = true; } } else if(g.dir === 'abajo') im = IM.gF || IM.gP; else im = IM.gE || IM.gP; }
   let ox = 0, lean = 0;
-  if(g.st === 'wind') lean = -g.face * .1 * Math.min(1, g.t / .5); else if(g.st === 'strike'){ lean = g.face * .12; ox = g.face * 10 * u; }
+  if(g.st === 'wind') lean = -g.face * .1 * Math.min(1, g.t / .5); else if(g.st === 'strike' && im !== IM.gH && im !== IM.gfH){ lean = g.face * .12; ox = g.face * 10 * u; }
   if(g.st === 'ko'){ rot = -g.face * Math.min(1, g.t / .4) * Math.PI / 2; alpha = Math.max(0, 1 - Math.max(0, g.t - .4) / .4); }
   if(g.flash > 0 && ((g.flash * 40) | 0) % 2) alpha = Math.min(alpha, .55);
   cShadow(g.x, g.y, u, g.st === 'ko' ? Math.max(0, alpha) : 1);
@@ -1606,7 +1629,7 @@ function fDraw(){
   cx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const hx = 14, hy = 12, bw = Math.min(150, W * .22);
   cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(hx - 4, hy - 4, bw + 8, 28);
-  cx.fillStyle = '#fff'; cx.font = '700 10px system-ui,sans-serif'; cx.textAlign = 'left'; cx.fillText('BODOCO', hx, hy + 6);
+  cx.fillStyle = '#fff'; cx.font = '700 10px system-ui,sans-serif'; cx.textAlign = 'left'; cx.fillText(H.toUpperCase(), hx, hy + 6);
   cx.fillStyle = '#4a1010'; cx.fillRect(hx, hy + 10, bw, 7); cx.fillStyle = p.hp > 35 ? '#3ddc5a' : '#ff4a3a'; cx.fillRect(hx, hy + 10, bw * Math.max(0, p.hp) / 100, 7);
   cx.fillStyle = '#222'; cx.fillRect(hx, hy + 19, bw, 4); cx.fillStyle = p.meter >= 100 ? ((CS.clock * 6 | 0) % 2 ? '#fff' : '#ffd93d') : '#3da0ff'; cx.fillRect(hx, hy + 19, bw * p.meter / 100, 4);
   const left = CS.gs.filter(g => g.st !== 'ko').length;
@@ -1641,6 +1664,11 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
 <\/script></body></html>
 </script>
 <div id="storyOv"><iframe id="storyFr" title="La historia de Bodoco y Bodoca" allow="autoplay"></iframe><button type="button" id="storyX" aria-label="Cerrar">✕</button></div>
+<div id="storyPick" role="dialog" aria-label="Elige tu personaje"><div class="sp-card"><h3>💫 ¿Con quién juegas?</h3><p>Elige tu personaje. Quien juegue sale a buscar al otro.</p>
+  <div class="sp-opts">
+    <button type="button" class="sp-opt" data-r="bodoca"><span class="sp-tag" hidden>Tu perfil</span><span class="sp-ph"><img src="Ncontenido/reposo.png" alt="" onerror="this.parentNode.textContent='👩'"></span><b>Bodoca</b><small>Va a rescatar a Bodoco</small></button>
+    <button type="button" class="sp-opt" data-r="bodoco"><span class="sp-tag" hidden>Tu perfil</span><span class="sp-ph"><img src="Ncontenido/bodoco_reposo.png" alt="" onerror="this.parentNode.textContent='👨'"></span><b>Bodoco</b><small>Va a rescatar a Bodoca</small></button>
+  </div><button type="button" class="sp-cancel" id="spCancel">Cancelar</button></div></div>
 <div class="game-page" id="gameBox" aria-hidden="true">
   <div class="gm-sec" id="gmMenuSec">
     <div class="gm-bar">
@@ -1660,7 +1688,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       </button>
       <button type="button" class="gm-mcard story" data-g="story">
         <span class="gm-mico">💫</span>
-        <span class="gm-mtx"><b>La historia de Bodoco y Bodoca</b><small>Psique los separó. Atraviesa tus miedos para encontrar al otro. Prototipo: niveles 1 y 2.</small></span>
+        <span class="gm-mtx"><b>La historia de Bodoco y Bodoca</b><small>Elige a Bodoco o a Bodoca. Psique los separó: atraviesa tus miedos y pelea contra los guardias para encontrar al otro.</small></span>
         <span class="gm-mtag">Nuevo</span>
       </button>
     </div>
@@ -6470,14 +6498,19 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
   }
   // La historia (historia.html) se abre a pantalla completa encima del menú, con su propia ✕ para volver
   const storyOv = document.getElementById('storyOv'), storyFr = document.getElementById('storyFr');
-  function openStory(){ let r = ''; try{ r = myRole || ''; }catch(_){} const src = document.getElementById('storySrc').textContent.replace(/<\\\/script>/g, '<\/script>'); storyFr.srcdoc = src.replace('<head>', '<head><script>window.STORY_ROL="' + (r === 'bodoco' ? 'bodoco' : 'bodoca') + '"<\/script>'); storyOv.style.display = 'block'; fitStory(); }
+  function openStory(r){ const src = document.getElementById('storySrc').textContent.replace(/<\\\/script>/g, '<\/script>'); storyFr.srcdoc = src.replace('<head>', '<head><script>window.STORY_ROL="' + (r === 'bodoco' ? 'bodoco' : 'bodoca') + '"<\/script>'); storyOv.style.display = 'block'; fitStory(); }
   // Si el celular está en vertical (o la app tiene bloqueado el giro), el juego se gira solo 90° para jugarse en horizontal
   function fitStory(){ const W = innerWidth, H = innerHeight, st = storyFr.style;
     if(H > W){ st.width = H + 'px'; st.height = W + 'px'; st.top = '0'; st.left = '0'; st.right = 'auto'; st.bottom = 'auto'; st.transformOrigin = '0 0'; st.transform = 'translateX(' + W + 'px) rotate(90deg)'; }
     else { st.width = '100%'; st.height = '100%'; st.top = '0'; st.left = '0'; st.transformOrigin = ''; st.transform = 'none'; } }
   addEventListener('resize', () => { if(storyOv.style.display === 'block') fitStory(); }); addEventListener('orientationchange', () => setTimeout(() => { if(storyOv.style.display === 'block') fitStory(); }, 250));
   document.getElementById('storyX').addEventListener('click', () => { storyOv.style.display = 'none'; storyFr.srcdoc = ''; });
-  function pickGame(g){ if(g === 'story'){ openStory(); return; } showSec(g); (g === 'air' ? gm : hd).start(); }
+  // Selector de personaje: se muestra antes de iniciar la historia (marca el de tu perfil)
+  const storyPick = document.getElementById('storyPick');
+  function openStoryPick(){ let r = ''; try{ r = myRole || ''; }catch(_){} storyPick.querySelectorAll('.sp-opt').forEach(b => { const me = b.dataset.r === r; b.classList.toggle('me', me); b.querySelector('.sp-tag').hidden = !me; }); storyPick.classList.add('on'); }
+  storyPick.querySelectorAll('.sp-opt').forEach(b => b.addEventListener('click', () => { storyPick.classList.remove('on'); openStory(b.dataset.r); }));
+  document.getElementById('spCancel').addEventListener('click', () => storyPick.classList.remove('on'));
+  function pickGame(g){ if(g === 'story'){ openStoryPick(); return; } showSec(g); (g === 'air' ? gm : hd).start(); }
   document.querySelectorAll('.gm-mcard').forEach(b => b.addEventListener('click', () => pickGame(b.dataset.g)));
   document.getElementById('gmMenuClose').addEventListener('click', () => closeGame());
   document.getElementById('gmBack').addEventListener('click', gameMenu);
