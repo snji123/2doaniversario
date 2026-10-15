@@ -521,6 +521,7 @@
   .gm-mcard.hd{background:linear-gradient(135deg,rgba(255,140,40,.30),rgba(255,70,70,.14));border-color:rgba(255,170,80,.5);}
   .gm-mcard.story{background:linear-gradient(135deg,rgba(160,90,255,.30),rgba(255,60,90,.16));border-color:rgba(190,130,255,.5);}
   #storyOv{position:fixed;inset:0;z-index:40;background:#05060d;display:none;}
+  #storyOv::before{content:'Cargando historia…';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fffa;font:700 16px system-ui,sans-serif}
   #storyOv iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
   #storyX{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:10px;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(8,12,24,.8);color:#fff;font-size:18px;line-height:1;cursor:pointer;}
   .gm-mico{font-size:46px;line-height:1;flex:none;filter:drop-shadow(0 4px 14px rgba(0,0,0,.45));}
@@ -1246,6 +1247,10 @@ window.Busy=(function(){
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:#05060d;overflow:hidden;font-family:system-ui,sans-serif;color:#fff;touch-action:none}
 canvas{position:fixed;inset:0;width:100%;height:100%}
+#ld{position:fixed;inset:0;z-index:99;background:#05060d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:20px}
+#ld h1{margin:0;font-size:24px}#ld p{margin:0;max-width:340px;line-height:1.4;opacity:.85;font-size:15px}
+#ldb{width:min(300px,70%);height:12px;border-radius:8px;background:#ffffff26;overflow:hidden}#ldi{display:block;height:100%;width:0;background:#ff4d6d;border-radius:8px;transition:width .25s}
+#ldr{display:none;background:#ff4d6d;color:#fff;border:0;border-radius:24px;padding:12px 26px;font-size:16px;font-weight:700}
 #hud{position:fixed;top:env(safe-area-inset-top,0);left:0;right:0;display:flex;gap:8px;padding:10px;pointer-events:none;font-weight:700;font-size:15px}
 #hud span{background:rgba(8,12,24,.78);border-radius:20px;padding:7px 14px}
 #toast{position:fixed;top:30%;left:0;right:0;text-align:center;font-size:22px;font-weight:800;text-shadow:0 2px 8px #000;opacity:0;transition:opacity .3s;pointer-events:none}
@@ -1269,6 +1274,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 <div id="toast"></div>
 <div id="fc"><button class="fb" id="fJ" data-k="jump">⤴</button><button class="fb" id="fB" data-k="block">🛡</button><button class="fb" id="fP" data-k="punch">👊</button><button class="fb" id="fS" data-k="special">⚡</button></div>
 <div id="dlg"><b id="ds"></b><p id="dt"></p><i>toca para seguir ▸</i></div>
+<div id="ld"><h1 id="ldh">Cargando…</h1><div id="ldb"><i id="ldi"></i></div><p id="ldp">0%</p><button id="ldr" onclick="location.reload()">Reintentar</button></div>
 <div id="ov"><h1 id="oh"></h1><p id="op"></p><button id="ob"></button><button id="ob2" style="display:none"></button><button id="ob3" style="display:none"></button></div>
 <script>
 (() => {
@@ -1291,7 +1297,11 @@ const ASSETS = { bg:['fondo2.jpg'], gF:['guardia_frente.png'], gE:['guardia_espa
 const IM = {};
 const load = k => new Promise(res => {
   const list = []; ['Ncontenido/', ''].forEach(f => ASSETS[k].forEach(n => list.push(encodeURI(f + n)))); let i = 0;
-  const next = () => { if(i >= list.length) return res(); const im = new Image(); im.onload = () => { IM[k] = im; res(); }; im.onerror = next; im.src = list[i++]; };
+  const next = () => { if(i >= list.length) return res(); const im = new Image(); let fin = false;
+    const to = setTimeout(() => { if(!fin){ fin = true; next(); } }, 9000);   // si una imagen se atora, sigue con la siguiente
+    im.onload = () => { if(fin) return; fin = true; clearTimeout(to); IM[k] = im; res(); };
+    im.onerror = () => { if(fin) return; fin = true; clearTimeout(to); next(); };
+    im.src = list[i++]; };
   next();
 });
 
@@ -1615,12 +1625,18 @@ function menuCap(){ inFight = false; fUpdate.on = false; $('fc').style.display =
   const b3 = $('ob3'); b3.style.display = ''; b3.textContent = 'Prototipo anterior (niveles 1 y 2)'; b3.onclick = () => { $('ov').style.display = 'none'; start(0); }; }
 function startCap(i){ capI = i; CAP = CAPS[i]; audio(); inFight = true; cInit(); $('hud').style.display = 'none'; mode = 'dlg'; say(CAP.intro, () => { fPend = {}; mode = 'fight'; cStartWave(0); }); }
 
-function loop(ms){ const dt = Math.min(.05, (ms - last) / 1000 || 0); last = ms; t += dt; if(inFight){ fUpdate(dt); fDraw(); } else { update(dt); draw(); } requestAnimationFrame(loop); }
+function loop(ms){ try{ const dt = Math.min(.05, (ms - last) / 1000 || 0); last = ms; t += dt; if(inFight){ fUpdate(dt); fDraw(); } else { update(dt); draw(); } }
+  catch(e){ if(!loop.err){ loop.err = 1; $('ld').style.display = 'flex'; $('ldh').textContent = 'Algo falló'; $('ldi').parentNode.style.display = 'none'; $('ldp').textContent = String((e && e.message) || e); $('ldr').style.display = 'block'; } }
+  requestAnimationFrame(loop); }
 function resize(){ dpr = Math.min(devicePixelRatio || 1, 2.5); W = innerWidth; H_ = innerHeight; cv.width = W * dpr; cv.height = H_ * dpr; sc = Math.max(W / 620, H_ / WS); }
 addEventListener('resize', resize); resize();
 
-Promise.all(Object.keys(ASSETS).map(load)).then(() => { requestAnimationFrame(loop);
-  menuCap(); });
+const KEYS = Object.keys(ASSETS); let nLoaded = 0, started = false;
+const prog = () => { const pc = Math.round(nLoaded / KEYS.length * 100); $('ldi').style.width = pc + '%'; $('ldp').textContent = pc + '%'; };
+const slowT = setTimeout(() => { $('ldp').textContent = Math.round(nLoaded / KEYS.length * 100) + '% · sigue cargando, revisa tu conexión…'; }, 8000);
+const go = () => { if(started) return; started = true; clearTimeout(slowT); $('ld').style.display = 'none'; requestAnimationFrame(loop); menuCap(); };
+Promise.all(KEYS.map(k => load(k).then(() => { nLoaded++; prog(); }))).then(go);
+setTimeout(go, 25000);   // si algo se atora, entra igual
 })();
 <\/script></body></html>
 </script>
@@ -1634,7 +1650,7 @@ Promise.all(Object.keys(ASSETS).map(load)).then(() => { requestAnimationFrame(lo
     <div class="gm-menu">
       <button type="button" class="gm-mcard air" data-g="air">
         <span class="gm-mico">✈️</span>
-        <span class="gm-mtx"><b>Aeropuerto</b><small>El juego de Bodoca. Lleva cada maleta a su contenedor del mismo color y esquiva los carritos.</small><em id="gmBestAir"></em></span>
+        <span class="gm-mtx"><b>Aeropuerto</b><small>El juego de Bodoca. Lleva cada maleta a su contenedor del mismo color y esquiva los carritos de equipaje.</small><em id="gmBestAir"></em></span>
         <span class="gm-mtag" id="gmTagAir"></span>
       </button>
       <button type="button" class="gm-mcard hd" data-g="hd">
@@ -1674,7 +1690,7 @@ Promise.all(Object.keys(ASSETS).map(load)).then(() => { requestAnimationFrame(lo
       </div>
     </div>
   </div>
-  <div class="gm-hint">Arrastra el dedo para moverte. Lleva cada maleta a su contenedor del mismo color y esquiva los carritos 🛒</div>
+  <div class="gm-hint">Arrastra el dedo para moverte. Lleva cada maleta a su contenedor del mismo color y esquiva los carritos de equipaje 🧳</div>
   </div>
   <div class="gm-sec hide" id="gmHdSec">
     <div class="gm-bar">
@@ -5699,11 +5715,28 @@ Promise.all(Object.keys(ASSETS).map(load)).then(() => { requestAnimationFrame(lo
       return n;
     }
     function box(x, y, w, h, c){ cx.fillStyle = c; cx.globalAlpha = .85; cx.beginPath(); cx.roundRect(x, y, w, h, 8); cx.fill(); cx.globalAlpha = 1; }
+    function drawAirportCart(c){ // carrito de equipaje de aeropuerto (se dibuja una sola vez)
+      c.lineCap = 'round'; c.lineJoin = 'round';
+      const L = (x1, y1, x2, y2, col, w) => { c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); };
+      // maleta grande (roja) y maleta chica (azul) sobre la plataforma
+      c.fillStyle = '#d63a3a'; c.strokeStyle = '#7a1c1c'; c.lineWidth = 2.5; c.beginPath(); c.roundRect(28, 28, 34, 30, 4); c.fill(); c.stroke();
+      L(36, 28, 36, 58, '#7a1c1c', 2); L(54, 28, 54, 58, '#7a1c1c', 2); L(40, 28, 40, 23, '#444', 3); L(50, 28, 50, 23, '#444', 3); L(40, 23, 50, 23, '#444', 3);
+      c.fillStyle = '#2f7bd6'; c.strokeStyle = '#173f73'; c.lineWidth = 2.5; c.beginPath(); c.roundRect(58, 40, 20, 18, 3); c.fill(); c.stroke();
+      L(68, 40, 68, 36, '#333', 2.5);
+      // estructura metálica: plataforma, respaldo y manija
+      L(14, 60, 82, 60, '#4b5563', 8); L(14, 60, 82, 60, '#b8c2cc', 4.5);
+      L(20, 60, 20, 12, '#4b5563', 6); L(20, 60, 20, 12, '#b8c2cc', 3);
+      L(20, 12, 36, 12, '#222', 7); L(20, 12, 36, 12, '#3b82f6', 4);   // manija con agarre azul
+      L(20, 34, 34, 34, '#4b5563', 4); L(20, 34, 34, 34, '#b8c2cc', 2);
+      L(82, 60, 82, 46, '#4b5563', 4); L(82, 60, 82, 46, '#b8c2cc', 2);
+      // ruedas
+      [[26, 72], [70, 72]].forEach(([x, y]) => { c.fillStyle = '#1f2937'; c.beginPath(); c.arc(x, y, 8, 0, 7); c.fill(); c.fillStyle = '#9ca3af'; c.beginPath(); c.arc(x, y, 3.2, 0, 7); c.fill(); L(x, y - 8, x, 63, '#4b5563', 3); });
+    }
     let cartCv = null;
     function cartImg(){ // el emoji se dibuja una sola vez (dibujar texto emoji en cada cuadro es lento)
       if(cartCv) return cartCv;
       cartCv = document.createElement('canvas'); cartCv.width = cartCv.height = 88;
-      const c = cartCv.getContext('2d'); c.font = '72px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('🛒', 44, 46);
+      drawAirportCart(cartCv.getContext('2d'));
       return cartCv;
     }
     function shadow(x, y, rx, ry, a){ cx.fillStyle = 'rgba(0,0,0,' + (a || .28) + ')'; cx.beginPath(); cx.ellipse(x, y, Math.max(1, rx), Math.max(1, ry), 0, 0, 7); cx.fill(); }
