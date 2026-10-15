@@ -1486,7 +1486,6 @@ function cPlayer(dt){
     p.t += dt;
     if(p.st === 'punch' && !p.hitDone && p.t >= p.hitAt){ p.hitDone = true; cPunch(); }
     if(p.st === 'special' && !p.hitDone && p.t >= .14){ p.hitDone = true; cBlast(); }
-    if(p.st === 'punch' && p.t < p.dur * .55){ p.x += p.fx * (p.kick ? 140 : 90) * dt; p.y += p.fy * (p.kick ? 100 : 60) * dt; }
     if(p.st === 'punch' && p.t >= p.dur * .72 && fPend.punch){ cAtk(); fPend = {}; }
     else if(p.t >= (p.st === 'punch' ? p.dur : .5)){ p.st = 'idle'; p.t = 0; }
     cKnock(p, dt); cClamp(p); return; }
