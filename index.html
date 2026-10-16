@@ -1312,19 +1312,26 @@ const ASSETS = { bg:['fondo2.jpg'], gF:['guardia_frente.png'], gE:['guardia_espa
         derecha:['bodoco_corriendo derecha.png', 'bodoco_corriendoderecha.png'], izquierda:['bodoco_corriendo izquierda.png', 'bodoco_corriendoizquierda.png'] }) };
 // Los sprites de combate y de caminata dependen del personaje elegido. Si falta alguno de Bodoca se usa el de Bodoco.
 ASSETS.cR = ASSETS.rep; ASSETS.cA = ASSETS.abajo; ASSETS.cU = ASSETS.arriba; ASSETS.cD = ASSETS.derecha; ASSETS.cL = ASSETS.izquierda;
-if(ROL === 'bodoca') ['fI', 'fB', 'fP', 'fJ', 'fW', 'fP2', 'kF', 'kB'].forEach(k => { const n = ASSETS[k][0]; ASSETS[k] = [n.replace('bodoco', 'bodoca'), n]; });
+const ALT = {};   // nombres alternativos de Bodoca (se prueban solo si no aparece el nombre esperado)
+if(ROL === 'bodoca'){
+  ['fI', 'fB', 'fP', 'fJ', 'fW', 'fP2', 'kF', 'kB'].forEach(k => { ASSETS[k] = [ASSETS[k][0].replace('bodoco', 'bodoca')]; });
+  ASSETS.fP.push('golpe-bodocoa.png');   // así quedó nombrado el golpe de Bodoca en el repo (con la o de más)
+  const W = { fI:[['guardia1'], ['guardia', '1'], ['guardia', 'pelea'], ['pelea']], fB:[['guardia'], ['bloqueo'], ['bloquear'], ['guardia', 'bloqueo'], ['defensa']],
+    fP:[['golpe'], ['golpe', 'izquierdo'], ['golpe', 'izquierda'], ['golpe', 'brazo', 'izquierdo'], ['golpe', '1']], fP2:[['golpe', 'brazo', 'derecho'], ['golpe', 'brazo', 'derecha'], ['golpe', 'derecho'], ['golpe', 'derecha'], ['golpe', '2']],
+    fJ:[['salto'], ['saltar']], fW:[['victoria'], ['ganar'], ['triunfo']], kF:[['patada', 'frente'], ['patada', 'frontal'], ['patada'], ['patada', 'abajo']], kB:[['patada', 'espaldas'], ['patada', 'espalda'], ['patada', 'atras'], ['patada', 'arriba']],
+    cR:[['reposo'], ['quieta'], ['parada']], cA:[['corriendo', 'abajo']], cU:[['corriendo', 'arriba'], ['corriendo', 'espaldas'], ['espaldas']], cD:[['corriendo', 'derecha']], cL:[['corriendo', 'izquierda']] };
+  const V = ws => { const o = []; ['-', '_', ' ', ''].forEach(s => { const c = ws.join(s); o.push(c, c + s + 'bodoca', 'bodoca' + s + c); if(ws.length > 1) o.push(ws[0] + s + 'bodoca' + s + ws.slice(1).join(s)); }); return o; };
+  Object.keys(W).forEach(k => { const set = new Set(); W[k].forEach(ws => V(ws).forEach(n => set.add(n + '.png'))); ALT[k] = [...set]; });
+  ALT.rep = ALT.cR; ALT.abajo = ALT.cA; ALT.arriba = ALT.cU; ALT.derecha = ALT.cD; ALT.izquierda = ALT.cL;
+}
 // Guardia mujer (gf*) y poses de golpe de los guardias (gH = guardia, gfH = guardia mujer)
 Object.assign(ASSETS, { gfF:['guardiaf_frente.png'], gfE:['guardiaf_espaldas.png'], gfW:['guardiaf_caminando_derecha.png'], gfH:['guardiaf_golpe_derecha.png'], gH:['guardia_golpe_derecha.png'] });
 const IM = {};
-const load = k => new Promise(res => {
-  const list = []; ['Ncontenido/', ''].forEach(f => ASSETS[k].forEach(n => list.push(encodeURI(f + n)))); let i = 0;
-  const next = () => { if(i >= list.length) return res(); const im = new Image(); let fin = false;
-    const to = setTimeout(() => { if(!fin){ fin = true; next(); } }, 9000);   // si una imagen se atora, sigue con la siguiente
-    im.onload = () => { if(fin) return; fin = true; clearTimeout(to); IM[k] = im; res(); };
-    im.onerror = () => { if(fin) return; fin = true; clearTimeout(to); next(); };
-    im.src = list[i++]; };
-  next();
-});
+const probe = u => new Promise(res => { const im = new Image(); const to = setTimeout(() => res(null), 9000);
+  im.onload = () => { clearTimeout(to); res(im); }; im.onerror = () => { clearTimeout(to); res(null); }; im.src = u; });
+const pick = async names => { const urls = []; ['Ncontenido/', ''].forEach(f => names.forEach(n => urls.push(encodeURI(f + n))));
+  const r = await Promise.all(urls.map(probe)); return r.find(Boolean) || null; };   // gana el primero de la lista que exista
+const load = async k => { let im = await pick(ASSETS[k]); if(!im && ALT[k]) im = await pick(ALT[k]); if(im) IM[k] = im; };
 
 // ---------- zonas por donde NO se puede caminar (Night Market) ----------
 const lineY = x => 385 - (x - 240) * .38, BLK = [];
@@ -1589,6 +1596,7 @@ function cDrawPl(){
   else if(p.st === 'hurt'){ pose('fI'); fl = p.face < 0; }
   else if(p.walk){ const m = { derecha:'cD', izquierda:'cL', abajo:'cA', arriba:'cU' }[p.dir]; im = IM[m]; ht = hh; if(p.dir === 'abajo' || p.dir === 'arriba') fl = Math.floor(CS.clock * 6) % 2 === 1; if(!im){ pose('fI'); fl = p.face < 0; } }
   else { const near = CS.gs.some(g => g.st !== 'ko' && Math.hypot(g.x - p.x, (g.y - p.y) * 1.6) < 300); if(near && IM.fI){ pose('fI'); fl = p.face < 0; } else { im = IM.cR; ht = hh; } }
+  if(!im){ im = IM.cR; ht = hh; ax = .5; }
   if(p.flash > 0 && ((p.flash * 40) | 0) % 2) alpha = .5; else if(p.inv > 0 && ((CS.clock * 20) | 0) % 2) alpha = .75;
   cShadow(p.x, p.y, u, Math.max(.5, 1 - p.h / 200));
   const bob = p.walk && p.h <= 0 ? Math.abs(Math.sin(CS.clock * 12)) * 3 * u : 0, y = p.y - p.h - bob;
@@ -1644,6 +1652,8 @@ function fDraw(){
 // ----- menú de capítulos -----
 function menuCap(){ inFight = false; fUpdate.on = false; $('fc').style.display = 'none'; $('hud').style.display = ''; mode = 'menu';
   overlay('Bodoco y Bodoca', ROL === 'bodoca' ? 'Bodoco desapareció. Esta vez te toca a ti encontrarlo.' : 'Bodoca desapareció. Esta vez te toca a ti encontrarla.', 'Capítulo 1 · ' + CAPS[0].t, () => startCap(0));
+  const miss = ['cR', 'cA', 'cD', 'cL', 'fI', 'fB', 'fP', 'fJ', 'fW', 'fP2', 'kF', 'kB'].filter(k => !IM[k]);
+  if(miss.length) $('op').textContent += '  ⚠️ No encontré imágenes de ' + H + ': ' + miss.map(k => ASSETS[k][0]).join(', ') + ' (deben estar en Ncontenido).';
   const b2 = $('ob2'); b2.style.display = ''; b2.textContent = 'Capítulo 2 · ' + CAPS[1].t; b2.onclick = () => { $('ov').style.display = 'none'; startCap(1); };
   const b3 = $('ob3'); b3.style.display = ''; b3.textContent = 'Prototipo anterior (niveles 1 y 2)'; b3.onclick = () => { $('ov').style.display = 'none'; start(0); }; }
 function startCap(i){ capI = i; CAP = CAPS[i]; audio(); inFight = true; cInit(); $('hud').style.display = 'none'; mode = 'dlg'; say(CAP.intro, () => { fPend = {}; mode = 'fight'; cStartWave(0); }); }
@@ -1666,8 +1676,8 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
 <div id="storyOv"><iframe id="storyFr" title="La historia de Bodoco y Bodoca" allow="autoplay"></iframe><button type="button" id="storyX" aria-label="Cerrar">✕</button></div>
 <div id="storyPick" role="dialog" aria-label="Elige tu personaje"><div class="sp-card"><h3>💫 ¿Con quién juegas?</h3><p>Elige tu personaje. Quien juegue sale a buscar al otro.</p>
   <div class="sp-opts">
-    <button type="button" class="sp-opt" data-r="bodoca"><span class="sp-tag" hidden>Tu perfil</span><span class="sp-ph"><img src="Ncontenido/reposo.png" alt="" onerror="this.parentNode.textContent='👩'"></span><b>Bodoca</b><small>Va a rescatar a Bodoco</small></button>
-    <button type="button" class="sp-opt" data-r="bodoco"><span class="sp-tag" hidden>Tu perfil</span><span class="sp-ph"><img src="Ncontenido/bodoco_reposo.png" alt="" onerror="this.parentNode.textContent='👨'"></span><b>Bodoco</b><small>Va a rescatar a Bodoca</small></button>
+    <button type="button" class="sp-opt" data-r="bodoca"><span class="sp-tag" hidden>Tu perfil</span><span class="sp-ph"><img alt="" data-srcs="Ncontenido/reposo.png|reposo.png|Ncontenido/bodoca_reposo.png|bodoca_reposo.png|Ncontenido/bodoca-reposo.png|Ncontenido/corriendoabajo.png|corriendoabajo.png" data-fb="👩"></span><b>Bodoca</b><small>Va a rescatar a Bodoco</small></button>
+    <button type="button" class="sp-opt" data-r="bodoco"><span class="sp-tag" hidden>Tu perfil</span><span class="sp-ph"><img alt="" data-srcs="Ncontenido/bodoco_reposo.png|bodoco_reposo.png|Ncontenido/reposo-bodoco.png|Ncontenido/guardia1-bodoco.png" data-fb="👨"></span><b>Bodoco</b><small>Va a rescatar a Bodoca</small></button>
   </div><button type="button" class="sp-cancel" id="spCancel">Cancelar</button></div></div>
 <div class="game-page" id="gameBox" aria-hidden="true">
   <div class="gm-sec" id="gmMenuSec">
@@ -6507,7 +6517,9 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
   document.getElementById('storyX').addEventListener('click', () => { storyOv.style.display = 'none'; storyFr.srcdoc = ''; });
   // Selector de personaje: se muestra antes de iniciar la historia (marca el de tu perfil)
   const storyPick = document.getElementById('storyPick');
-  function openStoryPick(){ let r = ''; try{ r = myRole || ''; }catch(_){} storyPick.querySelectorAll('.sp-opt').forEach(b => { const me = b.dataset.r === r; b.classList.toggle('me', me); b.querySelector('.sp-tag').hidden = !me; }); storyPick.classList.add('on'); }
+  function openStoryPick(){ let r = ''; try{ r = myRole || ''; }catch(_){} storyPick.querySelectorAll('.sp-opt').forEach(b => { const me = b.dataset.r === r; b.classList.toggle('me', me); b.querySelector('.sp-tag').hidden = !me; }); storyPick.querySelectorAll('.sp-ph img').forEach(img => { if(img.dataset.done) return; img.dataset.done = 1; const list = img.dataset.srcs.split('|'); let i = 0;
+      const next = () => { if(i >= list.length){ img.parentNode.textContent = img.dataset.fb; return; } img.src = list[i++]; }; img.onerror = next; next(); });
+    storyPick.classList.add('on'); }
   storyPick.querySelectorAll('.sp-opt').forEach(b => b.addEventListener('click', () => { storyPick.classList.remove('on'); openStory(b.dataset.r); }));
   document.getElementById('spCancel').addEventListener('click', () => storyPick.classList.remove('on'));
   function pickGame(g){ if(g === 'story'){ openStoryPick(); return; } showSec(g); (g === 'air' ? gm : hd).start(); }
