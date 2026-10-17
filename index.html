@@ -511,6 +511,17 @@
   .gm-row{display:flex;justify-content:space-between;font-size:14px;}
   .gm-row.me{color:var(--green);font-weight:700;}
   .gm-play{border:none;border-radius:999px;padding:13px 20px;font:800 15px var(--font,inherit);background:var(--accent-fill,var(--green));color:var(--on-accent,#000);cursor:pointer;}
+  .gm-card{max-height:100%;overflow:auto;}
+  .lv-map{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+  .lv-n{position:relative;aspect-ratio:1;border-radius:14px;border:2px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;}
+  .lv-n b{font-size:17px;font-weight:800;line-height:1;}
+  .lv-n i{font-style:normal;font-size:9px;letter-spacing:-1px;color:#ffd23f;line-height:1;}
+  .lv-n.done{border-color:rgba(255,210,63,.55);background:rgba(255,210,63,.12);}
+  .lv-n.sel{border-color:var(--green);box-shadow:0 0 0 2px rgba(var(--green-rgb),.35);}
+  .lv-n.lock{opacity:.45;cursor:default;font-size:15px;}
+  .lv-n:active:not(.lock){transform:scale(.94);}
+  .lv-gift{grid-column:1/-1;font-size:12px;line-height:1.35;color:rgba(255,255,255,.65);padding:4px 4px 0;}
+  .lv-gift.on{color:#ffd23f;font-weight:800;}
   .gm-sec{display:flex;flex-direction:column;gap:10px;flex:1 1 0;min-height:0;}
   .gm-sec.hide{display:none;}
   .gm-menu-title{font-size:18px;font-weight:800;padding:0 4px;}
@@ -1688,12 +1699,12 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     <div class="gm-menu">
       <button type="button" class="gm-mcard air" data-g="air">
         <span class="gm-mico">✈️</span>
-        <span class="gm-mtx"><b>Aeropuerto</b><small>El juego de Bodoca. Lleva cada maleta a su contenedor del mismo color y esquiva los carritos de equipaje.</small><em id="gmBestAir"></em></span>
+        <span class="gm-mtx"><b>Aeropuerto</b><small>El juego de Bodoca. 10 niveles cada vez más difíciles: lleva cada maleta a su contenedor y esquiva los carritos. Al terminar ganas una skin nueva.</small><em id="gmBestAir"></em></span>
         <span class="gm-mtag" id="gmTagAir"></span>
       </button>
       <button type="button" class="gm-mcard hd" data-g="hd">
         <span class="gm-mico">🌭</span>
-        <span class="gm-mtx"><b>Charly Hotdogs</b><small>El juego de Bodoco. Toma los hot dogs del puesto (Pepperoni, Hawaiano y Bistec) y entrégaselos a los clientes antes de que se cansen.</small><em id="gmBestHd"></em></span>
+        <span class="gm-mtx"><b>Charly Hotdogs</b><small>El juego de Bodoco. 10 niveles cada vez más difíciles: entrega los hot dogs a los clientes antes de que se cansen. Al terminar ganas una skin nueva.</small><em id="gmBestHd"></em></span>
         <span class="gm-mtag" id="gmTagHd"></span>
       </button>
       <button type="button" class="gm-mcard story" data-g="story">
@@ -1709,7 +1720,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     <div class="gm-stats">
       <span class="gm-pill">⭐ <b id="gmScore">0</b><i id="gmMult"></i></span>
       <span class="gm-pill" id="gmTimePill">⏱ <b id="gmTime">60</b></span>
-      <span class="gm-pill">Nv <b id="gmLvl">1</b></span>
+      <span class="gm-pill">Nv <b id="gmLvl">1</b> · 🎯 <b id="gmGoal">0/6</b></span>
     </div>
     <div class="gm-btns">
       <button type="button" class="gm-x" id="gmBack" aria-label="Elegir otro juego"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
@@ -1723,6 +1734,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       <div class="gm-card">
         <h3 id="gmOvTitle">Aeropuerto ✈️</h3>
         <p id="gmOvMsg"></p>
+        <div class="lv-map" id="gmMap"></div>
         <div class="gm-board" id="gmBoard"></div>
         <button type="button" class="gm-play" id="gmPlay">Jugar</button>
       </div>
@@ -1735,7 +1747,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       <div class="gm-stats">
         <span class="gm-pill">⭐ <b id="hdScore">0</b><i id="hdMult"></i></span>
         <span class="gm-pill" id="hdTimePill">⏱ <b id="hdTime">60</b></span>
-        <span class="gm-pill">Nv <b id="hdLvl">1</b></span>
+        <span class="gm-pill">Nv <b id="hdLvl">1</b> · 🎯 <b id="hdGoal">0/4</b></span>
       </div>
       <div class="gm-btns">
         <button type="button" class="gm-x" id="hdBack" aria-label="Elegir otro juego"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
@@ -1749,6 +1761,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
         <div class="gm-card">
           <h3 id="hdOvTitle">Charly Hotdogs 🌭</h3>
           <p id="hdOvMsg"></p>
+          <div class="lv-map" id="hdMap"></div>
           <div class="gm-board" id="hdBoard"></div>
           <button type="button" class="gm-play" id="hdPlay">Jugar</button>
         </div>
@@ -5502,10 +5515,39 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
   // ----- Juego del aeropuerto -----
   // Las imágenes y la música del juego van en la raíz, junto a este index.html (si algún día las mueves a una carpeta, cambia esto, ej. 'juego/')
   const JUEGO_BASE = '';
+  // ----- Niveles estilo «candy» (los usan el Aeropuerto y Charly Hotdogs) -----
+  // Cada juego tiene 10 niveles: se abre el siguiente al superar el anterior, con 1 a 3 estrellas según los puntos. Al superar el 10 se gana una skin nueva.
+  const LVL = (() => {
+    const N = 10;
+    const pad = a => { const o = []; for(let i = 0; i < N; i++) o[i] = Math.max(0, Math.min(3, ((a && a[i]) | 0))); return o; };
+    const get = (g, r) => { try{ return pad(JSON.parse(localStorage.getItem('lv_' + g + '_' + r) || '[]')); }catch(_){ return pad([]); } };
+    const put = (g, r, a) => { try{ localStorage.setItem('lv_' + g + '_' + r, JSON.stringify(pad(a))); }catch(_){} };
+    const merge = (a, b) => { a = pad(a); b = pad(b); return a.map((v, i) => Math.max(v, b[i])); };
+    const open = st => { let n = 1; for(let i = 0; i < N; i++){ if(st[i] > 0) n = i + 2; else break; } return Math.min(N, n); };
+    const done = st => st[N - 1] > 0;
+    const total = st => st.reduce((x, y) => x + y, 0);
+    const pts = (goal, extra) => { let t = 0; for(let i = 0; i < goal; i++) t += 10 * Math.min(4, 1 + (i >> 1)) + (extra || 0); return t; };   // puntos máximos con combo perfecto
+    const stars = (p, max) => p >= .7 * max ? 3 : p >= .4 * max ? 2 : 1;
+    const text = st => done(st) ? '🎁 Completado · ⭐ ' + total(st) + '/30' : 'Nivel ' + open(st) + '/10 · ⭐ ' + total(st) + '/30';
+    function map(box, st, sel, onPick){
+      const op = open(st); box.innerHTML = '';
+      for(let i = 0; i < N; i++){
+        const b = document.createElement('button'); b.type = 'button';
+        b.className = 'lv-n' + (i + 1 === sel ? ' sel' : '') + (i < op ? '' : ' lock') + (st[i] ? ' done' : '');
+        if(i < op){ b.innerHTML = '<b>' + (i + 1) + '</b><i>' + '★'.repeat(st[i]) + '☆'.repeat(3 - st[i]) + '</i>'; b.addEventListener('click', () => onPick(i + 1)); }
+        else { b.textContent = '🔒'; b.disabled = true; }
+        box.appendChild(b);
+      }
+      const g = document.createElement('div'); g.className = 'lv-gift' + (done(st) ? ' on' : '');
+      g.textContent = done(st) ? '🎁 ¡Skin nueva ganada!' : '🎁 Supera los 10 niveles y gana una skin nueva';
+      box.appendChild(g);
+    }
+    return { N, get, put, merge, open, done, total, pts, stars, text, map };
+  })();
   const gm = (() => {
     const $ = id => document.getElementById(id);
     const cv = $('gmCanvas'), cx = cv.getContext('2d');
-    const el = { score:$('gmScore'), mult:$('gmMult'), time:$('gmTime'), timePill:$('gmTimePill'), lvl:$('gmLvl'),
+    const el = { score:$('gmScore'), mult:$('gmMult'), time:$('gmTime'), timePill:$('gmTimePill'), lvl:$('gmLvl'), goal:$('gmGoal'), map:$('gmMap'),
       ov:$('gmOv'), ovTitle:$('gmOvTitle'), ovMsg:$('gmOvMsg'), board:$('gmBoard'), play:$('gmPlay'), mute:$('gmMute') };
     const COLORES = ['amarillo','verde','rojo','azul'];
     const HEX = { amarillo:'#ffd23f', verde:'#34d399', rojo:'#ff5252', azul:'#4d9bff' };
@@ -5528,6 +5570,17 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     const img = n => cache[n] || (cache[n] = Object.assign(new Image(), { decoding:'async', src: JUEGO_BASE + n }));
     const ready = im => im.complete && im.naturalWidth > 0;
     const MAL = 48, SPEED = 300, ROUND = 60, MAXT = 99, JR = 48, COMBO_WIN = 8;
+    // ---------- Niveles: entrega «goal» maletas antes de que se acaben «time» segundos ----------
+    // col = colores en juego, obs = carritos, spd = velocidad de los carritos. Si un nivel te queda muy fácil o muy difícil, cambia estos números.
+    const CFG = [
+      { goal:5,  time:45, col:2, obs:0, spd:60 },  { goal:7,  time:50, col:2, obs:1, spd:70 },  { goal:9,  time:55, col:3, obs:1, spd:85 },
+      { goal:11, time:60, col:3, obs:2, spd:95 },  { goal:13, time:65, col:4, obs:2, spd:110 }, { goal:15, time:70, col:4, obs:3, spd:125 },
+      { goal:17, time:75, col:4, obs:3, spd:140 }, { goal:19, time:80, col:4, obs:4, spd:155 }, { goal:21, time:85, col:4, obs:4, spd:170 },
+      { goal:24, time:95, col:4, obs:5, spd:190 }
+    ];
+    let cur = 1, lastLv = 1, lastStars = 1, ovKind = 'ready';
+    const cfg = () => CFG[cur - 1];
+    const actv = c => COLORES.indexOf(c) < cfg().col;
     const player = { x: 20, y: 0, w: 50, h: 80 };
     let W = 0, H = 0, running = false, raf = 0, last = 0;
     let state = 'ready', clock = 0, timeLeft = ROUND, points = 0, level = 1, deliveries = 0, combo = 0, lastDel = -99;
@@ -5586,16 +5639,20 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       const go = () => {
         if(subscribed || !window.fb || !window.fb.db) return; subscribed = true;
         try{ const { db, collection, onSnapshot } = window.fb;
-          onSnapshot(collection(db, 'gameScores'), snap => { snap.forEach(d => { scores[d.id] = d.data(); }); renderBoard(); }, () => {});
+          onSnapshot(collection(db, 'gameScores'), snap => { snap.forEach(d => { scores[d.id] = d.data(); }); renderBoard(); if(running && ovKind === 'ready' && state !== 'playing') showOv('ready'); }, () => {});
         }catch(_){}
       };
       if(window.fb) go(); else window.addEventListener('firebase-ready', go, { once:true });
     }
+    const prog = r => LVL.merge(r === me() ? LVL.get('air', r) : [], scores[r] && scores[r].lv);
+    function saveLv(st){
+      const r = me(); LVL.put('air', r, st); scores[r] = Object.assign({}, scores[r], { lv: st });
+      try{ if(window.fb && window.fb.db){ const { db, doc, setDoc } = window.fb; setDoc(doc(db, 'gameScores', r), { lv: st, lvAt: Date.now() }, { merge:true }).catch(() => {}); } }catch(_){}
+    }
     function renderBoard(){
-      const rows = ROLES.map(r => ({ r, n: nameOf(r), b: bestOf(r) }));
-      const top = Math.max(...rows.map(x => x.b));
-      el.board.innerHTML = '<small>Récords</small>' + rows.map(x =>
-        '<div class="gm-row' + (x.r === me() ? ' me' : '') + '"><span>' + (x.b > 0 && x.b === top ? '👑 ' : '') + esc(x.n) + (x.r === me() ? ' (tú)' : '') + '</span><b>' + x.b + '</b></div>').join('');
+      const rows = ROLES.map(r => ({ r, n: nameOf(r), t: LVL.text(prog(r)) }));
+      el.board.innerHTML = '<small>Progreso</small>' + rows.map(x =>
+        '<div class="gm-row' + (x.r === me() ? ' me' : '') + '"><span>' + esc(x.n) + (x.r === me() ? ' (tú)' : '') + '</span><b>' + x.t + '</b></div>').join('');
     }
     function saveScore(isRecord){
       const r = me(), prev = scores[r] || {};
@@ -5626,12 +5683,12 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       return { x: 10 + o.fx * aw, y: 8 + o.fy * ah };
     };
     function spawn(){
-      const lista = [...COLORES, ...COLORES].sort(() => Math.random() - .5);
+      const act = COLORES.filter(actv), lista = [...act, ...act].sort(() => Math.random() - .5);
       // las maletas solo caen en el asfalto (mitad de abajo del mapa), no sobre el edificio ni la pista. Si quieres más arriba/abajo, cambia ZONA_Y0 (0 = todo el mapa, .5 = mitad de abajo)
       const ZONA_Y0 = .5;
       objetos = lista.map(c => ({ color: c, fx: Math.random(), fy: ZONA_Y0 + Math.random() * (1 - ZONA_Y0) }));
     }
-    function obsSpeed(){ return 55 + level * 14; }
+    function obsSpeed(){ return cfg().spd; }
     function addObstacle(){
       const horiz = Math.random() < .5, sp = obsSpeed(), sg = Math.random() < .5 ? -1 : 1;
       const o = { w: 40, h: 40, x: 0, y: 0, vx: horiz ? sp * sg : 0, vy: horiz ? 0 : sp * sg };
@@ -5647,29 +5704,50 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
 
     // ---------- Reglas ----------
     function resetRound(){
-      points = 0; level = 1; deliveries = 0; combo = 0; lastDel = -99; carrying = null; clock = 0; timeLeft = ROUND;
+      ovKind = 'play'; points = 0; level = cur; deliveries = 0; combo = 0; lastDel = -99; carrying = null; clock = 0; timeLeft = cfg().time;
       obstacles = []; floats = []; invul = 0; shake = 0; lastTick = 0; joy.on = false;
       player.x = 20; player.y = H / 2 - player.h / 2;
+      for(let i = 0; i < cfg().obs; i++) addObstacle();
       spawn(); state = 'playing'; hud(true); el.ov.classList.add('hide');
       actx(); playMusic();
     }
-    function showOv(kind, rec){
-      renderBoard();
-      if(kind === 'ready'){
-        el.ovTitle.textContent = 'Aeropuerto ✈️';
-        el.ovMsg.innerHTML = 'Tienes 60 segundos. Cada entrega correcta suma puntos y tiempo. Si encadenas entregas, ¡el combo multiplica! Equivocarte de contenedor resta puntos y los carritos te quitan tiempo.';
-        el.play.textContent = 'Jugar';
+    function news(n){
+      const c = CFG[n - 1], p = CFG[n - 2]; if(!p) return 'Lleva cada maleta al contenedor de su color. Si te equivocas pierdes puntos; si encadenas entregas, el combo multiplica.';
+      const t = []; if(c.col > p.col) t.push('ahora hay ' + c.col + ' colores'); if(c.obs > p.obs) t.push('más carritos'); if(c.spd > p.spd) t.push('carritos más rápidos');
+      return 'Novedad: ' + (t.join(', ') || 'menos tiempo') + '. Un golpe de carrito te quita 3 segundos.';
+    }
+    function showOv(kind){
+      ovKind = kind; const st = prog(me()); if(cur > LVL.open(st)) cur = LVL.open(st);
+      renderBoard(); LVL.map(el.map, st, cur, n => { cur = n; showOv('ready'); });
+      const c = cfg(), goalTxt = 'Nivel ' + cur + ': entrega ' + c.goal + ' maletas en ' + c.time + ' segundos.';
+      if(kind === 'win'){
+        const w = CFG[lastLv - 1];
+        el.ovTitle.textContent = '¡Nivel ' + lastLv + ' superado! ' + '⭐'.repeat(lastStars);
+        el.ovMsg.textContent = points + ' puntos.' + (lastStars < 3 ? ' Para las 3 estrellas junta ' + Math.ceil(.7 * LVL.pts(w.goal)) + ' encadenando entregas.' : ' ¡Perfecto!') + (lastLv === LVL.N ? ' 🎁 ¡Completaste los 10 niveles! Ganaste una skin nueva.' : '');
+        el.play.textContent = lastLv < LVL.N ? 'Siguiente nivel ▶' : 'Jugar el nivel ' + cur;
+      } else if(kind === 'over'){
+        el.ovTitle.textContent = '¡Se acabó el tiempo! ⏱';
+        el.ovMsg.textContent = 'Entregaste ' + deliveries + ' de ' + c.goal + ' maletas. ¡Tú puedes!';
+        el.play.textContent = 'Reintentar nivel ' + cur;
       } else {
-        el.ovTitle.textContent = rec ? '¡Nuevo récord! 🏆' : '¡Se acabó el tiempo!';
-        el.ovMsg.textContent = 'Hiciste ' + points + ' puntos · llegaste al nivel ' + level + '.';
-        el.play.textContent = 'Jugar de nuevo';
+        el.ovTitle.textContent = 'Aeropuerto ✈️';
+        timeLeft = c.time; deliveries = 0; points = 0; hud(true);
+        el.ovMsg.textContent = goalTxt + ' ' + news(cur);
+        el.play.textContent = 'Jugar nivel ' + cur;
       }
       el.ov.classList.remove('hide');
     }
     function endRound(){
       state = 'over'; joy.on = false; sfx.over();
       const rec = points > 0 && points > bestOf(me());
-      saveScore(rec); showOv('over', rec);
+      saveScore(rec); showOv('over');
+    }
+    function winLevel(){
+      state = 'won'; joy.on = false; sfx.level();
+      const c = cfg(), s = LVL.stars(points, LVL.pts(c.goal)), st = prog(me());
+      lastLv = cur; lastStars = s; st[cur - 1] = Math.max(st[cur - 1], s);
+      saveLv(st); saveScore(points > bestOf(me()));
+      cur = Math.min(LVL.N, cur + 1); hud(true); showOv('win');
     }
     function levelUp(){
       level = 1 + Math.floor(deliveries / 4);
@@ -5729,14 +5807,14 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
         // entregar
         COLORES.forEach(c => {
           const z = zonas[c];
-          if(!carrying || !hit(player, z)) return;
+          if(!carrying || !actv(c) || !hit(player, z)) return;
           if(c === carrying){
             combo = (clock - lastDel <= COMBO_WIN && combo > 0) ? combo + 1 : 1; lastDel = clock;
             const m = multNow(), gain = 10 * m;
-            points += gain; timeLeft = Math.min(MAXT, timeLeft + 3); deliveries++; carrying = null; z.pulse = .3;
+            points += gain; deliveries++; carrying = null; z.pulse = .3;
             sfx.deliver(m);
-            float(z.x + z.w / 2, z.y, '+' + gain + (m > 1 ? ' ×' + m : ''), '#7dffb0'); float(z.x + z.w / 2, z.y + 18, '+3s', '#9bd7ff');
-            if(1 + Math.floor(deliveries / 4) > level) levelUp();
+            float(z.x + z.w / 2, z.y, '+' + gain + (m > 1 ? ' ×' + m : ''), '#7dffb0');
+            if(deliveries >= cfg().goal){ winLevel(); return; }
             if(!objetos.length) spawn();
           } else if(z.cd <= 0){
             z.cd = 1; points = Math.max(0, points - 5); combo = 0; shake = .25; sfx.wrong();
@@ -5783,6 +5861,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       cx.save();
       if(shake > 0) cx.translate((Math.random() - .5) * shake * 16, (Math.random() - .5) * shake * 16);
       COLORES.forEach(c => {
+        if(!actv(c)) return;
         const z = zonas[c], im = img(F.cont[c]), k = 1 + z.pulse * .5, w = z.w * k, h = z.h * k, x = z.x - (w - z.w) / 2, y = z.y - (h - z.h) / 2;
         if(ready(im)) cx.drawImage(im, x, y, w, h); else box(x, y, w, h, HEX[c]);
       });
@@ -5837,7 +5916,8 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       if(force || hs.p !== points) el.score.textContent = hs.p = points;
       if(force || hs.m !== m) el.mult.textContent = hs.m = m;
       if(force || hs.t !== t){ el.time.textContent = hs.t = t; el.timePill.classList.toggle('low', t <= 10 && state === 'playing'); }
-      if(force || hs.l !== level) el.lvl.textContent = hs.l = level;
+      if(force || hs.l !== cur) el.lvl.textContent = hs.l = cur;
+      const gl = deliveries + '/' + cfg().goal; if(force || hs.g !== gl) el.goal.textContent = hs.g = gl;
     }
     function loop(t){
       if(!running) return;
@@ -5896,6 +5976,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     return {
       preload,
       best(){ return bestOf(me()); },
+      lvText(){ return LVL.text(prog(me())); },
       on(){ return running; },
       start(){
         if(running) return;
@@ -5911,7 +5992,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
           }
         }
         cv.style.backgroundImage = 'url("' + JUEGO_BASE + 'fondo.png")';
-        running = true; resize(); if(!objetos.length) spawn();
+        cur = LVL.open(prog(me())); running = true; resize(); spawn();
         state = 'ready'; moving = false; hud(true); showOv('ready');
         last = 0; raf = requestAnimationFrame(loop);
       },
@@ -5928,9 +6009,19 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
   const hd = (() => {
     const $ = id => document.getElementById(id);
     const cv = $('hdCanvas'), cx = cv.getContext('2d');
-    const el = { score:$('hdScore'), mult:$('hdMult'), time:$('hdTime'), timePill:$('hdTimePill'), lvl:$('hdLvl'),
+    const el = { score:$('hdScore'), mult:$('hdMult'), time:$('hdTime'), timePill:$('hdTimePill'), lvl:$('hdLvl'), goal:$('hdGoal'), map:$('hdMap'),
       ov:$('hdOv'), ovTitle:$('hdOvTitle'), ovMsg:$('hdOvMsg'), board:$('hdBoard'), play:$('hdPlay'), mute:$('hdMute') };
     const WS = 1024, ROUND = 75, MAXT = 99, SPEED = 480, JR = 48, COMBO_WIN = 10, CAP = 2, PH = 150;
+    // ---------- Niveles: entrega «goal» hot dogs antes de que se acaben «time» segundos ----------
+    // types = sabores que piden, sl = puestos de clientes abiertos (1 a 4), dogs = perritos, dspd = velocidad de los perritos, pat = paciencia de los clientes (segundos)
+    const CFG = [
+      { goal:4,  time:45, types:1, sl:1, dogs:0, dspd:70,  pat:36 }, { goal:6,  time:50, types:2, sl:1, dogs:0, dspd:80,  pat:34 }, { goal:7,  time:50, types:2, sl:2, dogs:0, dspd:90,  pat:32 },
+      { goal:9,  time:55, types:3, sl:2, dogs:1, dspd:100, pat:30 }, { goal:10, time:55, types:3, sl:3, dogs:1, dspd:115, pat:28 }, { goal:12, time:60, types:3, sl:3, dogs:2, dspd:130, pat:26 },
+      { goal:13, time:60, types:3, sl:4, dogs:2, dspd:145, pat:24 }, { goal:15, time:65, types:3, sl:4, dogs:3, dspd:160, pat:22 }, { goal:16, time:65, types:3, sl:4, dogs:3, dspd:175, pat:20 },
+      { goal:18, time:75, types:3, sl:4, dogs:3, dspd:190, pat:18 }
+    ];
+    let cur = 1, lastLv = 1, lastStars = 1, ovKind = 'ready';
+    const cfg = () => CFG[cur - 1];
     const TIPOS = [ { n:'Pepperoni', col:'#ff4747', bg:'#d42b2b' }, { n:'Hawaiano', col:'#ffd23f', bg:'#f5c518' }, { n:'Bistec', col:'#ff9a3c', bg:'#9b6238' } ];
     // los 3 hot dogs del puesto (frente al mostrador de Charly)
     const PADS = [ { t:0, x:300, y:430 }, { t:1, x:380, y:404 }, { t:2, x:460, y:377 } ];
@@ -6113,16 +6204,20 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       const go = () => {
         if(subscribed || !window.fb || !window.fb.db) return; subscribed = true;
         try{ const { db, collection, onSnapshot } = window.fb;
-          onSnapshot(collection(db, 'gameScores'), snap => { snap.forEach(d => { if(d.id.indexOf('hd_') === 0) scores[d.id.slice(3)] = d.data(); }); renderBoard(); }, () => {});
+          onSnapshot(collection(db, 'gameScores'), snap => { snap.forEach(d => { if(d.id.indexOf('hd_') === 0) scores[d.id.slice(3)] = d.data(); }); renderBoard(); if(running && ovKind === 'ready' && state !== 'playing') showOv('ready'); }, () => {});
         }catch(_){}
       };
       if(window.fb) go(); else window.addEventListener('firebase-ready', go, { once:true });
     }
+    const prog = r => LVL.merge(r === me() ? LVL.get('hd', r) : [], scores[r] && scores[r].lv);
+    function saveLv(st){
+      const r = me(); LVL.put('hd', r, st); scores[r] = Object.assign({}, scores[r], { lv: st });
+      try{ if(window.fb && window.fb.db){ const { db, doc, setDoc } = window.fb; setDoc(doc(db, 'gameScores', 'hd_' + r), { lv: st, lvAt: Date.now() }, { merge:true }).catch(() => {}); } }catch(_){}
+    }
     function renderBoard(){
-      const rows = ROLES.map(r => ({ r, n: nameOf(r), b: bestOf(r) }));
-      const top = Math.max(...rows.map(x => x.b));
-      el.board.innerHTML = '<small>Récords</small>' + rows.map(x =>
-        '<div class="gm-row' + (x.r === me() ? ' me' : '') + '"><span>' + (x.b > 0 && x.b === top ? '👑 ' : '') + esc(x.n) + (x.r === me() ? ' (tú)' : '') + '</span><b>' + x.b + '</b></div>').join('');
+      const rows = ROLES.map(r => ({ r, n: nameOf(r), t: LVL.text(prog(r)) }));
+      el.board.innerHTML = '<small>Progreso</small>' + rows.map(x =>
+        '<div class="gm-row' + (x.r === me() ? ' me' : '') + '"><span>' + esc(x.n) + (x.r === me() ? ' (tú)' : '') + '</span><b>' + x.t + '</b></div>').join('');
     }
     function saveScore(isRecord){
       const r = me(), prev = scores[r] || {};
@@ -6142,7 +6237,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     const multNow = () => Math.min(4, 1 + Math.floor((Math.max(1, combo) - 1) / 2));
     const float = (x, y, txt, col) => floats.push({ x, y, txt, col, t:0 });
     const clamp01 = v => Math.max(0, Math.min(1, v));
-    const dogSpeed = () => 80 + level * 14;
+    const dogSpeed = () => cfg().dspd;
 
     function camTarget(){
       const mx = WS * s - W, my = WS * s - H;
@@ -6159,12 +6254,12 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     // ---------- Reglas ----------
     function trySpawn(){
       const used = new Set(custs.filter(c => c.state !== 'leave').map(c => c.slot));
-      const free = []; SLOTS.forEach((sl, i) => { if(sl.lv <= level && !used.has(i)) free.push(i); });
+      const free = []; SLOTS.forEach((sl, i) => { if(sl.lv <= cfg().sl && !used.has(i)) free.push(i); });
       if(!free.length) return false;
       const i = free[(Math.random() * free.length) | 0], sl = SLOTS[i];
-      const vip = level >= 2 && Math.random() < .12 && !custs.some(c => c.vip && c.state !== 'leave');
-      const pm = Math.max(16, 36 - level * 1.5) * (vip ? 1.25 : 1);
-      custs.push({ slot:i, x:1090, y:sl.y, tx:sl.x, type:(Math.random() * TIPOS.length) | 0, state:'arrive', pat:pm, pm, look:(Math.random() * LOOKS) | 0, vip, t:Math.random() * 6, fx:0, nope:0, mood:'' });
+      const vip = level >= 3 && Math.random() < .12 && !custs.some(c => c.vip && c.state !== 'leave');
+      const pm = cfg().pat * (vip ? 1.25 : 1);
+      custs.push({ slot:i, x:1090, y:sl.y, tx:sl.x, type:(Math.random() * cfg().types) | 0, state:'arrive', pat:pm, pm, look:(Math.random() * LOOKS) | 0, vip, t:Math.random() * 6, fx:0, nope:0, mood:'' });
       return true;
     }
     function addDog(){
@@ -6176,31 +6271,54 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       d.horiz = horiz; dogs.push(d);
     }
     function resetRound(){
-      points = 0; level = 1; deliveries = 0; combo = 0; lastDel = -99; clock = 0; timeLeft = ROUND;
+      ovKind = 'play'; points = 0; level = cur; deliveries = 0; combo = 0; lastDel = -99; clock = 0; timeLeft = cfg().time;
       carried = []; custs = []; dogs = []; floats = []; dwell = PADS.map(() => 0); padCd = PADS.map(() => 0); standCd = 0;
       invul = 0; shake = 0; lastTick = 0; spawnT = .3; joy.on = false; dir = 'abajo';
       P.x = 300; P.y = 500; camSnap();
+      for(let i = 0; i < cfg().dogs; i++) addDog();
       state = 'playing'; hud(true); el.ov.classList.add('hide');
       actx(); playMusic();
     }
     function ovMissing(){ if(pre.d < pre.n) return ''; const m = missing(); return m.length ? '<br><small style="color:#ffb3b3">⚠️ No encontré: ' + esc(m.join(', ')) + ' (revisa que estén en la carpeta Ncontenido)</small>' : ''; }
-    function showOv(kind, rec){
-      renderBoard();
-      if(kind === 'ready'){
-        el.ovTitle.textContent = 'Charly Hotdogs 🌭';
-        el.ovMsg.innerHTML = 'Tienes 75 segundos. Quédate un momentito sobre cada hot dog del puesto (Pepperoni, Hawaiano o Bistec) para tomarlo (cargas hasta 2) y llévaselo al cliente que lo pidió. Entrega rápido y te dan propina 💰; si encadenas entregas el combo multiplica. Si un cliente se cansa de esperar pierdes puntos, ¡y los perritos 🐕 se comen tu bandeja! Si llega Bodoca 💖 paga triple.' + ovMissing();
-        el.play.textContent = 'Jugar';
+    const HOWTO = 'Quédate un momento sobre cada hot dog para tomarlo (cargas 2) y llévaselo a quien lo pidió. Propinas y combos dan más puntos; ¡los perritos 🐕 se comen tu bandeja!';
+    function news(n){
+      const c = CFG[n - 1], p = CFG[n - 2]; if(!p) return HOWTO;
+      const t = []; if(c.types > p.types) t.push(c.types === 2 ? 'ahora piden Hawaiano' : 'ahora piden Bistec'); if(c.sl > p.sl) t.push('más clientes a la vez');
+      if(c.dogs > p.dogs) t.push(p.dogs ? 'más perritos 🐕' : 'llegan los perritos 🐕'); if(c.dspd > p.dspd) t.push('perritos más rápidos'); if(c.pat < p.pat) t.push('clientes menos pacientes');
+      return 'Novedad: ' + (t.join(', ') || 'menos tiempo') + '.';
+    }
+    function showOv(kind){
+      ovKind = kind; const st = prog(me()); if(cur > LVL.open(st)) cur = LVL.open(st);
+      renderBoard(); LVL.map(el.map, st, cur, n => { cur = n; showOv('ready'); });
+      const c = cfg(), goalTxt = 'Nivel ' + cur + ': entrega ' + c.goal + ' hot dogs en ' + c.time + ' segundos.';
+      if(kind === 'win'){
+        const w = CFG[lastLv - 1];
+        el.ovTitle.textContent = '¡Nivel ' + lastLv + ' superado! ' + '⭐'.repeat(lastStars);
+        el.ovMsg.textContent = points + ' puntos.' + (lastStars < 3 ? ' Para las 3 estrellas junta ' + Math.ceil(.7 * LVL.pts(w.goal, 5)) + ' con propinas y combos.' : ' ¡Perfecto!') + (lastLv === LVL.N ? ' 🎁 ¡Completaste los 10 niveles! Ganaste una skin nueva.' : '');
+        el.play.textContent = lastLv < LVL.N ? 'Siguiente nivel ▶' : 'Jugar el nivel ' + cur;
+      } else if(kind === 'over'){
+        el.ovTitle.textContent = '¡Se acabó el tiempo! ⏱';
+        el.ovMsg.textContent = 'Entregaste ' + deliveries + ' de ' + c.goal + ' hot dogs. ¡Tú puedes!';
+        el.play.textContent = 'Reintentar nivel ' + cur;
       } else {
-        el.ovTitle.textContent = rec ? '¡Nuevo récord! 🏆' : '¡Se acabó el tiempo!';
-        el.ovMsg.textContent = 'Hiciste ' + points + ' puntos · ' + deliveries + ' hot dogs entregados · nivel ' + level + '.';
-        el.play.textContent = 'Jugar de nuevo';
+        el.ovTitle.textContent = 'Charly Hotdogs 🌭';
+        timeLeft = c.time; deliveries = 0; points = 0; hud(true);
+        el.ovMsg.innerHTML = esc(goalTxt + ' ' + news(cur)) + ovMissing();
+        el.play.textContent = 'Jugar nivel ' + cur;
       }
       el.ov.classList.remove('hide');
     }
     function endRound(){
       state = 'over'; joy.on = false; sfx.over();
       const rec = points > 0 && points > bestOf(me());
-      saveScore(rec); showOv('over', rec);
+      saveScore(rec); showOv('over');
+    }
+    function winLevel(){
+      state = 'won'; joy.on = false; sfx.level();
+      const c = cfg(), s = LVL.stars(points, LVL.pts(c.goal, 5)), st = prog(me());
+      lastLv = cur; lastStars = s; st[cur - 1] = Math.max(st[cur - 1], s);
+      saveLv(st); saveScore(points > bestOf(me()));
+      cur = Math.min(LVL.N, cur + 1); hud(true); showOv('win');
     }
     function levelUp(){
       level = 1 + Math.floor(deliveries / 5);
@@ -6212,11 +6330,11 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       combo = (clock - lastDel <= COMBO_WIN && combo > 0) ? combo + 1 : 1; lastDel = clock;
       const m = multNow(), frac = c.pat / c.pm, tip = frac > .5 ? 5 : frac > .25 ? 2 : 0;
       const gain = (10 * m + tip) * (c.vip ? 3 : 1), bonus = c.vip ? 8 : 5;
-      points += gain; timeLeft = Math.min(MAXT, timeLeft + bonus); deliveries++;
+      points += gain; deliveries++;
       c.state = 'leave'; c.mood = 'happy'; c.fx = 0; sfx.deliver(m);
       float(c.x, c.y - 150, '+' + gain + (m > 1 ? ' ×' + m : '') + (c.vip ? ' 💖' : ''), '#7dffb0');
-      float(c.x, c.y - 125, '+' + bonus + 's' + (tip ? ' · propina +' + tip : ''), '#9bd7ff');
-      if(1 + Math.floor(deliveries / 5) > level) levelUp();
+      if(tip) float(c.x, c.y - 125, 'propina +' + tip, '#9bd7ff');
+      if(deliveries >= cfg().goal) winLevel();
     }
     function hurt(d){
       const lost = carried.length; carried = []; timeLeft = Math.max(0, timeLeft - 2); combo = 0; invul = 2; shake = .35; sfx.hit();
@@ -6423,7 +6541,8 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       if(force || hs.p !== points) el.score.textContent = hs.p = points;
       if(force || hs.m !== m) el.mult.textContent = hs.m = m;
       if(force || hs.t !== t){ el.time.textContent = hs.t = t; el.timePill.classList.toggle('low', t <= 10 && state === 'playing'); }
-      if(force || hs.l !== level) el.lvl.textContent = hs.l = level;
+      if(force || hs.l !== cur) el.lvl.textContent = hs.l = cur;
+      const gl = deliveries + '/' + cfg().goal; if(force || hs.g !== gl) el.goal.textContent = hs.g = gl;
     }
     function loop(t){
       if(!running) return;
@@ -6464,6 +6583,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     return {
       preload,
       best(){ return bestOf(me()); },
+      lvText(){ return LVL.text(prog(me())); },
       on(){ return running; },
       start(){
         if(running) return;
@@ -6477,7 +6597,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
           const tm = setInterval(() => { if(B) B.set(.05 + .9 * pre.d / Math.max(1, pre.n)); }, 80);
           pr.then(() => { clearInterval(tm); el.play.disabled = false; if(B) B.end(); if(running && state === 'ready') showOv('ready'); });
         }
-        running = true; resize(); camSnap();
+        cur = LVL.open(prog(me())); running = true; resize(); camSnap();
         state = 'ready'; moving = false; custs = []; dogs = []; carried = []; floats = []; hud(true); showOv('ready');
         last = 0; raf = requestAnimationFrame(loop);
       },
@@ -6501,8 +6621,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     gm.stop(); hd.stop(); showSec('menu');
     let role = ''; try{ role = myRole || ''; }catch(_){}
     const put = (id, v) => { const e = document.getElementById(id); if(e) e.textContent = v; };
-    const a = gm.best(), b = hd.best();
-    put('gmBestAir', a ? 'Tu récord: ' + a : ''); put('gmBestHd', b ? 'Tu récord: ' + b : '');
+    put('gmBestAir', gm.lvText()); put('gmBestHd', hd.lvText());
     put('gmTagAir', role === 'bodoca' ? 'Tu juego' : ''); put('gmTagHd', role === 'bodoco' ? 'Tu juego' : '');
     try{ hd.preload(); }catch(_){}
   }
