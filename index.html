@@ -4730,7 +4730,63 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     { dir:'axel',     files:['1.jpeg', ..._n(3,21,'jpeg'), '22.jpg','23.jpeg','24.gif'] },
     { dir:'nosotros', files:[..._n(1,27,'jpeg'), '28.gif','29.jpeg','30.jpeg'] }
   ];
-  const GALAXY_WORDS = ['Te amo','Eres mi sol','Amor de mi vida','Siempre juntos','Eres preciosa','Me encantas','Te adoro','My love','Eres mi todo'];
+  // Frases de la galaxia: [texto, galaxia] → 0 = Ali, 1 = Axel, 2 = Nosotros. Al final de cada una se pone un emoji romántico al azar.
+  const GALAXY_WORDS = [
+    ['Desde que llegaste, todo cambió.',0],
+    ['Mi lugar favorito siempre será contigo.',0],
+    ['Te elegiría una y mil veces.',0],
+    ['Contigo aprendí lo bonito de amar.',0],
+    ['Mi corazón te reconoce como hogar.',0],
+    ['No sabía que me faltabas hasta que llegaste.',0],
+    ['Mi mejor versión nació contigo.',0],
+    ['Si pudiera volver atrás, te elegiría otra vez.',0],
+    ['Mi sonrisa tiene mucho que ver contigo.',0],
+    ['Eres mi pensamiento favorito.',0],
+    ['Amarte es mi parte favorita de cada día.',0],
+    ['No necesito suerte, te tengo a ti.',0],
+    ['Contigo entendí qué significa sentirse en casa.',0],
+    ['Mi corazón encontró su lugar en ti.',0],
+    ['Llegaste sin avisar y te quedaste en mi corazón.',0],
+    ['De todas mis decisiones, tú eres mi favorita.',0],
+    ['Te amo más de lo que sé explicar.',0],
+    ['Soy tu bodoquito',1],
+    ['Mis manos de nenuco son tuyas',1],
+    ['Te quiero siempre en mi vida',1],
+    ['Quiero ser tu hombre',1],
+    ['Quiero ser tu esposo',1],
+    ['Quiero estar para ti siempre',1],
+    ['Soy y seré tu nenuco programador',1],
+    ['Soy y seré tu nenuco filósofo',1],
+    ['Soy y seré quien te haga hot dogs',1],
+    ['Si algún día me faltas, yo crearé una galaxia donde tú estés.',1],
+    ['Tú eres esa persona que quiero cuidar siempre.',2],
+    ['Tú y yo contra el mundo.',2],
+    ['Juntos, todo se siente diferente.',2],
+    ['Nuestra historia apenas comienza.',2],
+    ['Dos personas, un mismo hogar.',2],
+    ['Lo nuestro vale cada momento.',2],
+    ['Contigo quiero seguir escribiendo nuestra historia.',2],
+    ['No somos perfectos, pero somos nosotros.',2],
+    ['De todos los caminos, me quedo con el nuestro.',2],
+    ['Nuestro amor es mi historia favorita.',2],
+    ['Donde estés tú, quiero estar yo.',2],
+    ['Hoy somos nosotros; mañana, también.',2],
+    ['Quiero más días, más risas y más vida contigo.',2],
+    ['Nuestro mejor capítulo todavía no llega.',2],
+    ['Lo mejor de mi vida tiene tu nombre.',2],
+    ['Que nunca nos falten razones para elegirnos.',2],
+    ['Tú conmigo, yo contigo.',2],
+    ['Un amor, dos corazones, una historia.',2],
+    ['Cada recuerdo contigo se queda conmigo.',2],
+    ['Quiero seguir haciendo recuerdos a tu lado.',2],
+    ['Si es contigo, quiero todo lo que venga.',2],
+    ['Nuestro lugar favorito: juntos.',2],
+    ['Y entre tantas historias, encontré la nuestra.',2],
+    ['Que el tiempo pase, pero que nosotros sigamos.',2],
+    ['Mi presente te tiene, mi futuro también te quiere.',2],
+    ['Te encontré y quiero seguir encontrándote cada día.',2]
+  ];
+  const GALAXY_EMOJIS = ['❤️','😍','🥰','🌹','💖','💕','😘','💗'];
   const galaxy = (function(){
     const box = document.getElementById('galBox'), cv = document.getElementById('galCanvas'), hint = document.getElementById('galHint');
     const ctx = cv.getContext('2d');
@@ -4935,7 +4991,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     const usedByG = [[], [], []], candG = [], photoHits = [], customIds = new Map();
     let pendingCustom = null;
     function anchor(sp){
-      const gi = sp.gi, used = usedByG[gi], rad = sp.kind === 'txt' ? 9 : 2.6;
+      const gi = sp.gi, used = usedByG[gi], rad = sp.kind === 'txt' ? 6 : 2.6;
       if(!candG[gi]){ candG[gi] = []; gal.forEach((p, i)=>{ if(p.gi === gi && p.r > 4) candG[gi].push(i); }); }
       const cand = candG[gi]; if(!cand.length) return;
       const at = ci=>{ const p = gal[ci]; return { x: p.r * Math.cos(p.a), z: p.r * Math.sin(p.a), rad }; };
@@ -4979,7 +5035,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
         sp.url = GALAXY_IMG_DIR + set.dir + '/' + encodeURIComponent(name);
         enqueue({ sp, url: sp.url });
       }));
-      GALAXY_WORDS.forEach((w, i)=>{ if(hiddenSet.has('t:' + w)) return; const sp = { kind:'txt', text:w, gi:i % 3 }; per[sp.gi].push(sp); sprites.push(sp); });
+      GALAXY_WORDS.forEach(([w, g])=>{ if(hiddenSet.has('t:' + w)) return; const sp = { kind:'txt', text:w + ' ' + GALAXY_EMOJIS[Math.floor(Math.random() * GALAXY_EMOJIS.length)], gi:g }; per[g].push(sp); sprites.push(sp); });
       per.forEach(arr=>{
         for(let i=arr.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
         const n = arr.length, R = 22 + n * 1.6;
@@ -5226,8 +5282,8 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
         const s = it.s, al = Math.max(.25, Math.min(1, 1 - (it.z + 200) / 620));
         const ds = dsZ;
         if(s.kind === 'txt'){
-          const fpx = Math.min(40, 2.3 * it.p); if(fpx < 3) continue; // misma escala que las fotos (3.4–4.2 u): letra de ~2.3 u
-          ctx.globalAlpha = Math.max(.6, al) * clamp((fpx - 3) / 6, 0, 1); ctx.font = `600 ${fpx}px Poppins, system-ui, sans-serif`;
+          const fpx = Math.min(30, 1.45 * it.p); if(fpx < 2.6) continue; // letra pequeñita, cursiva romántica
+          ctx.globalAlpha = Math.max(.6, al) * clamp((fpx - 2.6) / 5, 0, 1); ctx.font = `700 ${fpx}px "Dancing Script", "Segoe Script", "Brush Script MT", cursive`;
           ctx.fillStyle = '#fff'; ctx.fillText(s.text, it.x, it.y);
         } else {
           const z = Math.min(cap, (s.wsz || 3.6) * it.p); if(z < 3) continue;
@@ -6810,7 +6866,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     function render(){
       const hide = new Set((window.galHide || []).map(h=>h.key)), cus = (window.galItems || []).slice().sort((a,b)=>(b.ts||0)-(a.ts||0)), defs = [];
       GALAXY_SETS.forEach((set, gi)=>set.files.forEach(n=>defs.push({ def:true, kind:'img', gi, key:'i:' + set.dir + '/' + n, url:GALAXY_IMG_DIR + set.dir + '/' + encodeURIComponent(n), dir:set.dir, name:n })));
-      GALAXY_WORDS.forEach((w, i)=>defs.push({ def:true, kind:'txt', gi:i % 3, key:'t:' + w, text:w }));
+      GALAXY_WORDS.forEach(([w, g])=>defs.push({ def:true, kind:'txt', gi:g, key:'t:' + w, text:w }));
       defs.forEach(d=>{ d.off = hide.has(d.key); });
       const all = cus.concat(defs.filter(d=>!d.off), defs.filter(d=>d.off)), vis = all.filter(x=>(flt < 0 || x.gi === flt) && (x.kind === 'img') === (typ === 'img'));
       $('galAdmSub').textContent = all.filter(x=>!x.off && x.kind === 'img').length + ' fotos · ' + all.filter(x=>!x.off && x.kind !== 'img').length + ' frases' + (defs.some(d=>d.off) ? ' · ' + defs.filter(d=>d.off).length + ' quitadas' : '');
