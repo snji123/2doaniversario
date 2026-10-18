@@ -13,8 +13,8 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600;700&family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600;700&family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600&display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet"></noscript>
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
@@ -4730,18 +4730,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     { dir:'axel',     files:['1.jpeg', ..._n(3,21,'jpeg'), '22.jpg','23.jpeg','24.gif'] },
     { dir:'nosotros', files:[..._n(1,27,'jpeg'), '28.gif','29.jpeg','30.jpeg'] }
   ];
-  // Frases de cada galaxia (0 = Ali, 1 = Axel, 2 = Nosotros). Al final de cada una se pone un emoji de amor AL AZAR (cambia cada vez que se abre la galaxia)
-  const GALAXY_PHRASES = [
-    [],   // 0 = Ali
-    [],   // 1 = Axel
-    []    // 2 = Nosotros
-  ];   // vacío: las frases se agregan desde el botón + de la galaxia
-  const GALAXY_EMOJIS = ['❤️', '💖', '💗', '💕', '💘', '🥰', '😍', '🌹'];
-  const galEmoji = () => GALAXY_EMOJIS[Math.floor(Math.random() * GALAXY_EMOJIS.length)];
-  const GALAXY_GI = {}, GALAXY_WORDS = [];
-  GALAXY_PHRASES.forEach((arr, gi)=> arr.forEach(w=>{ GALAXY_GI[w] = gi; GALAXY_WORDS.push(w); }));
-  // las frases largas se parten en 2 o 3 renglones para que no se encimen
-  const galWrap = t => { const w = t.split(' '), out = []; let cur = ''; w.forEach(x=>{ if(cur && (cur + ' ' + x).length > 22){ out.push(cur); cur = x; } else cur = cur ? cur + ' ' + x : x; }); if(cur) out.push(cur); return out; };
+  const GALAXY_WORDS = ['Te amo','Eres mi sol','Amor de mi vida','Siempre juntos','Eres preciosa','Me encantas','Te adoro','My love','Eres mi todo'];
   const galaxy = (function(){
     const box = document.getElementById('galBox'), cv = document.getElementById('galCanvas'), hint = document.getElementById('galHint');
     const ctx = cv.getContext('2d');
@@ -4885,7 +4874,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
         trail.push({ x: hx(t) + gauss() * 5, y: hy(t) + gauss() * 5, z: gauss() * 8, u, s: Math.random() * 1.1 + .7, ph: Math.random() * 6.28, g: i % 3 });
       }
       trail.sort((p,q)=>p.g-q.g);
-      Promise.race([document.fonts && document.fonts.load ? Promise.all([document.fonts.load('700 150px "Dancing Script"'), document.fonts.load('italic 500 40px "Cormorant Garamond"')]) : Promise.resolve(), new Promise(r => setTimeout(r, 1800))]).then(buildNames, buildNames);
+      Promise.race([document.fonts && document.fonts.load ? document.fonts.load('700 150px "Dancing Script"') : Promise.resolve(), new Promise(r => setTimeout(r, 1800))]).then(buildNames, buildNames);
       // corazoncitos dentro de cada galaxia, siguiendo sus brazos
       for(let gi=0; gi<3; gi++){
         const dir = GN[gi].dir, NH = weak ? 12 : 20;
@@ -4943,16 +4932,15 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       }
     }
     // ----- anclas: dónde vive cada foto/frase (un puntito de los brazos de su galaxia) -----
-    const usedByG = [[], [], []], candG = [], candT = [], photoHits = [], customIds = new Map();
+    const usedByG = [[], [], []], candG = [], photoHits = [], customIds = new Map();
     let pendingCustom = null;
     function anchor(sp){
-      const gi = sp.gi, used = usedByG[gi], rad = sp.kind === 'txt' ? 14 : 2.6;
+      const gi = sp.gi, used = usedByG[gi], rad = sp.kind === 'txt' ? 9 : 2.6;
       if(!candG[gi]){ candG[gi] = []; gal.forEach((p, i)=>{ if(p.gi === gi && p.r > 4) candG[gi].push(i); }); }
-      if(!candT[gi]) candT[gi] = candG[gi].filter(i=>gal[i].r > 16); // las frases van hacia los brazos, lejos del centro apretado
-      const cand = sp.kind === 'txt' && candT[gi].length > 20 ? candT[gi] : candG[gi]; if(!cand.length) return;
+      const cand = candG[gi]; if(!cand.length) return;
       const at = ci=>{ const p = gal[ci]; return { x: p.r * Math.cos(p.a), z: p.r * Math.sin(p.a), rad }; };
       let pick = -1, rec = null;
-      for(let t=0, tries = sp.kind === 'txt' ? 250 : 80; t<tries; t++){
+      for(let t=0; t<80; t++){
         const ci = cand[Math.floor(Math.random() * cand.length)], r_ = at(ci);
         if(used.every(u=>Math.hypot(u.x - r_.x, u.z - r_.z) > u.rad + rad)){ pick = ci; rec = r_; break; }
       }
@@ -4991,7 +4979,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
         sp.url = GALAXY_IMG_DIR + set.dir + '/' + encodeURIComponent(name);
         enqueue({ sp, url: sp.url });
       }));
-      GALAXY_WORDS.forEach(w=>{ if(hiddenSet.has('t:' + w)) return; const full = w + ' ' + galEmoji(), sp = { kind:'txt', text:full, lines:galWrap(full), gi:GALAXY_GI[w] }; per[sp.gi].push(sp); sprites.push(sp); });
+      GALAXY_WORDS.forEach((w, i)=>{ if(hiddenSet.has('t:' + w)) return; const sp = { kind:'txt', text:w, gi:i % 3 }; per[sp.gi].push(sp); sprites.push(sp); });
       per.forEach(arr=>{
         for(let i=arr.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
         const n = arr.length, R = 22 + n * 1.6;
@@ -5003,7 +4991,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
         });
       });
       // Fotos y frases MINÚSCULAS dentro de los cuadritos de los brazos: cada una se pega a una partícula de su galaxia (y gira con ella)
-      usedByG.forEach(u=>u.length = 0); candG.length = 0; candT.length = 0;
+      usedByG.forEach(u=>u.length = 0); candG.length = 0;
       for(let gi=0; gi<3; gi++){
         sprites.filter(q=>q.gi===gi).sort((x,y)=>(x.kind==='txt'?0:1)-(y.kind==='txt'?0:1)).forEach(anchor); // primero las frases (necesitan más espacio)
       }
@@ -5238,9 +5226,9 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
         const s = it.s, al = Math.max(.25, Math.min(1, 1 - (it.z + 200) / 620));
         const ds = dsZ;
         if(s.kind === 'txt'){
-          const fpx = Math.min(36, 2 * it.p); if(fpx < 3) continue; // misma escala que las fotos (3.4–4.2 u): letra de ~2 u
-          ctx.globalAlpha = Math.max(.6, al) * clamp((fpx - 3) / 6, 0, 1); ctx.font = `italic 500 ${fpx}px "Cormorant Garamond", Georgia, "Times New Roman", serif`; // letra romántica, fina y cursiva
-          ctx.fillStyle = '#fff'; { const Ls = s.lines || [s.text], lh = fpx * 1.2; Ls.forEach((ln, k)=>ctx.fillText(ln, it.x, it.y + (k - (Ls.length - 1) / 2) * lh)); }
+          const fpx = Math.min(40, 2.3 * it.p); if(fpx < 3) continue; // misma escala que las fotos (3.4–4.2 u): letra de ~2.3 u
+          ctx.globalAlpha = Math.max(.6, al) * clamp((fpx - 3) / 6, 0, 1); ctx.font = `600 ${fpx}px Poppins, system-ui, sans-serif`;
+          ctx.fillStyle = '#fff'; ctx.fillText(s.text, it.x, it.y);
         } else {
           const z = Math.min(cap, (s.wsz || 3.6) * it.p); if(z < 3) continue;
           ctx.globalAlpha = (.88 + .12 * al) * clamp((z - 3) / 4, 0, 1);
@@ -6822,7 +6810,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     function render(){
       const hide = new Set((window.galHide || []).map(h=>h.key)), cus = (window.galItems || []).slice().sort((a,b)=>(b.ts||0)-(a.ts||0)), defs = [];
       GALAXY_SETS.forEach((set, gi)=>set.files.forEach(n=>defs.push({ def:true, kind:'img', gi, key:'i:' + set.dir + '/' + n, url:GALAXY_IMG_DIR + set.dir + '/' + encodeURIComponent(n), dir:set.dir, name:n })));
-      GALAXY_WORDS.forEach(w=>defs.push({ def:true, kind:'txt', gi:GALAXY_GI[w], key:'t:' + w, text:w }));
+      GALAXY_WORDS.forEach((w, i)=>defs.push({ def:true, kind:'txt', gi:i % 3, key:'t:' + w, text:w }));
       defs.forEach(d=>{ d.off = hide.has(d.key); });
       const all = cus.concat(defs.filter(d=>!d.off), defs.filter(d=>d.off)), vis = all.filter(x=>(flt < 0 || x.gi === flt) && (x.kind === 'img') === (typ === 'img'));
       $('galAdmSub').textContent = all.filter(x=>!x.off && x.kind === 'img').length + ' fotos · ' + all.filter(x=>!x.off && x.kind !== 'img').length + ' frases' + (defs.some(d=>d.off) ? ' · ' + defs.filter(d=>d.off).length + ' quitadas' : '');
