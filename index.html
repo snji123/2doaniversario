@@ -512,6 +512,8 @@
   .gm-row.me{color:var(--green);font-weight:700;}
   .gm-play{border:none;border-radius:999px;padding:13px 20px;font:800 15px var(--font,inherit);background:var(--accent-fill,var(--green));color:var(--on-accent,#000);cursor:pointer;}
   .gm-card{max-height:100%;overflow:auto;}
+  .gm-dif{margin:0;}
+  .gm-dif button{padding:8px 0;font-size:12.5px;}
   .lv-map{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
   .lv-n{position:relative;aspect-ratio:1;border-radius:14px;border:2px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;}
   .lv-n b{font-size:17px;font-weight:800;line-height:1;}
@@ -1287,6 +1289,11 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 #ov h1{margin:0;font-size:26px}#ov p{margin:0;max-width:340px;line-height:1.4;opacity:.9}
 #ov button{background:#ff4d6d;color:#fff;border:0;border-radius:24px;padding:13px 28px;font-size:17px;font-weight:700}
 #ob2,#ob3{background:#3a4a7a!important;font-size:14px!important;padding:10px 20px!important}
+#difRow{display:none;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap}
+#difRow span{font-size:13px;opacity:.8;width:100%}
+#ov #difRow button{background:#1c2540;border:2px solid #fff3;font-size:14px;padding:8px 14px;border-radius:18px}
+#ov #difRow button.on{background:#ff4d6d;border-color:#fff}
+@media (max-height:480px){#ov{gap:8px;padding:12px;overflow:auto}#ov h1{font-size:21px}#ov button{padding:9px 20px}}
 #fc{position:fixed;inset:0;pointer-events:none;display:none}
 .fb{position:absolute;pointer-events:auto;touch-action:none;width:66px;height:66px;border-radius:50%;border:3px solid #fff6;background:rgba(0,0,0,.45);color:#fff;font-size:22px;font-weight:800;opacity:.85;display:flex;align-items:center;justify-content:center;padding:0}
 .fb.on{background:rgba(255,217,61,.7);color:#000}
@@ -1301,7 +1308,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 <div id="fc"><button class="fb" id="fJ" data-k="jump">⤴</button><button class="fb" id="fB" data-k="block">🛡</button><button class="fb" id="fP" data-k="punch">👊</button><button class="fb" id="fS" data-k="special">⚡</button></div>
 <div id="dlg"><b id="ds"></b><p id="dt"></p><i>toca para seguir ▸</i></div>
 <div id="ld"><h1 id="ldh">Cargando…</h1><div id="ldb"><i id="ldi"></i></div><p id="ldp">0%</p><button id="ldr" onclick="location.reload()">Reintentar</button></div>
-<div id="ov"><h1 id="oh"></h1><p id="op"></p><button id="ob"></button><button id="ob2" style="display:none"></button><button id="ob3" style="display:none"></button></div>
+<div id="ov"><h1 id="oh"></h1><p id="op"></p><div id="difRow"><span>Dificultad</span><button type="button" data-d="facil">😊 Fácil</button><button type="button" data-d="normal">😐 Normal</button><button type="button" data-d="dificil">🔥 Difícil</button></div><button id="ob"></button><button id="ob2" style="display:none"></button><button id="ob3" style="display:none"></button></div>
 <script>
 (() => {
 // Uso: historia.html?p=bodoca  (ella rescata a Bodoco)  |  historia.html?p=bodoco  (él rescata a Bodoca)
@@ -1375,7 +1382,7 @@ function adv(){ if(mode !== 'dlg') return; const l = queue.shift(), d = $('dlg')
   d.style.display = 'block'; $('ds').textContent = l[0]; $('ds').style.color = l[0] === 'Psique' || l[0] === '???' ? '#ff5d5d' : l[0] === 'Guía' ? '#ffd23f' : l[0] === 'Guardia' ? '#ffb347' : '#9be7ff'; $('dt').textContent = l[1]; }
 $('dlg').addEventListener('pointerdown', e => { e.stopPropagation(); adv(); });
 
-function overlay(h, p, b, fn){ $('ob2').style.display = 'none'; $('ob3').style.display = 'none'; $('oh').textContent = h; $('op').textContent = p; $('ob').textContent = b; $('ov').style.display = 'flex'; $('ob').onclick = () => { $('ov').style.display = 'none'; fn(); }; }
+function overlay(h, p, b, fn){ $('difRow').style.display = 'none'; $('ob2').style.display = 'none'; $('ob3').style.display = 'none'; $('oh').textContent = h; $('op').textContent = p; $('ob').textContent = b; $('ov').style.display = 'flex'; $('ob').onclick = () => { $('ov').style.display = 'none'; fn(); }; }
 
 function start(i){ inFight = false; $('hud').style.display = ''; li = i; const n = NIVELES[li]; P = { ...START, dir:'abajo', mv:false }; got = 0; ojos = 0;
   items = n.items.map(([x, y]) => ({ x, y, got:false }));
@@ -1452,6 +1459,18 @@ const CAPS = [
     fin:'Despejaste la zona. Aquí seguirá la historia.' }
 ];
 let CAP = CAPS[0], capI = 0;
+// ----- dificultad de las peleas: «facil» = como estaba antes; «normal» y «dificil» = guardias más duros y MÁS oleadas -----
+// ghp = vida de cada guardia · gdmg = daño de su golpe · wind = tiempo que avisa antes de pegar · cdm = pausa entre golpes (menos = más seguido)
+// spd = velocidad · heal = vida que recuperas entre oleadas · waves = guardias por oleada, de cada capítulo
+const DIFS = {
+  facil:   { ghp:30, gdmg:9,  wind:.5,  cdm:1,   spd:1,    heal:30, waves:[[2, 3, 3, 4], [3, 4, 4, 5]] },
+  normal:  { ghp:42, gdmg:11, wind:.42, cdm:.8,  spd:1.12, heal:22, waves:[[3, 3, 4, 4, 5, 6], [4, 4, 5, 5, 6, 7]] },
+  dificil: { ghp:55, gdmg:14, wind:.34, cdm:.62, spd:1.25, heal:14, waves:[[3, 4, 4, 5, 5, 6, 7], [5, 5, 6, 6, 7, 8, 9]] }
+};
+let DIF = 'normal'; try{ const v = localStorage.getItem('gdif_story'); if(DIFS[v]) DIF = v; }catch(e){}
+const DF = () => DIFS[DIF], cWaves = () => DIFS[DIF].waves[Math.min(capI, DIFS[DIF].waves.length - 1)];
+function difPaint(){ document.querySelectorAll('#difRow button').forEach(b => b.classList.toggle('on', b.dataset.d === DIF)); }
+document.querySelectorAll('#difRow button').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); DIF = b.dataset.d; try{ localStorage.setItem('gdif_story', DIF); }catch(_){} difPaint(); }));
 let inFight = false, CS = {}, fHeld = {}, fPend = {};
 
 // ----- sonido (todo sintetizado, no necesita archivos) -----
@@ -1483,10 +1502,10 @@ const SFX = {
 // ----- estado -----
 function cInit(){ CS = { pl:{ x:512, y:620, h:0, vh:0, fx:0, fy:1, face:1, dir:'abajo', hp:100, meter:0, st:'idle', t:0, flash:0, inv:0, hitDone:false, walk:false, kx:0, ky:0 },
   gs:[], sparks:[], rings:[], clock:0, stop:0, shake:0, wave:-1, wait:0, banner:'', bt:0, st:'fight', t:0, wt:0 }; fHeld = {}; fPend = {}; }
-function cStartWave(i){ CS.wave = i; CS.wait = 0; const n = CAP.waves[i];
+function cStartWave(i){ CS.wave = i; CS.wait = 0; const WV = cWaves(), D = DF(), n = WV[i];
   for(let k = 0; k < n; k++){ const edge = Math.random() < .5, x = edge ? (Math.random() < .5 ? AREA.x0 + 10 : AREA.x1 - 10) : AREA.x0 + 60 + Math.random() * (AREA.x1 - AREA.x0 - 120), y = edge ? AREA.y0 + Math.random() * (AREA.y1 - AREA.y0) : AREA.y0 + 4;
-    CS.gs.push({ fem:(k + i) % 2 === 1, x, y, hp:30, st:'chase', t:0, cd:1.2 + Math.random() * 1.2, flash:0, face:1, dir:'abajo', spd:100 + Math.random() * 30, hitDone:false, kx:0, ky:0 }); }
-  CS.banner = CAP.waves.length > 1 ? 'OLEADA ' + (i + 1) + '/' + CAP.waves.length : '¡GUARDIAS!'; CS.bt = 1.6; SFX.wave(); }
+    CS.gs.push({ fem:(k + i) % 2 === 1, x, y, hp:D.ghp, st:'chase', t:0, cd:(1.2 + Math.random() * 1.2) * D.cdm, flash:0, face:1, dir:'abajo', spd:(100 + Math.random() * 30) * D.spd, hitDone:false, kx:0, ky:0 }); }
+  CS.banner = WV.length > 1 ? 'OLEADA ' + (i + 1) + '/' + WV.length : '¡GUARDIAS!'; CS.bt = 1.6; SFX.wave(); }
 
 // ----- entrada -----
 const FKEY = { f:'punch', j:'punch', ' ':'jump', l:'jump', g:'special', k:'special' };
@@ -1518,7 +1537,7 @@ function cGuardHit(g){ const p = CS.pl;
   if(p.h >= 35){ SFX.dodge(); return; }   // saltaste: el golpe pasa por debajo
   const front = ((g.x - p.x) * p.fx + (g.y - p.y) * p.fy) > 0, dx = p.x - g.x, dy = p.y - g.y, d = Math.hypot(dx, dy) || 1;
   if(p.st === 'block' && front){ p.hp = Math.max(1, p.hp - 1); p.kx = dx / d * 140; p.ky = dy / d * 80; p.meter = Math.min(100, p.meter + 6); cSpark(p.x + p.fx * 24, p.y - hOf(p.y) * .5, '#6ec6ff'); SFX.block(); }
-  else { p.hp = Math.max(0, p.hp - 9); p.st = 'hurt'; p.t = .3; p.inv = .7; p.flash = .3; p.kx = dx / d * 300; p.ky = dy / d * 180; p.meter = Math.min(100, p.meter + 8);
+  else { p.hp = Math.max(0, p.hp - DF().gdmg); p.st = 'hurt'; p.t = .3; p.inv = .7; p.flash = .3; p.kx = dx / d * 300; p.ky = dy / d * 180; p.meter = Math.min(100, p.meter + 8);
     CS.shake = .15; CS.stop = .06; cSpark(p.x, p.y - hOf(p.y) * .55, '#ff6b5a'); SFX.hurt(); } }
 // Combo: jab (brazo derecho) -> golpe -> patada. Nunca se repite el mismo movimiento dos veces seguidas.
 function cAtk(){ const p = CS.pl; p.ci = ((p.ci == null ? -1 : p.ci) + 1) % 3; const m = ['fP2', 'fP', 'K'][p.ci];
@@ -1560,9 +1579,9 @@ function cGuards(dt){ const p = CS.pl;
     if(g.st === 'chase'){
       if(near && g.cd <= 0 && alive){ g.st = 'wind'; g.t = 0; SFX.alert(); }
       else if(!near){ const d = Math.hypot(dx, dy * 1.4) || 1; g.x += dx / d * g.spd * dt; g.y += dy / d * g.spd * .7 * dt; } }
-    else if(g.st === 'wind'){ g.t += dt; if(g.t >= .5){ g.st = 'strike'; g.t = 0; g.hitDone = false; } }
+    else if(g.st === 'wind'){ g.t += dt; if(g.t >= DF().wind){ g.st = 'strike'; g.t = 0; g.hitDone = false; } }
     else if(g.st === 'strike'){ g.t += dt; if(!g.hitDone && g.t >= .05){ g.hitDone = true; cGuardHit(g); } if(g.t >= .2){ g.st = 'rec'; g.t = 0; } }
-    else if(g.st === 'rec'){ g.t += dt; if(g.t >= .45){ g.st = 'chase'; g.cd = 1.1 + Math.random() * 1.3; } } }
+    else if(g.st === 'rec'){ g.t += dt; if(g.t >= .45){ g.st = 'chase'; g.cd = (1.1 + Math.random() * 1.3) * DF().cdm; } } }
   const live = CS.gs.filter(g => g.st !== 'ko');
   for(let i = 0; i < live.length; i++) for(let j = i + 1; j < live.length; j++){ const a = live[i], b = live[j], dx = a.x - b.x, dy = (a.y - b.y) * 1.6, d = Math.hypot(dx, dy), m = 58 * uOf(a.y);
     if(d < m && d > .01){ const k = (m - d) / 2 / d; a.x += dx * k; b.x -= dx * k; a.y += dy * k * .5; b.y -= dy * k * .5; } }
@@ -1582,7 +1601,7 @@ function fUpdate(dt){
     CS.gs = CS.gs.filter(g => g.st !== 'ko' || g.t < .8);
     if(p.hp <= 0){ CS.st = 'lost'; CS.t = 0; mode = 'fx'; p.st = 'ko'; p.t = 0; SFX.lose(); }
     else if(alive === 0 && CS.wave >= 0){
-      if(CS.wave + 1 < CAP.waves.length){ if(!CS.wait){ CS.wait = 1.4; CS.banner = '¡LIBRE!'; CS.bt = 1.1; } CS.wait -= dt; if(CS.wait <= 0){ CS.wait = 0; p.hp = Math.min(100, p.hp + 30); cStartWave(CS.wave + 1); } }
+      if(CS.wave + 1 < cWaves().length){ if(!CS.wait){ CS.wait = 1.4; CS.banner = '¡LIBRE!'; CS.bt = 1.1; } CS.wait -= dt; if(CS.wait <= 0){ CS.wait = 0; p.hp = Math.min(100, p.hp + DF().heal); cStartWave(CS.wave + 1); } }
       else { CS.st = 'won'; CS.t = 0; mode = 'fx'; p.st = 'win'; SFX.win(); } }
   } else if(mode === 'fx'){
     CS.t += dt; if(p.st === 'ko') p.t += dt; for(const g of CS.gs) if(g.st === 'ko') g.t += dt;
@@ -1663,6 +1682,7 @@ function fDraw(){
 // ----- menú de capítulos -----
 function menuCap(){ inFight = false; fUpdate.on = false; $('fc').style.display = 'none'; $('hud').style.display = ''; mode = 'menu';
   overlay('Bodoco y Bodoca', ROL === 'bodoca' ? 'Bodoco desapareció. Esta vez te toca a ti encontrarlo.' : 'Bodoca desapareció. Esta vez te toca a ti encontrarla.', 'Capítulo 1 · ' + CAPS[0].t, () => startCap(0));
+  $('difRow').style.display = 'flex'; difPaint();
   const miss = ['cR', 'cA', 'cD', 'cL', 'fI', 'fB', 'fP', 'fJ', 'fW', 'fP2', 'kF', 'kB'].filter(k => !IM[k]);
   if(miss.length) $('op').textContent += '  ⚠️ No encontré imágenes de ' + H + ': ' + miss.map(k => ASSETS[k][0]).join(', ') + ' (deben estar en Ncontenido).';
   const b2 = $('ob2'); b2.style.display = ''; b2.textContent = 'Capítulo 2 · ' + CAPS[1].t; b2.onclick = () => { $('ov').style.display = 'none'; startCap(1); };
@@ -1734,6 +1754,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       <div class="gm-card">
         <h3 id="gmOvTitle">Aeropuerto ✈️</h3>
         <p id="gmOvMsg"></p>
+        <div class="th-seg gm-dif" id="gmDif"><button type="button" data-d="facil">😊 Fácil</button><button type="button" data-d="normal">😐 Normal</button><button type="button" data-d="dificil">🔥 Difícil</button></div>
         <div class="lv-map" id="gmMap"></div>
         <div class="gm-board" id="gmBoard"></div>
         <button type="button" class="gm-play" id="gmPlay">Jugar</button>
@@ -1761,6 +1782,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
         <div class="gm-card">
           <h3 id="hdOvTitle">Charly Hotdogs 🌭</h3>
           <p id="hdOvMsg"></p>
+          <div class="th-seg gm-dif" id="hdDif"><button type="button" data-d="facil">😊 Fácil</button><button type="button" data-d="normal">😐 Normal</button><button type="button" data-d="dificil">🔥 Difícil</button></div>
           <div class="lv-map" id="hdMap"></div>
           <div class="gm-board" id="hdBoard"></div>
           <button type="button" class="gm-play" id="hdPlay">Jugar</button>
@@ -5596,6 +5618,13 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
   const JUEGO_BASE = '';
   // ----- Niveles estilo «candy» (los usan el Aeropuerto y Charly Hotdogs) -----
   // Cada juego tiene 10 niveles: se abre el siguiente al superar el anterior, con 1 a 3 estrellas según los puntos. Al superar el 10 se gana una skin nueva.
+  // ===== Dificultad de los juegos: Fácil / Normal (= como estaba) / Difícil. Se recuerda por juego en el teléfono =====
+  const GDIF = (() => {
+    const val = k => { try{ const v = localStorage.getItem('gdif_' + k); if(v === 'facil' || v === 'dificil') return v; }catch(_){} return 'normal'; };
+    const paint = (host, k) => { const v = val(k); host.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.d === v)); };
+    return { get: val,
+      bind(host, k, fn){ paint(host, k); host.addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; try{ localStorage.setItem('gdif_' + k, b.dataset.d); }catch(_){} paint(host, k); if(fn) fn(); }); } };
+  })();
   const LVL = (() => {
     const N = 10;
     const pad = a => { const o = []; for(let i = 0; i < N; i++) o[i] = Math.max(0, Math.min(3, ((a && a[i]) | 0))); return o; };
@@ -5658,7 +5687,14 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       { goal:24, time:95, col:4, obs:5, spd:190 }
     ];
     let cur = 1, lastLv = 1, lastStars = 1, ovKind = 'ready';
-    const cfg = () => CFG[cur - 1];
+    // Fácil: menos maletas, más tiempo, un carrito menos y más lentos · Difícil: más maletas, un carrito más y más rápidos
+    const gmCache = {};
+    const cfgOf = n => { const d = GDIF.get('gm'), key = d + n; if(gmCache[key]) return gmCache[key]; const c = CFG[n - 1]; if(!c) return undefined;
+      const r = d === 'facil' ? { goal:Math.max(3, Math.round(c.goal * .8)), time:Math.round(c.time * 1.2), col:c.col, obs:Math.max(0, c.obs - 1), spd:Math.round(c.spd * .8) }
+        : d === 'dificil' ? { goal:Math.round(c.goal * 1.2), time:c.time, col:c.col, obs:c.obs + 1, spd:Math.round(c.spd * 1.2) } : c;
+      return gmCache[key] = r; };
+    const cfg = () => cfgOf(cur);
+    GDIF.bind($('gmDif'), 'gm', () => { if(state !== 'playing') showOv('ready'); });
     const actv = c => COLORES.indexOf(c) < cfg().col;
     const player = { x: 20, y: 0, w: 50, h: 80 };
     let W = 0, H = 0, running = false, raf = 0, last = 0;
@@ -5791,7 +5827,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       actx(); playMusic();
     }
     function news(n){
-      const c = CFG[n - 1], p = CFG[n - 2]; if(!p) return 'Lleva cada maleta al contenedor de su color. Si te equivocas pierdes puntos; si encadenas entregas, el combo multiplica.';
+      const c = cfgOf(n), p = cfgOf(n - 1); if(!p) return 'Lleva cada maleta al contenedor de su color. Si te equivocas pierdes puntos; si encadenas entregas, el combo multiplica.';
       const t = []; if(c.col > p.col) t.push('ahora hay ' + c.col + ' colores'); if(c.obs > p.obs) t.push('más carritos'); if(c.spd > p.spd) t.push('carritos más rápidos');
       return 'Novedad: ' + (t.join(', ') || 'menos tiempo') + '. Un golpe de carrito te quita 3 segundos.';
     }
@@ -5800,7 +5836,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       renderBoard(); LVL.map(el.map, st, cur, n => { cur = n; showOv('ready'); });
       const c = cfg(), goalTxt = 'Nivel ' + cur + ': entrega ' + c.goal + ' maletas en ' + c.time + ' segundos.';
       if(kind === 'win'){
-        const w = CFG[lastLv - 1];
+        const w = cfgOf(lastLv);
         el.ovTitle.textContent = '¡Nivel ' + lastLv + ' superado! ' + '⭐'.repeat(lastStars);
         el.ovMsg.textContent = points + ' puntos.' + (lastStars < 3 ? ' Para las 3 estrellas junta ' + Math.ceil(.7 * LVL.pts(w.goal)) + ' encadenando entregas.' : ' ¡Perfecto!') + (lastLv === LVL.N ? ' 🎁 ¡Completaste los 10 niveles! Ganaste una skin nueva.' : '');
         el.play.textContent = lastLv < LVL.N ? 'Siguiente nivel ▶' : 'Jugar el nivel ' + cur;
@@ -6100,7 +6136,14 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       { goal:18, time:75, types:3, sl:4, dogs:3, dspd:190, pat:18 }
     ];
     let cur = 1, lastLv = 1, lastStars = 1, ovKind = 'ready';
-    const cfg = () => CFG[cur - 1];
+    // Fácil: menos hot dogs, más tiempo, un perrito menos, más lentos y clientes más pacientes · Difícil: lo contrario
+    const hdCache = {};
+    const cfgOf = n => { const d = GDIF.get('hd'), key = d + n; if(hdCache[key]) return hdCache[key]; const c = CFG[n - 1]; if(!c) return undefined;
+      const r = d === 'facil' ? { goal:Math.max(3, Math.round(c.goal * .8)), time:Math.round(c.time * 1.2), types:c.types, sl:c.sl, dogs:Math.max(0, c.dogs - 1), dspd:Math.round(c.dspd * .8), pat:Math.round(c.pat * 1.25) }
+        : d === 'dificil' ? { goal:Math.round(c.goal * 1.2), time:c.time, types:c.types, sl:c.sl, dogs:c.dogs + 1, dspd:Math.round(c.dspd * 1.2), pat:Math.round(c.pat * .8) } : c;
+      return hdCache[key] = r; };
+    const cfg = () => cfgOf(cur);
+    GDIF.bind($('hdDif'), 'hd', () => { if(state !== 'playing') showOv('ready'); });
     const TIPOS = [ { n:'Pepperoni', col:'#ff4747', bg:'#d42b2b' }, { n:'Hawaiano', col:'#ffd23f', bg:'#f5c518' }, { n:'Bistec', col:'#ff9a3c', bg:'#9b6238' } ];
     // los 3 hot dogs del puesto (frente al mostrador de Charly)
     const PADS = [ { t:0, x:300, y:430 }, { t:1, x:380, y:404 }, { t:2, x:460, y:377 } ];
@@ -6137,7 +6180,9 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       espaldas: ['bodoco_espaldas.png'],
       dog0: ['hotdog_pepperoni.png'],
       dog1: ['hotdog_hawaiano.png'],
-      dog2: ['hotdog_bistec.png']
+      dog2: ['hotdog_bistec.png'],
+      // Bodoca (la clienta VIP del corazón): las mismas imágenes que usa el juego del Aeropuerto
+      bodoca: ['reposo.png'], bodocaD: ['corriendoderecha.png'], bodocaI: ['corriendoizquierda.png']
     };
     // Bodoco con la bandeja: un dibujo por hot dog (0 pepperoni, 1 hawaiano, 2 bistec) y dirección; de espaldas es el mismo para los 3
     ['pepperoni', 'hawaiano', 'bistec'].forEach((n, t) => ['abajo', 'izquierda', 'derecha'].forEach(d => { ASSETS['car' + t + '_' + d] = ['bodoco_' + d + '_' + n + '.png']; }));
@@ -6164,7 +6209,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       pre.p = Promise.all(Object.keys(ASSETS).map(k => Promise.race([loadAsset(k), new Promise(r => setTimeout(r, 12000))]).then(() => { pre.d++; })));
       return pre.p;
     }
-    const missing = () => Object.keys(ASSETS).filter(k => !R(k)).map(k => ASSETS[k][0]);
+    const missing = () => Object.keys(ASSETS).filter(k => !R(k) && k.indexOf('bodoca') !== 0).map(k => ASSETS[k][0]);
 
     // ---------- Dibujos hechos con código (hot dogs, gente, perrito) ----------
     const dogCache = {};
@@ -6310,6 +6355,8 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     let W = 0, H = 0, s = 1, camX = 0, camY = 0, running = false, raf = 0, last = 0;
     let state = 'ready', clock = 0, timeLeft = ROUND, points = 0, level = 1, deliveries = 0, combo = 0, lastDel = -99;
     let dir = 'abajo', hdir = 'derecha', moving = false, invul = 0, shake = 0, lastTick = 0, spawnT = 0;
+    // tomar el primer hot dog es rápido; para el segundo (o para cambiar uno) hay que quedarse ~1 segundo sobre el hot dog
+    const padNeed = () => carried.length >= 1 ? 1 : .18;
     let carried = [], custs = [], dogs = [], floats = [], keys = {}, dwell = PADS.map(() => 0), padCd = PADS.map(() => 0), standCd = 0;
     const P = { x:300, y:500 };
     let joy = { on:false, id:null, bx:0, by:0, dx:0, dy:0 };
@@ -6361,7 +6408,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     function ovMissing(){ if(pre.d < pre.n) return ''; const m = missing(); return m.length ? '<br><small style="color:#ffb3b3">⚠️ No encontré: ' + esc(m.join(', ')) + ' (revisa que estén en la carpeta Ncontenido)</small>' : ''; }
     const HOWTO = 'Quédate un momento sobre cada hot dog para tomarlo (cargas 2) y llévaselo a quien lo pidió. Propinas y combos dan más puntos; ¡los perritos 🐕 se comen tu bandeja!';
     function news(n){
-      const c = CFG[n - 1], p = CFG[n - 2]; if(!p) return HOWTO;
+      const c = cfgOf(n), p = cfgOf(n - 1); if(!p) return HOWTO;
       const t = []; if(c.types > p.types) t.push(c.types === 2 ? 'ahora piden Hawaiano' : 'ahora piden Bistec'); if(c.sl > p.sl) t.push('más clientes a la vez');
       if(c.dogs > p.dogs) t.push(p.dogs ? 'más perritos 🐕' : 'llegan los perritos 🐕'); if(c.dspd > p.dspd) t.push('perritos más rápidos'); if(c.pat < p.pat) t.push('clientes menos pacientes');
       return 'Novedad: ' + (t.join(', ') || 'menos tiempo') + '.';
@@ -6371,7 +6418,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       renderBoard(); LVL.map(el.map, st, cur, n => { cur = n; showOv('ready'); });
       const c = cfg(), goalTxt = 'Nivel ' + cur + ': entrega ' + c.goal + ' hot dogs en ' + c.time + ' segundos.';
       if(kind === 'win'){
-        const w = CFG[lastLv - 1];
+        const w = cfgOf(lastLv);
         el.ovTitle.textContent = '¡Nivel ' + lastLv + ' superado! ' + '⭐'.repeat(lastStars);
         el.ovMsg.textContent = points + ' puntos.' + (lastStars < 3 ? ' Para las 3 estrellas junta ' + Math.ceil(.7 * LVL.pts(w.goal, 5)) + ' con propinas y combos.' : ' ¡Perfecto!') + (lastLv === LVL.N ? ' 🎁 ¡Completaste los 10 niveles! Ganaste una skin nueva.' : '');
         el.play.textContent = lastLv < LVL.N ? 'Siguiente nivel ▶' : 'Jugar el nivel ' + cur;
@@ -6475,7 +6522,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       PADS.forEach((p, i) => {
         if(Math.hypot(P.x - p.x, (P.y - p.y) * 1.5) < 36){
           dwell[i] += dt;
-          if(dwell[i] >= .18){
+          if(dwell[i] >= padNeed()){
             dwell[i] = 0;
             if(carried.length >= CAP){ carried.shift(); float(p.x, p.y - 110, 'Cambio', '#ffe08a'); }
             carried.push(p.t); sfx.pick(); padCd[i] = .3;
@@ -6534,7 +6581,9 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       cx.save();
       if(c.state === 'leave') cx.globalAlpha = 1 - c.fx * .9;
       shadow(c.x, c.y + 3, 26 * k, 8 * k, .28);
-      cx.imageSmoothingEnabled = false; cx.drawImage(folkImg(c.look, c.vip), c.x - w / 2, y0, w, h); cx.imageSmoothingEnabled = true;
+      const bd = c.vip ? (R(c.state === 'arrive' ? 'bodocaI' : c.state === 'leave' ? 'bodocaD' : 'bodoca') || R('bodoca')) : null;
+      if(bd){ const hh = h * 1.1, ww = bd.naturalWidth * hh / bd.naturalHeight; cx.drawImage(bd, c.x - ww / 2, y0 + h - hh, ww, hh); }   // la VIP es Bodoca
+      else { cx.imageSmoothingEnabled = false; cx.drawImage(folkImg(c.look, c.vip), c.x - w / 2, y0, w, h); cx.imageSmoothingEnabled = true; }
       if(c.state === 'leave'){
         cx.font = '30px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
         cx.fillText(c.mood === 'happy' ? (c.vip ? '💖' : '😋') : '😠', c.x, y0 - 16);
@@ -6562,7 +6611,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       // hot dogs del puesto
       cx.textAlign = 'center'; cx.textBaseline = 'alphabetic';
       PADS.forEach((p, i) => {
-        const T = TIPOS[p.t], pulse = .5 + .5 * Math.sin(now / 320 + i * 1.3), prog = clamp01(dwell[i] / .18);
+        const T = TIPOS[p.t], pulse = .5 + .5 * Math.sin(now / 320 + i * 1.3), prog = clamp01(dwell[i] / padNeed());
         const rx = 44 + pulse * 2, ry = 24 + pulse;
         cx.fillStyle = T.bg; cx.beginPath(); cx.ellipse(p.x, p.y, rx, ry, 0, 0, 7); cx.fill();
         cx.lineWidth = 4; cx.strokeStyle = '#fff'; cx.beginPath(); cx.ellipse(p.x, p.y, rx, ry, 0, 0, 7); cx.stroke();
