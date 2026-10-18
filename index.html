@@ -5150,6 +5150,22 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       return dotCache[col] = c;
     }
 
+    // frases: se dibujan UNA sola vez en una imagen (grande y chica) y luego solo se estampan; igual de nítidas que con texto
+    const drawList = [], TFONT = '\"Dancing Script\", \"Segoe Script\", \"Brush Script MT\", cursive';
+    function textBmp(txt, px){
+      const c = document.createElement('canvas'), x = c.getContext('2d'), f = `700 ${px}px ${TFONT}`;
+      x.font = f; const w = Math.ceil(x.measureText(txt).width) + 12, h = Math.ceil(px * 1.5);
+      c.width = w; c.height = h; x.font = f; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#fff'; x.fillText(txt, w / 2, h / 2);
+      return c;
+    }
+    function ensureTextBmp(sp){
+      if(sp.tb || sp.tbFail) return !!sp.tb;
+      try{
+        if(document.fonts && document.fonts.check && !document.fonts.check('700 48px \"Dancing Script\"')) return false; // la letra aún no llegó: se dibuja normal por ahora
+        sp.tb = textBmp(sp.text, 48); sp.tb2 = textBmp(sp.text, 20);
+      }catch(e){ sp.tbFail = true; return false; }
+      return true;
+    }
     function frame(now){
       raf = 0; if(!running) return;
       raf = requestAnimationFrame(frame);
@@ -5268,23 +5284,30 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       ctx.globalCompositeOperation = 'source-over';
       // imágenes y frases: casi invisibles de lejos; al acercarte a una galaxia, las suyas crecen y se vuelven nítidas
       const dsZ = sstep(1.3, 5, r), cap = Math.min(W, H) * .42;
-      const list = []; photoHits.length = 0;
+      const list = drawList; let ln = 0; photoHits.length = 0;
       for(const sp_ of sprites){
         if(sp_.bad || (sp_.kind==='img' && !sp_.ok)) continue;
         if(sp_.pi != null){ const q = gal[sp_.pi]; place(q.gi, q.r, q.y, q.a + spin * GN[q.gi].dir); }
         else place(sp_.gi, sp_.rr, sp_.y + Math.sin(clock * .9 + sp_.ph) * 4, sp_.a0 + clock * sp_.w * GN[sp_.gi].dir);
         if(!proj(gx, gy, gz)) continue;
-        list.push({ s: sp_, x: px, y: py, p: pp, z: pz });
+        if(px < -420 || px > W + 420 || py < -420 || py > H + 420) continue; // fuera de pantalla: ni se ordena ni se dibuja
+        const e_ = list[ln] || (list[ln] = {}); e_.s = sp_; e_.x = px; e_.y = py; e_.p = pp; e_.z = pz; ln++;
       }
+      list.length = ln;
       list.sort((a,b)=>b.z - a.z);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       for(const it of list){
         const s = it.s, al = Math.max(.25, Math.min(1, 1 - (it.z + 200) / 620));
         const ds = dsZ;
         if(s.kind === 'txt'){
-          const fpx = Math.min(30, 1.45 * it.p); if(fpx < 2.6) continue; // letra pequeñita, cursiva romántica
-          ctx.globalAlpha = Math.max(.6, al) * clamp((fpx - 2.6) / 5, 0, 1); ctx.font = `700 ${fpx}px "Dancing Script", "Segoe Script", "Brush Script MT", cursive`;
-          ctx.fillStyle = '#fff'; ctx.fillText(s.text, it.x, it.y);
+          const fpx = Math.min(28, 1.45 * it.p); if(fpx < 2.6) continue; // letra pequeñita, cursiva romántica
+          ctx.globalAlpha = Math.max(.6, al) * clamp((fpx - 2.6) / 5, 0, 1);
+          if(ensureTextBmp(s)){
+            const small = fpx * dpr <= 22, bm = small ? s.tb2 : s.tb, k = fpx / (small ? 20 : 48), tw = bm.width * k, th = bm.height * k;
+            ctx.drawImage(bm, it.x - tw / 2, it.y - th / 2, tw, th);
+          } else {
+            ctx.font = `700 ${fpx}px ${TFONT}`; ctx.fillStyle = '#fff'; ctx.fillText(s.text, it.x, it.y);
+          }
         } else {
           const z = Math.min(cap, (s.wsz || 3.6) * it.p); if(z < 3) continue;
           ctx.globalAlpha = (.88 + .12 * al) * clamp((z - 3) / 4, 0, 1);
