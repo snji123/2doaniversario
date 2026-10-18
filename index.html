@@ -13,8 +13,8 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600;700&family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@600;700&family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600&display=swap" rel="stylesheet"></noscript>
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
@@ -4885,7 +4885,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
         trail.push({ x: hx(t) + gauss() * 5, y: hy(t) + gauss() * 5, z: gauss() * 8, u, s: Math.random() * 1.1 + .7, ph: Math.random() * 6.28, g: i % 3 });
       }
       trail.sort((p,q)=>p.g-q.g);
-      Promise.race([document.fonts && document.fonts.load ? document.fonts.load('700 150px "Dancing Script"') : Promise.resolve(), new Promise(r => setTimeout(r, 1800))]).then(buildNames, buildNames);
+      Promise.race([document.fonts && document.fonts.load ? Promise.all([document.fonts.load('700 150px "Dancing Script"'), document.fonts.load('italic 500 40px "Cormorant Garamond"')]) : Promise.resolve(), new Promise(r => setTimeout(r, 1800))]).then(buildNames, buildNames);
       // corazoncitos dentro de cada galaxia, siguiendo sus brazos
       for(let gi=0; gi<3; gi++){
         const dir = GN[gi].dir, NH = weak ? 12 : 20;
@@ -5239,7 +5239,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
         const ds = dsZ;
         if(s.kind === 'txt'){
           const fpx = Math.min(36, 2 * it.p); if(fpx < 3) continue; // misma escala que las fotos (3.4–4.2 u): letra de ~2 u
-          ctx.globalAlpha = Math.max(.6, al) * clamp((fpx - 3) / 6, 0, 1); ctx.font = `600 ${fpx}px Poppins, system-ui, sans-serif`;
+          ctx.globalAlpha = Math.max(.6, al) * clamp((fpx - 3) / 6, 0, 1); ctx.font = `italic 500 ${fpx}px "Cormorant Garamond", Georgia, "Times New Roman", serif`; // letra romántica, fina y cursiva
           ctx.fillStyle = '#fff'; { const Ls = s.lines || [s.text], lh = fpx * 1.2; Ls.forEach((ln, k)=>ctx.fillText(ln, it.x, it.y + (k - (Ls.length - 1) / 2) * lh)); }
         } else {
           const z = Math.min(cap, (s.wsz || 3.6) * it.p); if(z < 3) continue;
