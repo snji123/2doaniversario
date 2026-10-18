@@ -4732,10 +4732,10 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
   ];
   // Frases de cada galaxia (0 = Ali, 1 = Axel, 2 = Nosotros). Al final de cada una se pone un emoji de amor AL AZAR (cambia cada vez que se abre la galaxia)
   const GALAXY_PHRASES = [
-    ['Desde que llegaste, todo cambió.', 'Mi lugar favorito siempre será contigo.', 'Te elegiría una y mil veces.', 'Contigo aprendí lo bonito de amar.', 'Mi corazón te reconoce como hogar.', 'No sabía que me faltabas hasta que llegaste.', 'Mi mejor versión nació contigo.', 'Si pudiera volver atrás, te elegiría otra vez.', 'Mi sonrisa tiene mucho que ver contigo.', 'Eres mi pensamiento favorito.', 'Amarte es mi parte favorita de cada día.', 'No necesito suerte, te tengo a ti.', 'Contigo entendí qué significa sentirse en casa.', 'Mi corazón encontró su lugar en ti.', 'Llegaste sin avisar y te quedaste en mi corazón.', 'De todas mis decisiones, tú eres mi favorita.', 'Te amo más de lo que sé explicar.'],
-    ['Soy tu bodoquito.', 'Mis manos de nenuco son tuyas.', 'Te quiero siempre en mi vida.', 'Quiero ser tu hombre.', 'Quiero ser tu esposo.', 'Quiero estar para ti siempre.', 'Soy y seré tu nenuco programador.', 'Soy y seré tu nenuco filósofo.', 'Soy y seré quien te haga hot dogs.', 'Si algún día me faltas, yo crearé una galaxia donde tú estés.'],
-    ['Tú eres esa persona que quiero cuidar siempre.', 'Tú y yo contra el mundo.', 'Juntos, todo se siente diferente.', 'Nuestra historia apenas comienza.', 'Dos personas, un mismo hogar.', 'Lo nuestro vale cada momento.', 'Contigo quiero seguir escribiendo nuestra historia.', 'No somos perfectos, pero somos nosotros.', 'De todos los caminos, me quedo con el nuestro.', 'Nuestro amor es mi historia favorita.', 'Donde estés tú, quiero estar yo.', 'Hoy somos nosotros; mañana, también.', 'Quiero más días, más risas y más vida contigo.', 'Nuestro mejor capítulo todavía no llega.', 'Lo mejor de mi vida tiene tu nombre.', 'Que nunca nos falten razones para elegirnos.', 'Tú conmigo, yo contigo.', 'Un amor, dos corazones, una historia.', 'Cada recuerdo contigo se queda conmigo.', 'Quiero seguir haciendo recuerdos a tu lado.', 'Si es contigo, quiero todo lo que venga.', 'Nuestro lugar favorito: juntos.', 'Y entre tantas historias, encontré la nuestra.', 'Que el tiempo pase, pero que nosotros sigamos.', 'Mi presente te tiene, mi futuro también te quiere.', 'Te encontré y quiero seguir encontrándote cada día.']
-  ];
+    [],   // 0 = Ali
+    [],   // 1 = Axel
+    []    // 2 = Nosotros
+  ];   // vacío: las frases se agregan desde el botón + de la galaxia
   const GALAXY_EMOJIS = ['❤️', '💖', '💗', '💕', '💘', '🥰', '😍', '🌹'];
   const galEmoji = () => GALAXY_EMOJIS[Math.floor(Math.random() * GALAXY_EMOJIS.length)];
   const GALAXY_GI = {}, GALAXY_WORDS = [];
