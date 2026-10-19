@@ -389,7 +389,10 @@
             mask:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E") center/contain no-repeat;}
   .bn-fl{position:absolute;bottom:-20px;font-size:15px;color:rgba(var(--green-rgb),.55);opacity:0;animation:bnUp 7s ease-in infinite;}
   @keyframes bnUp{0%{transform:translateY(0) scale(.7);opacity:0}15%{opacity:.8}100%{transform:translateY(-260px) scale(1.15);opacity:0}}
-  .bn-seal{position:absolute;left:50%;top:-38px;width:82px;height:76px;margin-left:-41px;filter:drop-shadow(0 8px 16px rgba(var(--green-rgb),.6));animation:bnBeat 1.8s ease-in-out infinite;transform-origin:50% 60%;}
+  .bn-seal{position:absolute;left:50%;top:-38px;width:82px;height:76px;margin-left:-41px;animation:bnBeat 1.8s ease-in-out infinite;transform-origin:50% 60%;will-change:transform;}
+  .bn-seal::before{content:"";position:absolute;inset:-16px -14px -8px;border-radius:50%;background:radial-gradient(closest-side,rgba(var(--green-rgb),.5),rgba(var(--green-rgb),0));}
+  .bn-seal svg{position:relative;}
+  .sheet:not(.open) .bn-seal,.sheet:not(.open) .bn-fl{animation-play-state:paused;}
   .bn-seal svg{width:100%;height:100%;display:block;}
   @keyframes bnBeat{0%,100%{transform:scale(1)}14%{transform:scale(1.13)}28%{transform:scale(1)}42%{transform:scale(1.08)}56%{transform:scale(1)}}
   .block.bn h3{position:relative;text-align:center;font-size:15px;letter-spacing:.6px;margin:0 0 14px;color:var(--green);font-weight:800;}
@@ -400,15 +403,10 @@
   .bn-p::before{content:"";position:absolute;left:0;top:.35em;bottom:.35em;width:2px;border-radius:2px;background:linear-gradient(180deg,var(--green),rgba(var(--green-rgb),.1));
     transform:scaleY(0);transform-origin:top;transition:transform 1.3s cubic-bezier(.3,.7,.2,1);box-shadow:0 0 8px rgba(var(--green-rgb),.6);}
   .bn-p.on::before{transform:scaleY(1);}
-  .bn-w{display:inline-block;white-space:nowrap;}
-  /* cada letra aparece "como tinta": nace con el color del tema, borrosa y un poco abajo, y se asienta */
-  .bn-l{display:inline-block;opacity:0;transform:translateY(7px);filter:blur(3px);color:var(--green);}
-  .bn-p.on .bn-l{animation:bnInk .75s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:calc(var(--i) * var(--st));}
-  @keyframes bnInk{0%{opacity:0;transform:translateY(7px);filter:blur(3px);color:var(--green);text-shadow:0 0 12px rgba(var(--green-rgb),.9)}
-    55%{opacity:1;filter:blur(0);color:var(--green);text-shadow:0 0 10px rgba(var(--green-rgb),.7)}
-    100%{opacity:1;transform:none;filter:none;color:var(--text);text-shadow:none}}
-  .bn-foot{position:relative;text-align:center;margin-top:14px;font-size:13px;letter-spacing:6px;color:rgba(var(--green-rgb),.7);}
-  @media (prefers-reduced-motion:reduce){.bn-seal,.bn-fl{animation:none}.bn-l{opacity:1;transform:none;filter:none;color:var(--text)}.bn-p::before{transform:scaleY(1);transition:none}.bn-p.on .bn-l{animation:none}}
+  .bn-w{display:inline-block;white-space:nowrap;opacity:0;transform:translate3d(0,8px,0);}
+  .bn-p.on .bn-w{animation:bnWord .7s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:calc(var(--i) * var(--st));}
+  @keyframes bnWord{from{opacity:0;transform:translate3d(0,8px,0)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.bn-seal,.bn-fl{animation:none}.bn-w{opacity:1;transform:none}.bn-p::before{transform:scaleY(1);transition:none}.bn-p.on .bn-w{animation:none}}
   .note-box textarea{
     width:100%;background:transparent;border:none;color:var(--text);font-family:var(--font);
     font-size:14px;line-height:1.5;resize:vertical;min-height:70px;padding:0;margin-bottom:10px;
@@ -1967,7 +1965,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     </div>
     </div></div>
     <div class="block bn" id="blkNote">
-      <div class="bn-bg" aria-hidden="true"><i class="bn-mark"></i><span class="bn-fl" style="left:12%;animation-delay:0s">♥</span><span class="bn-fl" style="left:48%;animation-delay:2.2s">♥</span><span class="bn-fl" style="left:82%;animation-delay:4.1s">♥</span></div>
+      <div class="bn-bg" aria-hidden="true"><i class="bn-mark"></i><span class="bn-fl" style="left:12%;animation-delay:0s">♥</span><span class="bn-fl" style="left:82%;animation-delay:4.1s">♥</span></div>
       <div class="bn-seal" aria-hidden="true">
         <svg viewBox="0 0 24 24"><defs><linearGradient id="bnG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--green)"/><stop offset="1" style="stop-color:var(--green-dim)"/></linearGradient></defs>
           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="url(#bnG)"/>
@@ -3176,7 +3174,7 @@ Te amo muchísimo, mi Ali. Eres una parte de mis fuerzas, de mis sueños y de to
     document.getElementById('miniplayer').classList.toggle('mp-on', !!playing);
   }
 
-  // Nota para Bodoca: cada párrafo se escribe solo, letra por letra, cuando va llegando a la pantalla al deslizar hacia abajo
+  // Nota para Bodoca: cada párrafo se escribe solo, palabra por palabra, cuando va llegando a la pantalla al deslizar hacia abajo
   let bnIO = null;
   function bnRender(text){
     const el = document.getElementById('sheetNote');
@@ -3185,16 +3183,14 @@ Te amo muchísimo, mi Ali. Eres una parte de mis fuerzas, de mis sueños y de to
     if(bnIO){ bnIO.disconnect(); bnIO = null; }
     el.textContent = '';
     const parts = String(text || '').normalize('NFC').split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
-    const glyph = /\p{Extended_Pictographic}\uFE0F?(?:\u200D\p{Extended_Pictographic}\uFE0F?)*|[\s\S]/gu;   // un emoji = una sola letra
     const paras = parts.map(p => {
       const pe = document.createElement('span'); pe.className = 'bn-p';
-      let i = 0;
-      p.split(/\s+/).filter(Boolean).forEach((w, wi, arr) => {
-        const we = document.createElement('span'); we.className = 'bn-w';
-        (w.match(glyph) || []).forEach(ch => { const l = document.createElement('span'); l.className = 'bn-l'; l.textContent = ch; l.style.setProperty('--i', i++); we.appendChild(l); });
-        pe.appendChild(we); if(wi < arr.length - 1) pe.appendChild(document.createTextNode(' '));
+      const words = p.split(/\s+/).filter(Boolean);
+      words.forEach((w, wi) => {
+        const we = document.createElement('span'); we.className = 'bn-w'; we.textContent = w; we.style.setProperty('--i', wi);
+        pe.appendChild(we); if(wi < words.length - 1) pe.appendChild(document.createTextNode(' '));
       });
-      pe.style.setProperty('--st', Math.max(5, Math.min(20, 1600 / Math.max(1, i))) + 'ms');   // párrafos largos escriben más rápido
+      pe.style.setProperty('--st', Math.max(18, Math.min(70, 1900 / Math.max(1, words.length))) + 'ms');   // párrafos largos van más rápido
       el.appendChild(pe);
       return pe;
     });
