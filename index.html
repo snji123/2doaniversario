@@ -378,6 +378,25 @@
   .block p{margin:0;font-size:15px;line-height:1.6;}
   .phrase{font-style:italic;font-weight:500;font-size:18px;line-height:1.5;}
   .note-box{background:var(--surface);border:1px solid var(--divider);border-radius:14px;padding:16px;}
+  /* Nota para Bodoca: carta con un corazón de sello; todo sale de los colores de Apariencia (--green) */
+  .block.bn{position:relative;margin:46px 0 26px;padding:46px 20px 18px;border-radius:26px;
+    background:linear-gradient(160deg,rgba(var(--green-rgb),.20),rgba(var(--green-rgb),.06) 48%,var(--surface));
+    border:1px solid rgba(var(--green-rgb),.5);
+    box-shadow:0 12px 34px rgba(var(--green-rgb),.20),inset 0 0 44px rgba(var(--green-rgb),.07);}
+  .bn-bg{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none;}
+  .bn-mark{position:absolute;right:-34px;bottom:-30px;width:210px;height:210px;background:rgba(var(--green-rgb),.11);transform:rotate(-12deg);
+    -webkit-mask:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E") center/contain no-repeat;
+            mask:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E") center/contain no-repeat;}
+  .bn-fl{position:absolute;bottom:-20px;font-size:15px;color:rgba(var(--green-rgb),.55);opacity:0;animation:bnUp 7s ease-in infinite;}
+  @keyframes bnUp{0%{transform:translateY(0) scale(.7);opacity:0}15%{opacity:.8}100%{transform:translateY(-260px) scale(1.15);opacity:0}}
+  .bn-seal{position:absolute;left:50%;top:-38px;width:82px;height:76px;margin-left:-41px;filter:drop-shadow(0 8px 16px rgba(var(--green-rgb),.6));animation:bnBeat 1.8s ease-in-out infinite;transform-origin:50% 60%;}
+  .bn-seal svg{width:100%;height:100%;display:block;}
+  .bn-seal b{position:absolute;left:0;right:0;top:50%;transform:translateY(-58%);text-align:center;font-size:25px;font-weight:800;color:var(--on-accent);font-family:'Dancing Script','Poppins',cursive;}
+  @keyframes bnBeat{0%,100%{transform:scale(1)}14%{transform:scale(1.13)}28%{transform:scale(1)}42%{transform:scale(1.08)}56%{transform:scale(1)}}
+  .block.bn h3{position:relative;text-align:center;font-size:15px;letter-spacing:.6px;margin:0 0 14px;color:var(--green);font-weight:800;}
+  .bn-text{position:relative;white-space:pre-line;font-size:15px;line-height:1.75;color:var(--text);}
+  .bn-foot{position:relative;text-align:center;margin-top:14px;font-size:13px;letter-spacing:6px;color:rgba(var(--green-rgb),.7);}
+  @media (prefers-reduced-motion:reduce){.bn-seal,.bn-fl{animation:none}}
   .note-box textarea{
     width:100%;background:transparent;border:none;color:var(--text);font-family:var(--font);
     font-size:14px;line-height:1.5;resize:vertical;min-height:70px;padding:0;margin-bottom:10px;
@@ -1935,9 +1954,18 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
       <button class="sp-aux" id="repeatBtn" type="button" aria-label="Repetir canción"><svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/><path d="M11.5 10.5l1-.8v4.6" stroke-width="1.6"/></svg></button>
     </div>
     </div></div>
-    <div class="block" id="blkPhrase"><h3>La frase</h3><p class="phrase" id="sheetPhrase"></p></div>
-    <div class="block" id="blkMeaning"><h3>Lo que significa</h3><p id="sheetMeaning"></p></div>
-    <div class="block" id="blkNote"><h3>Mi nota para ti</h3><div class="note-box"><p id="sheetNote"></p></div></div>
+    <div class="block bn" id="blkNote">
+      <div class="bn-bg" aria-hidden="true"><i class="bn-mark"></i><span class="bn-fl" style="left:12%;animation-delay:0s">♥</span><span class="bn-fl" style="left:48%;animation-delay:2.2s">♥</span><span class="bn-fl" style="left:82%;animation-delay:4.1s">♥</span></div>
+      <div class="bn-seal" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><defs><linearGradient id="bnG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--green)"/><stop offset="1" style="stop-color:var(--green-dim)"/></linearGradient></defs>
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="url(#bnG)"/>
+          <path d="M6.2 6.4c.9-.8 2.1-.9 3-.3" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.1" stroke-linecap="round"/></svg>
+        <b>B</b>
+      </div>
+      <h3>Nota para Bodoca</h3>
+      <p id="sheetNote" class="bn-text"></p>
+      <div class="bn-foot" aria-hidden="true">♥ ♥ ♥</div>
+    </div>
     <div class="block" id="blkHer"><h3>Tu nota para él</h3><div class="note-box">
       <textarea id="herNoteInput" placeholder="Escribe aquí lo que quieras responderle…"></textarea>
       <button class="save-btn" id="herNoteSave">Guardar</button>
@@ -1952,9 +1980,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     <label>Título</label><input id="eTitle">
     <label>Artista</label><input id="eArtist">
     <div id="eOursFields">
-      <label>La frase</label><textarea id="ePhrase" rows="2"></textarea>
-      <label>Lo que significa</label><textarea id="eMeaning" rows="2"></textarea>
-      <label>Mi nota para ti</label><textarea id="eNote" rows="3"></textarea>
+      <label>Nota para Bodoca</label><textarea id="eNote" rows="8"></textarea>
     </div>
     <label>Archivo mp3</label>
     <div class="file-row">
@@ -2367,26 +2393,79 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
   }
 
   // ----- Canciones (reemplaza frase/significado/nota/audio por lo real, o edítalo desde admin.html) -----
+  // Nota para Bodoca de cada canción (el texto de relleno que ya estuviera guardado en la nube se cambia solo, ver initFirestoreSongs)
+  const NOTA_VACIA = 'Escribe tu dedicatoria aquí.';
+  const NOTAS = {
+    song1:`Recuerdo la primera vez que escuché esta canción y cómo inmediatamente me recordó a ti. ❤️ Me trae tantos recuerdos, pero sobre todo de cuando nos conocimos y de la primera vez que te besé.
+
+Recuerdo aquella vez que estaba sentado en mi silla, gestionando llamadas en la Pepsi, mientras escuchaba esta canción y pensaba en ti. También recuerdo cuando hice un video con esta canción y cambié el subtítulo por tu nombre: “Sin ti, Mary… sin ti, Ali, que Dios me ayude a vivir”.
+
+Porque eres mi razón de ser, mi razón para estar en paz y una de las partes más bonitas de mi vida. Eres mi todo y, poco a poco, te ganaste por completo mi corazón de Nenuco. 🥺❤️
+
+Te amo, mi amor. Y cada vez que escucho esta canción, inevitablemente vuelvo a aquellos momentos en los que apenas comenzaba nuestra historia. ❤️`,
+    song2:`Si supieras cómo puedo llegar a verte yo, mi Ali, jamás dudarías de ti, jamás pensarías que no eres suficiente. Si pudieras verte aunque fuera por un instante a través de mis ojos, entenderías todo el amor que siento por ti.
+
+La forma en la que mis ojitos ven tu carita, tu sonrisa, tu manera de ser… todo en ti me hace sentir que quiero estar siempre para ti, cuidarte, apoyarte y acompañarte en cada momento de tu vida.
+
+No sabes cuánto puedo llegar a admirarte, no solamente por la mujer que eres, sino también por la novia que eres y por esa compañera que siempre ha estado para mí. ❤️
+
+Y cada vez que dudes de ti, mírame a mí. Porque en mis ojos vas a encontrar una percepción de ti llena de amor, admiración y orgullo; la forma en que un hombre mira a la mujer que ama con todo su corazón.
+
+Ojalá algún día puedas verte como yo te veo, porque entonces entenderías por qué para mí eres tan especial y por qué te elegiría una y otra vez.
+
+Te amo muchísimo, mi vida. ❤️`,
+    song3:`La primera vez que escuché esta canción entendí que, por un momento, todo lo demás y todos los demás podían desvanecerse poco a poco cuando estaba contigo. Como si no existiera nada más importante que nosotros dos, simplemente amándonos.
+
+Me gusta pensar en nosotros dos en nuestro punto más alto; en la idea de tenerte conmigo, de compartir mi vida contigo y de saber que soy quien soy porque tú formas parte de mi vida.
+
+Y siempre que tenemos días malos, cuando peleamos o cuando me siento triste, recuerdo esta canción. Porque me lleva de vuelta a ese momento en el que todo se siente bien, donde no existe nada más que nosotros y donde recuerdo algo muy sencillo:
+
+Mi felicidad tiene mucho que ver contigo.
+
+Porque cuando estás tú, incluso en los días difíciles, tengo un lugar al cual regresar. Y ese lugar eres tú, mi amor. ❤️`,
+    song4:`Al escuchar esta canción me doy cuenta de cuánto han cambiado las cosas desde aquellas primeras veces que nos veíamos, cuando todavía no éramos novios.
+
+Recuerdo perfectamente los nervios que sentía al estar contigo, cómo me sudaban mis manitas de Nenuco, y cómo verte a los ojos hacía que solo pudiera pensar en cuánto te quería y cuánto te deseaba. Mi corazón se aceleraba y me sentía tan nervioso que a veces ni siquiera sabía cómo actuar.
+
+Y jamás imaginé que, en algún momento, nuestras vidas llegarían a convertirse en un “nosotros”. No porque no lo quisiera, sino todo lo contrario. Desde aquellos días ya había algo en ti que me hacía querer estar cada vez más cerca.
+
+Para mí eres esa mujer preciosa que poco a poco se fue robando mi corazón: en cada detalle, en cada palabra, en cada mirada y en cada gesto. Y lo más bonito es que, con cada día que pasa, lo nuestro se transforma, crece y se vuelve todavía más especial.
+
+Hoy, cuando miro hacia atrás, me encanta pensar que aquel Axel que se ponía nervioso y le sudaban sus manitas de nenuco, al estar frente a ti terminó encontrando a su nenuca que ama con todo su corazón.
+
+Te amo hoy, siempre y en cada versión de nuestra historia, mi vida. ❤️`,
+    song5:`Tú sí eres real, Ali. ❤️
+
+Siempre que estoy cansado, agotado por el trabajo, por la rutina o simplemente por esos días en los que siento que ya no puedo más, recuerdo cuánto me amas y, de alguna manera, encuentro fuerzas para seguir adelante.
+
+Y muchas veces no lo hago solamente por mí, sino por los dos. Porque cuando pienso en nosotros, en todo lo que hemos vivido y en todo lo que todavía nos falta vivir juntos, siento que vale la pena continuar, esforzarme y dar un poquito más de mí.
+
+Tú eres mi motor, esa fuerza que no se ve, pero que se siente. Una fuerza que aparece en cada pensamiento que tengo de ti, en cada recuerdo, en cada abrazo que imagino y en cada forma en la que intento demostrarte cuánto te amo.
+
+Quizá no siempre pueda explicarte lo que provocas en mí, pero sí puedo decirte algo: tenerte en mi vida me da una razón más para seguir adelante.
+
+Te amo muchísimo, mi Ali. Eres una parte de mis fuerzas, de mis sueños y de todo lo que quiero construir. ❤️`
+  };
   const songs = [
     { id:"song1", title:"Mary Es Mi Amor", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#7a2f4a,#c98a3e)",
       audio:"mari es mi amor.mp3", cover:"sin ti mari.gif",
-      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí.",
+      note:NOTAS.song1,
       liked:false, herNote:"" },
     { id:"song2", title:"Si Supieras", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#4a2a5c,#a9702c)",
       audio:"si supieras kevin karl.mp3", cover:"kevin3.gif",
-      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí.",
+      note:NOTAS.song2,
       liked:false, herNote:"" },
     { id:"song3", title:"San Lucas", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#5c2a3a,#caa15c)",
       audio:"san lucas.mp3", cover:"kevin-sanlucas.gif",
-      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí.",
+      note:NOTAS.song3,
       liked:false, herNote:"" },
     { id:"song4", title:"Zoe Luna", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#1ed760,#0a3d20)",
       audio:"luna de zoe.mp3", cover:"zoe-luna.gif",
-      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí.",
+      note:NOTAS.song4,
       liked:false, herNote:"" },
     { id:"song5", title:"Tú Sí Eres Real", artist:"Dedicada a ti", grad:"linear-gradient(135deg,#7a2f4a,#4a2a5c)",
       audio:"tu si eres real kevin karl.mp3", cover:"tu si eres real kevin.gif",
-      phrase:"“…”", meaning:"Escribe aquí qué representa esta canción.", note:"Escribe tu dedicatoria aquí.",
+      note:NOTAS.song5,
       liked:false, herNote:"" }
   ];
   document.getElementById('songCount').textContent = `${songs.length} canciones · nuestra playlist`;
@@ -2683,6 +2762,10 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
         if(!snap.exists()) return;
         const d = snap.data();
         Object.assign(s, d);
+        if(NOTAS[s.id] && (d.note === undefined || String(d.note).trim() === NOTA_VACIA)){
+          s.note = NOTAS[s.id];
+          if(!s._noteSaved){ s._noteSaved = true; updateDoc(ref, { note:s.note }).catch(()=>{}); }
+        }
         if(d.deleted || d.trashed || d.purged){ if(!removedDefaults.has(s)){ removedDefaults.add(s); rebuildOurs(); } else refreshTrash(); return; }
         if(removedDefaults.has(s)){ removedDefaults.delete(s); rebuildOurs(); }
         renderTracks();
@@ -3093,11 +3176,9 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     document.getElementById('sheetCover').style.background = bg;
     document.getElementById('sheetTitle').textContent = s.title;
     document.getElementById('sheetArtist').textContent = s.artist;
-    document.getElementById('sheetPhrase').textContent = s.phrase || '';
-    document.getElementById('sheetMeaning').textContent = s.meaning || '';
     document.getElementById('sheetNote').textContent = s.note || '';
     const ours = playlist===songs;
-    ['blkPhrase','blkMeaning','blkNote','blkHer'].forEach(id=>{ document.getElementById(id).style.display = ours ? '' : 'none'; });
+    ['blkNote','blkHer'].forEach(id=>{ document.getElementById(id).style.display = ours ? '' : 'none'; });
   }
 
   const _rnp = refreshNowPlayingUI;
@@ -3576,8 +3657,6 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     eF('eAudioName').textContent = 'Sin cambios'; eF('eChip').style.display = 'none'; eF('eAudioFile').value = '';
     eF('eTitle').value = editTarget.title || '';
     eF('eArtist').value = editTarget.artist || '';
-    eF('ePhrase').value = editTarget.phrase || '';
-    eF('eMeaning').value = editTarget.meaning || '';
     eF('eNote').value = editTarget.note || '';
     eF('eOursFields').style.display = editArr===songs ? 'flex' : 'none';
     eF('eCoverName').textContent = 'Sin cambios';
@@ -3645,7 +3724,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     try{
       const oldAudio = editTarget.audio, oldCover = editTarget.cover;
       const data = { title, artist: eF('eArtist').value.trim() };
-      if(editArr===songs){ data.phrase = eF('ePhrase').value; data.meaning = eF('eMeaning').value; data.note = eF('eNote').value; }
+      if(editArr===songs){ data.note = eF('eNote').value; }
       if(editAudio){
         eF('eStatus').textContent = 'Subiendo canción…';
         data.audio = await cloudinaryUpload(editAudio, 'video', ()=>{});
@@ -6151,7 +6230,7 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     const SLOTS = [
       { x:770, y:500, lv:1 }, { x:900, y:585, lv:1 }, { x:700, y:650, lv:1 },
       { x:860, y:710, lv:2 }, { x:760, y:790, lv:2 },
-      { x:385, y:590, lv:3 }, { x:470, y:590, lv:4 }
+      { x:400, y:655, lv:3 }, { x:540, y:650, lv:4 }   // más atrás y más separados: su globo de pedido ya no tapa los círculos de los hot dogs
     ];
     // zonas por las que NO se puede caminar (pies del personaje): mostrador, puestos, cajas, carritos, fuente y farol
     const lineY = x => 385 - (x - 240) * .38;
@@ -6355,8 +6434,9 @@ setTimeout(go, 25000);   // si algo se atora, entra igual
     let W = 0, H = 0, s = 1, camX = 0, camY = 0, running = false, raf = 0, last = 0;
     let state = 'ready', clock = 0, timeLeft = ROUND, points = 0, level = 1, deliveries = 0, combo = 0, lastDel = -99;
     let dir = 'abajo', hdir = 'derecha', moving = false, invul = 0, shake = 0, lastTick = 0, spawnT = 0;
-    // tomar el primer hot dog es rápido; para el segundo (o para cambiar uno) hay que quedarse ~1 segundo sobre el hot dog
-    const padNeed = () => carried.length >= 1 ? 1 : .18;
+    // tomar el primer hot dog es rápido (.18 s); para el segundo (o para cambiar uno) hay que quedarse un poquito más (.5 s):
+    // lo bastante para no agarrar uno por accidente al pasar por encima, y lo bastante corto para sentirse fluido
+    const padNeed = () => carried.length >= 1 ? .5 : .18;
     let carried = [], custs = [], dogs = [], floats = [], keys = {}, dwell = PADS.map(() => 0), padCd = PADS.map(() => 0), standCd = 0;
     const P = { x:300, y:500 };
     let joy = { on:false, id:null, bx:0, by:0, dx:0, dy:0 };
